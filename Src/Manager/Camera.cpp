@@ -74,7 +74,7 @@ void Camera::MoveXYZDirection(void)
 	if (ins.IsNew(KEY_INPUT_RIGHT)) { angles_.y += rotPow; }
 	if (ins.IsNew(KEY_INPUT_LEFT)) { angles_.y -= rotPow; }
 	// WASDÇ≈ÉJÉÅÉâÇà⁄ìÆÇ≥ÇπÇÈ
-	const float movePow = 3.0f;
+	const float movePow = 100.0f;
 	VECTOR dir = AsoUtility::VECTOR_ZERO;
 	if (ins.IsNew(KEY_INPUT_I)) { dir = { 0.0f, 0.0f, 1.0f }; }
 	if (ins.IsNew(KEY_INPUT_J)) { dir = { -1.0f, 0.0f, 0.0f }; }

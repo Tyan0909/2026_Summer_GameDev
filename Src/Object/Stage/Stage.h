@@ -1,11 +1,17 @@
 #pragma once
-#include "../Scene/GameScene.h"
+//#include "../Scene/GameScene.h"
 #include <DxLib.h>
 #include <vector>
 
 class Stage
 {
 public:
+
+	// 定数
+	// ステージモデルの拡散光の強さ
+	static constexpr float DIFFUSE_STRENGTH = 0.8f;
+
+
 
 	// コンストラクタ
 	Stage();

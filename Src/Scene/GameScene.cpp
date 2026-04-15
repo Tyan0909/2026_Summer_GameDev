@@ -1,6 +1,7 @@
 #include <cmath>
 #include <DxLib.h>
 #include "GameScene.h"
+#include "../Object/Stage/Stage.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
 
@@ -25,8 +26,10 @@ void GameScene::Init()
 		VGet(0, 0, 0)     // 注視点
 	);
 
+	
 	// ステージ初期化
-	stage.Init();
+	stage_ = new Stage();
+	stage_->Init();
 }
 
 void GameScene::Update()
@@ -41,23 +44,29 @@ void GameScene::Update()
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 	}
 
-	stage.Update();
+	stage_->Update();
 }
 
 void GameScene::Draw()
 {
 	// ゲームシーンの描画
 	DrawString(200, 200, "ゲームシーン", GetColor(255, 255, 255));
+	stage_->Draw();
 }
 
 void GameScene::Draw3D()
 {
 	// 3D描画が必要な場合はここに追加
-	stage.Draw();
+	
 }
 
 void GameScene::Release()
 {
-	
+	if (stage_)
+	{
+		stage_->Release();
+		delete stage_;
+		stage_ = nullptr;
+	}
 }
 
