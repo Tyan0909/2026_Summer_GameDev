@@ -1,0 +1,108 @@
+## Visual Studio 一時ファイル / ビルド成果物 / ユーザー設定ファイル
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Visual Studio cache / temporary files
+.vs/
+log.txt
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build artifacts
+*.obj
+*.exe
+*.dll
+*.pdb
+*.cache
+*.ilk
+*.log
+*.vspscc
+*.vssscc
+*_i.c
+*_p.c
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.dbmdl
+*.bak
+*.backup
+*.BLOB
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.pch
+
+# Other binary / intermediate files
+*.o
+*.lo
+*.slo
+*.idb
+*.res
+*.tlb
+*.tlh
+*.tmp
+*.dmp
+*.d
+*.dwo
+
+# Test / profiling
+*.gcda
+*.gcno
+*.gcov
+*.tlog
+
+# NuGet packages
+*.nupkg
+*.snupkg
+# The packages folder can be ignored because of restore
+**/[Pp]ackages/*
+# except build/ and .targets files in case you commit them
+!**/[Pp]ackages/build/
+!**/[Pp]ackages/*.targets
+
+# CMake build directory
+[Cc]MakeFiles/
+[Cc]MakeCache.txt
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+build/
+
+# Others
+*.vsix
+*.tlog
+*.idb
+*.sbr
+*.tlh
+*.tlb
+
+# Backup / logs
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# IDE設定系
+.vscode/
+.idea/
