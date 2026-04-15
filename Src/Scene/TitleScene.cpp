@@ -20,7 +20,15 @@ TitleScene::~TitleScene(void)
 
 void TitleScene::Init(void)
 {
-	
+	// カメラモード変更
+	Camera* camera = SceneManager::GetInstance().GetCamera();
+	camera->ChangeMode(Camera::MODE::FREE);
+
+	// デバッグ用グリッドの生成
+
+	debugGrid_ = new Grid();
+	debugGrid_->Init();
+
 }
 
 void TitleScene::Update(void)
@@ -34,15 +42,26 @@ void TitleScene::Update(void)
 		scene.ChangeScene(SceneManager::SCENE_ID::PLAYERNUMBERSELECT);
 	}
 
+	// デバッグ用グリッドの更新
+
+	debugGrid_->Update();
+
+
 }
 
 void TitleScene::Draw(void)
 {
 	// タイトル画面の描画
 	DrawString(200, 200, "タイトルシーン", GetColor(255, 255, 255));
+
+	// デバッグ用グリッドの描画
+	debugGrid_->Draw();
 }
 
 void TitleScene::Release(void)
 {
+
+	delete debugGrid_;
+	debugGrid_ = nullptr;
 }
 

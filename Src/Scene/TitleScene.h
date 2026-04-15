@@ -19,6 +19,8 @@ public:
 	void Release(void) override;
 
 private:
+	// デバッグ用グリッド
+	Grid* debugGrid_;
 
 };
 
