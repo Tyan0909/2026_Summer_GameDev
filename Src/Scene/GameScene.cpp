@@ -15,6 +15,18 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
+	// 3D設定
+	SetUseZBuffer3D(TRUE);
+	SetWriteZBuffer3D(TRUE);
+
+	// カメラ設定
+	SetCameraPositionAndTarget_UpVecY(
+		VGet(0, 20, -50), // カメラ位置
+		VGet(0, 0, 0)     // 注視点
+	);
+
+	// ステージ初期化
+	stage.Init();
 }
 
 void GameScene::Update()
@@ -28,6 +40,8 @@ void GameScene::Update()
 	{
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 	}
+
+	stage.Update();
 }
 
 void GameScene::Draw()
@@ -39,6 +53,7 @@ void GameScene::Draw()
 void GameScene::Draw3D()
 {
 	// 3D描画が必要な場合はここに追加
+	stage.Draw();
 }
 
 void GameScene::Release()
