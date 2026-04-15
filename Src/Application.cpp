@@ -26,7 +26,7 @@ void Application::Init(void)
 
 	// アプリケーションの初期設定
 	// ウィンドウタイトル
-	SetWindowText("ふっ飛ばしアリーナ！");
+	SetWindowText("スクープ最前線");
 
 	// ウィンドウサイズ
 	SetGraphMode(SCREEN_SIZE_X, SCREEN_SIZE_Y, 32);
