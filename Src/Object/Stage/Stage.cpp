@@ -1,85 +1,51 @@
+#include <DxLib.h>
 #include "Stage.h"
 
-// コンストラクタ
 Stage::Stage()
 {
 }
 
-// デストラクタ
 Stage::~Stage()
 {
 }
 
-// 初期化
-void Stage::Init()
+void Stage::Init(void)
 {
-    CreateStage();
+	// ステージモデルの読み込み
+	// データパスとファイル名は要修正
+	modelId_ = MV1LoadModel("Data/Model/m.mv1");
+
+	// 位置・角度・拡縮の初期化
+	pos_ = { 0.0f, 0.0f, 0.0f };
+	angle_ = { 0.0f, 0.0f, 0.0f };
+	scale_ = { 0.001f, 0.001f, 0.001f };
+
 }
 
-// 更新（今回は特になし）
-void Stage::Update()
+void Stage::Update(void)
 {
+	// ステージの更新処理が必要な場合はここに追加
+
+	// 発光色を白に設定
+	COLOR_F emiColor;
+	emiColor.r = 1.0f;
+	emiColor.g = 1.0f;
+	emiColor.b = 1.0f;
+	emiColor.a = 1.0f;
+
+	MV1SetMaterialEmiColor(modelId_, 0, emiColor);
 }
 
-// 描画
-void Stage::Draw()
+void Stage::Draw(void)
 {
-    for (const auto& block : blocks)
-    {
-        VECTOR min = VGet(
-            block.position.x - block.size.x / 2,
-            block.position.y,
-            block.position.z - block.size.z / 2);
+	// ステージモデルの描画
+	MV1DrawModel(modelId_);
 
-        VECTOR max = VGet(
-            block.position.x + block.size.x / 2,
-            block.position.y + block.size.y,
-            block.position.z + block.size.z / 2);
 
-        DrawCube3D(min, max, block.color, block.color, TRUE);
-    }
 }
 
-// ステージ生成
-void Stage::CreateStage()
+void Stage::Release(void)
 {
-    blocks.clear();
-
-    // 地面
-    blocks.push_back({
-        VGet(0.0f, -1.0f, 0.0f),
-        VGet(100.0f, 1.0f, 100.0f),
-        GetColor(50, 50, 50)
-        });
-
-    // 建物（商店街っぽく）
-    for (int i = -5; i <= 5; i++)
-    {
-        // 左側の建物
-        blocks.push_back({
-            VGet(-10.0f, 0.0f, i * 10.0f),
-            VGet(5.0f, 10.0f, 5.0f),
-            GetColor(100, 100, 255)
-            });
-
-        // 右側の建物
-        blocks.push_back({
-            VGet(10.0f, 0.0f, i * 10.0f),
-            VGet(5.0f, 10.0f, 5.0f),
-            GetColor(255, 100, 100)
-            });
-    }
-
-    // 障害物（瓦礫）
-    blocks.push_back({
-        VGet(0.0f, 0.0f, 10.0f),
-        VGet(3.0f, 2.0f, 3.0f),
-        GetColor(150, 150, 150)
-        });
-
-    blocks.push_back({
-        VGet(2.0f, 0.0f, -5.0f),
-        VGet(2.0f, 1.5f, 2.0f),
-        GetColor(120, 120, 120)
-        });
+	// ステージモデルの解放
+	MV1DeleteModel(modelId_);
 }
