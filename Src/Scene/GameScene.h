@@ -31,4 +31,5 @@ public:
 private:
 
 	// ‚±‚±‚Éƒƒ“ƒo•Ï”‚ğ’Ç‰Á‚µ‚Ä‚¢‚­
+	Stage stage;
 };
