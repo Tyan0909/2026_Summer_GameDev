@@ -18,22 +18,23 @@ void Stage::Init(void)
 	// 位置・角度・拡縮の初期化
 	pos_ = { 0.0f, 0.0f, 0.0f };
 	angle_ = { 0.0f, 0.0f, 0.0f };
-	scale_ = { 0.001f, 0.001f, 0.001f };
+	scale_ = { 0.1f, 0.1f, 0.1f };
+
+
+	// グローバルアンビエントライトの設定
+	SetGlobalAmbientLight(GetColorF(0.3f, 0.3f, 0.3f, 1.0f));
+
+	// メイン
+	SetLightDirection(VGet(-1.0f, -1.0f, 1.0f));
 
 }
 
 void Stage::Update(void)
 {
 	// ステージの更新処理が必要な場合はここに追加
-
-	// 発光色を白に設定
-	COLOR_F emiColor;
-	emiColor.r = 1.0f;
-	emiColor.g = 1.0f;
-	emiColor.b = 1.0f;
-	emiColor.a = 1.0f;
-
-	MV1SetMaterialEmiColor(modelId_, 0, emiColor);
+	MV1SetPosition(modelId_, pos_);
+	MV1SetRotationXYZ(modelId_, angle_);
+	MV1SetScale(modelId_, scale_);
 }
 
 void Stage::Draw(void)
