@@ -1,7 +1,7 @@
 #include <cmath>
 #include <DxLib.h>
 #include "GameScene.h"
-#include "../Object/Stage/Stage.h"
+#include "../Object/Actor/Stage/Stage.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
 
