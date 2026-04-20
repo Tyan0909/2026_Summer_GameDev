@@ -38,9 +38,11 @@ private:
 	VECTOR angle_;
 	VECTOR scale_;
 
-	// ライトの方向
-	VECTOR lightDirection_;
-	VECTOR lightDirection2_;
-	VECTOR lightDirection3_;
+	// ライトハンドル
+	int lightHandle_;		// 上から下
+	int lightHandle2_;		// 右から左
+	int lightHandle3_;		// 左から右
+	int lightHandle4_;		// 右上から中央
+	int lightHandle5_;		// 左上から中央
 
 };
