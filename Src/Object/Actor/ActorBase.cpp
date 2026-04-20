@@ -94,5 +94,6 @@ void ActorBase::AddHitCollider(const ColliderBase* hitCollider)
 void ActorBase::ClearHitCollider(void)
 {
 	hitColliders_.clear();
+	int a = 1;
 }
 
