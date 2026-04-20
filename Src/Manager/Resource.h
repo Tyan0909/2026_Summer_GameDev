@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 #pragma once
+=======
+
+#pragma once
+#include "Resource.h"
+>>>>>>> f2f4dfa024c193b0f78acab1bdfc1cf1a23240c7
 #include <string>
 #include <vector>
 

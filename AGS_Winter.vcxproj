@@ -142,9 +142,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+<<<<<<< HEAD
     <ClCompile Include="Src\Object\Actor\ActorBase.cpp" />
     <ClCompile Include="Src\Manager\ResourceManager.cpp" />
     <ClCompile Include="Src\Manager\Resource.cpp" />
+=======
+    <ClCompile Include="Src\Manager\Resource.cpp" />
+    <ClCompile Include="Src\Object\Actor\ActorBase.cpp" />
+>>>>>>> f2f4dfa024c193b0f78acab1bdfc1cf1a23240c7
     <ClCompile Include="Src\Object\Collider\ColliderBase.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderCapsule.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderLine.cpp" />
@@ -160,9 +165,6 @@
     <ClCompile Include="Src\Scene\GameScene.cpp" />
     <ClCompile Include="Src\Common\Quaternion.cpp" />
     <ClCompile Include="Src\Common\Fader.cpp" />
-    <ClCompile Include="Src\Manager\SceneManager.cpp" />
-    <ClCompile Include="Src\Manager\Camera.cpp" />
-    <ClCompile Include="Src\Manager\InputManager.cpp" />
     <ClCompile Include="Src\Object\Common\AnimationController.cpp" />
     <ClCompile Include="Src\Object\Grid.cpp" />
     <ClCompile Include="Src\Scene\SceneBase.cpp" />
@@ -176,9 +178,14 @@
     <ClCompile Include="Src\Object\Common\Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
+<<<<<<< HEAD
     <ClInclude Include="Src\Object\Actor\ActorBase.h" />
     <ClInclude Include="Src\Manager\ResourceManager.h" />
     <ClInclude Include="Src\Manager\Resource.h" />
+=======
+    <ClInclude Include="Src\Manager\Resource.h" />
+    <ClInclude Include="Src\Object\Actor\ActorBase.h" />
+>>>>>>> f2f4dfa024c193b0f78acab1bdfc1cf1a23240c7
     <ClInclude Include="Src\Object\Collider\ColliderBase.h" />
     <ClInclude Include="Src\Object\Collider\ColliderCapsule.h" />
     <ClInclude Include="Src\Object\Collider\ColliderLine.h" />
@@ -194,9 +201,6 @@
     <ClInclude Include="Src\Scene\GameScene.h" />
     <ClInclude Include="Src\Common\Quaternion.h" />
     <ClInclude Include="Src\Common\Fader.h" />
-    <ClInclude Include="Src\Manager\SceneManager.h" />
-    <ClInclude Include="Src\Manager\Camera.h" />
-    <ClInclude Include="Src\Manager\InputManager.h" />
     <ClInclude Include="Src\Object\Common\AnimationController.h" />
     <ClInclude Include="Src\Object\Grid.h" />
     <ClInclude Include="Src\Scene\SceneBase.h" />

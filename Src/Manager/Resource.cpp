@@ -134,4 +134,8 @@ void Resource::CopyHandle(int* imgs) const
 		imgs[i] = handleIds_[i];
 	}
 
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f2f4dfa024c193b0f78acab1bdfc1cf1a23240c7
