@@ -1,7 +1,12 @@
 #include <DxLib.h>
 #include "Stage.h"
+#include "../../../Manager/ResourceManager.h"
+#include "../../../Object/Collider/ColliderModel.h"
+#include "../../../Utility/AsoUtility.h"
 
 Stage::Stage()
+	:
+	ActorBase()
 {
 }
 
@@ -9,17 +14,14 @@ Stage::~Stage()
 {
 }
 
-void Stage::Init(void)
+void Stage::Update(void)
 {
-	// ステージモデルの読み込み
-	// データパスとファイル名は要修正
-	modelId_ = MV1LoadModel("Data/Model/m.mv1");
+}
 
-	// 位置・角度・拡縮の初期化
-	pos_ = { 0.0f, 0.0f, 0.0f };
-	angle_ = { 0.0f, 0.0f, 0.0f };
-	scale_ = { 0.1f, 0.1f, 0.1f };
-
+void Stage::InitLoad(void)
+{
+	transform_.SetModel(
+		resMng_.LoadModelDuplicate(ResourceManager::SRC::MAIN_STAGE));
 
 	// グローバルアンビエントライトの設定
 	SetGlobalAmbientLight(GetColorF(0.3f, 0.3f, 0.3f, 1.0f));
@@ -59,40 +61,43 @@ void Stage::Init(void)
 	SetLightDifColorHandle(lightHandle5_, diffuse);
 }
 
-void Stage::Update(void)
+void Stage::InitTransform(void)
 {
-	// ステージの更新処理が必要な場合はここに追加
-	MV1SetPosition(modelId_, pos_);
-	MV1SetRotationXYZ(modelId_, angle_);
-	MV1SetScale(modelId_, scale_);
-
-	// ライトはInit時にハンドルで作成済み
+	transform_.scl = { 0.1f,0.1f,0.1f };
+	transform_.quaRot = Quaternion::Identity();
+	transform_.quaRotLocal = Quaternion::Identity();
+	transform_.pos = INIT_POS;
+	transform_.Update();
 }
 
-void Stage::Draw(void)
+void Stage::InitCollider(void)
 {
-	// ステージモデルの描画
-	MV1DrawModel(modelId_);
+	// DxLib側の衝突判定をセットアップ
+	MV1SetupCollInfo(transform_.modelId);
 
-	// フォグ
-	//SetFogEnable(true);
+	// モデルのコライダー
+	ColliderModel * colModel = 
+		new ColliderModel(ColliderBase::TAG::STAGE, &transform_);
 
-	// フォグの色と距離の設定
-	//SetFogColor(100, 110, 1100);
-	//SetFogStartEnd(100.0f, 500.0f);
+	for (const std::string& name : EXCLUDE_FRAMES)
+	{
+		colModel->AddExcludeFrameIds(name);
+	}
 
+	for (const std::string& name : TARGET_FRAMES)
+	{
+		colModel->AddTargetFrameIds(name);
+	}
 
+	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::MODEL), colModel);
 }
 
-void Stage::Release(void)
+void Stage::InitAnimation(void)
 {
-	// ステージモデルの解放
-	MV1DeleteModel(modelId_);
+	// アニメーションの初期化は必要に応じて実装
+}
 
-	// ライトの解放
-	DeleteLightHandle(lightHandle_);
-	DeleteLightHandle(lightHandle2_);
-	DeleteLightHandle(lightHandle3_);
-	DeleteLightHandle(lightHandle4_);
-	DeleteLightHandle(lightHandle5_);
+void Stage::InitPost(void)
+{
+	// ステージの初期化後の個別処理は必要に応じて実装
 }

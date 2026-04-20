@@ -31,50 +31,10 @@ void ResourceManager::Init(void)
 
 	Resource* res;
 
-	//タイトル画像
-	res = new RES(RES_T::IMG, PATH_IMG + "Title.png");
-	resourcesMap_.emplace(SRC::TITLE, res);
-
-	//PushSpace画像
-	res = new RES(RES_T::IMG, PATH_IMG + "PushSpace.png");
-	resourcesMap_.emplace(SRC::PUSH_SPACE, res);
-
-	//惑星モデル
-	res = new RES(RES_T::MODEL, PATH_MDL +
-		"Stage/PitfallPlanet/PitfallPlanet.mv1");
-	resourcesMap_.emplace(SRC::PIT_FALL_PLANET, res);
-
-	res = new RES(RES_T::MODEL, PATH_MDL +
-		"Stage/SpherePlanet/SpherePlanet.mv1");
-	resourcesMap_.emplace(SRC::SPHERE_PLANET, res);
-
-	//プレイヤー
-	res = new RES(RES_T::MODEL, PATH_MDL + "Player/Player.mv1");
-	resourcesMap_.emplace(SRC::PLAYER, res);
-
-	//ステージ
-	res = new RES(RES_T::MODEL, PATH_MDL + "Stage/MainStage/MainStage.mv1");
+	// ステージ
+	res = new RES(RES_T::MODEL,PATH_MDL + 
+	"Stage/m.mv1");
 	resourcesMap_.emplace(SRC::MAIN_STAGE, res);
-
-	//スカイドーム画像
-	res = new RES(RES_T::MODEL, PATH_MDL + "SkyDome/SkyDome.mv1");
-	resourcesMap_.emplace(SRC::SKY_DOME, res);
-
-	// プレイヤー影
-	res = new RES(RES_T::IMG, PATH_IMG + "Shadow.png");
-	resourcesMap_.emplace(SRC::PLAYER_SHADOW, res);
-
-	// ネズミ
-	res = new RES(RES_T::MODEL, PATH_MDL + "Enemy/Rat/Rat.mv1");
-	resourcesMap_.emplace(SRC::ENEMY_RAT, res);
-
-	// ロボット
-	res = new RES(RES_T::MODEL, PATH_MDL + "Enemy/Robot/Robot.mv1");
-	resourcesMap_.emplace(SRC::ENEMY_ROBOT, res);
-
-	// 円錐型視野
-	res = new RES(RES_T::MODEL, PATH_MDL + "Enemy/Robot/Cone.mv1");
-	resourcesMap_.emplace(SRC::VIEW_RANGE, res);
 
 }
 

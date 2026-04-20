@@ -1,6 +1,7 @@
 #include <DxLib.h>
 #include "Manager/InputManager.h"
 #include "Manager/SceneManager.h"
+#include "Manager/ResourceManager.h"
 #include "Application.h"
 
 Application* Application::instance_ = nullptr;
@@ -53,6 +54,10 @@ void Application::Init(void)
 	// 乱数の初期値を設定する
 	// 設定する数値によって、ランダムの出方が変わる
 	SRand(date.Year + date.Mon + date.Day + date.Hour + date.Min + date.Sec);
+
+
+	// リソース管理初期化
+	ResourceManager::CreateInstance();
 
 	// 入力制御初期化
 	SetUseDirectInputFlag(true);
