@@ -1,6 +1,6 @@
 #pragma once
 #include "SceneBase.h"
-#include "../Object/Stage/Stage.h" 
+#include "../Object/Actor/Stage/Stage.h" 
 
 class Grid;
 class StageManager;
