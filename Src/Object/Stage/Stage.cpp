@@ -27,6 +27,11 @@ void Stage::Init(void)
 	// メイン
 	SetLightDirection(VGet(-1.0f, -1.0f, 1.0f));
 
+	// ライトの方向
+	// カメラの方向に対して斜め上からの光になるように設定
+	lightDirection_ = VGet(0.0f,1.0f,0.0f);
+	lightDirection2_ = VGet(1.0, 1.0f, 0.0f);
+	lightDirection3_ = VGet(0.0f, 1.0, 1.0f);
 }
 
 void Stage::Update(void)
@@ -35,6 +40,10 @@ void Stage::Update(void)
 	MV1SetPosition(modelId_, pos_);
 	MV1SetRotationXYZ(modelId_, angle_);
 	MV1SetScale(modelId_, scale_);
+
+	ChangeLightTypeDir(lightDirection_);
+	ChangeLightTypeDir(lightDirection2_);
+	ChangeLightTypeDir(lightDirection3_);
 }
 
 void Stage::Draw(void)
@@ -42,7 +51,15 @@ void Stage::Draw(void)
 	// ステージモデルの描画
 	MV1DrawModel(modelId_);
 
-	
+	// フォグ
+	SetFogEnable(true);
+
+	// フォグの色と距離の設定
+	SetFogColor(100, 110, 1100);
+
+	SetFogStartEnd(100.0f, 500.0f);
+
+
 }
 
 void Stage::Release(void)

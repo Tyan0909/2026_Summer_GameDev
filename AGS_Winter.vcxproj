@@ -142,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Object\Player\Player.cpp" />
     <ClCompile Include="Src\Scene\BuySelect.cpp" />
     <ClCompile Include="Src\Scene\ExampleScene.cpp" />
     <ClCompile Include="Src\Scene\Result.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="Src\Object\Stage\Stage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Object\Player\Player.h" />
     <ClInclude Include="Src\Scene\BuySelect.h" />
     <ClInclude Include="Src\Scene\ExampleScene.h" />
     <ClInclude Include="Src\Scene\Result.h" />

@@ -38,4 +38,9 @@ private:
 	VECTOR angle_;
 	VECTOR scale_;
 
+	// ƒ‰ƒCƒg‚Ì•ûŒü
+	VECTOR lightDirection_;
+	VECTOR lightDirection2_;
+	VECTOR lightDirection3_;
+
 };
