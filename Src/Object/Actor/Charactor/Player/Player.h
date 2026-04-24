@@ -1,37 +1,60 @@
 #pragma once
 #include <DxLib.h>
+#include <vector>
+#include <string>
+#include "../../ActorBase.h"
+#include "../../../../Object/Collider/ColliderModel.h"
 
-class Player
+class ResourceManager;
+
+class Player : public ActorBase
 {
-	// 定数
+	
 public:
 
-	// プレイヤーの移動速度
-	static constexpr float MOVE_SPEED = 0.2f;
-	// プレイヤーの回転速度
-	static constexpr float ROTATE_SPEED = 0.05f;
+	// 定数
+
+	// 衝突判定種別
+	enum class COLLIDER_TYPE
+	{
+		MODEL,		// モデル
+		MAX,
+	};
+
 	// コンストラクタ
-	Player();
+	Player(void);
+
 	// デストラクタ
-	~Player();
-	// 初期化
-	void Init(void);
+	~Player(void);
+
 	// 更新
-	void Update(void);
-	// 描画
-	void Draw(void);
-	// 解放
-	void Release(void);
+	void Update(void) override;
+protected:
+
+	// リソースロード
+	void InitLoad(void) override;
+
+	// 大きさ、回転、座標の初期化
+	void InitTransform(void) override;
+
+	// 衝突判定の初期化
+	void InitCollider(void) override;
+
+	// アニメーションの初期化
+	void InitAnimation(void) override;
+
+	// 初期化後の個別処理
+	void InitPost(void) override;
 
 
 private:
 
-	// プレイヤーモデルID
-	int modelId_;
-	// 位置・角度・拡縮
-	VECTOR pos_;
-	VECTOR angle_;
-	VECTOR scale_;
+	// 定数
+
+	// 座標の衝突判定の初期座標
+	static constexpr VECTOR INIT_POS = { 0.0f, 400.0f, 0.0f };
+
+
 
 
 };

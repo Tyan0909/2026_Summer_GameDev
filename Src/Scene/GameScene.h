@@ -7,6 +7,7 @@ class StageManager;
 class PlayerManager;
 class Stage;
 class Player_1;
+class Player;
 
 class GameScene : public SceneBase
 {
@@ -32,4 +33,6 @@ private:
 
 	// ‚±‚±‚Éƒƒ“ƒo•Ï”‚ğ’Ç‰Á‚µ‚Ä‚¢‚­
 	Stage* stage_;
+
+	Player* player_;
 };

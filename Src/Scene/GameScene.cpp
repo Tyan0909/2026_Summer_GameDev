@@ -2,6 +2,7 @@
 #include <DxLib.h>
 #include "GameScene.h"
 #include "../Object/Actor/Stage/Stage.h"
+#include "../Object/Actor/Charactor/Player/Player.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
 
@@ -30,6 +31,10 @@ void GameScene::Init()
 	// ステージ初期化
 	stage_ = new Stage();
 	stage_->Init();
+
+	// プレイヤー
+	player_ = new Player();
+	player_->Init();
 }
 
 void GameScene::Update()
@@ -45,6 +50,7 @@ void GameScene::Update()
 	}
 
 	stage_->Update();
+	player_->Update();
 }
 
 void GameScene::Draw()
@@ -52,6 +58,7 @@ void GameScene::Draw()
 	// ゲームシーンの描画
 	DrawString(200, 200, "ゲームシーン", GetColor(255, 255, 255));
 	stage_->Draw();
+	player_->Draw();
 }
 
 void GameScene::Draw3D()
