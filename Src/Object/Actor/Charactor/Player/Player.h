@@ -13,6 +13,7 @@ class Player : public ActorBase
 public:
 
 	// ’è”
+	static constexpr float GRAVITY = 0.5f;		// d—Í
 
 	// Õ“Ë”»’èí•Ê
 	enum class COLLIDER_TYPE
