@@ -1,5 +1,5 @@
-#include "../Manager/ResourceManager.h"
-#include "../Manager/SceneManager.h"
+#include "../../Manager/ResourceManager.h"
+#include "../../Manager/SceneManager.h"
 #include "ActorBase.h"
 
 ActorBase::ActorBase(void)
@@ -7,7 +7,7 @@ ActorBase::ActorBase(void)
 	scnMng_(SceneManager::GetInstance())
 {
 }
-
+	
 ActorBase::~ActorBase(void)
 {
 	transform_.Release();

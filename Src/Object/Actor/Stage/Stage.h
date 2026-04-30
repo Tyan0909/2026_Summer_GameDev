@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include "../ActorBase.h"
-#include "../../../Object/Collider/ColliderModel.h"
+#include "../../../Object/Common/Collider.h"
 
 class Stage : public ActorBase
 {
@@ -35,19 +35,19 @@ public:
 protected:
 
 	// リソースロード
-	void InitLoad(void) override;
+	void InitLoad(void) ;
 
 	// 大きさ、回転、座標の初期化
-	void InitTransform(void) override;
+	void InitTransform(void) ;
 
 	// 衝突判定の初期化
-	void InitCollider(void) override;
+	void InitCollider(void) ;
 
 	// アニメーションの初期化
-	void InitAnimation(void) override;
+	void InitAnimation(void) ;
 
 	// 初期化後の個別処理
-	void InitPost(void) override;
+	void InitPost(void) ;
 
 private:
 
