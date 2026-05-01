@@ -15,11 +15,8 @@ public:
 
 	// 定数宣言
 	// 速度
-	static constexpr float SPEED_MOVE = 0.5f;
 
-	
-		// 回転完了までの時間
-	static constexpr float TIME_ROT = 1.0f;
+	// 回転
 
 	// ジャンプ力
 
@@ -131,10 +128,8 @@ private:
 	void ProcessMove(void);		//	移動処理
 	void ProcessJump(void);		//	ジャンプ処理
 
-	
-
 	// 回転
-	void SetGoalRotate(double rotRad);
+	void SetGoalRotateion(double rotRad);
 	void Rotate(void);
 
 	// 衝突判定

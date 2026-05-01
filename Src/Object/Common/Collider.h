@@ -1,10 +1,10 @@
 #pragma once
-
-// Collider クラスの完全な宣言を提供
 class Collider
 {
+
 public:
-	// 衝突タイプ
+
+	// 衝突種別
 	enum class TYPE
 	{
 		STAGE,
@@ -16,9 +16,10 @@ public:
 	// デストラクタ
 	~Collider(void);
 
-	// 衝突タイプ
-	TYPE type_;	
+	// 衝突種別
+	TYPE type_;
 
 	// モデルのハンドルID
 	int modelId_;
+
 };

@@ -1,19 +1,14 @@
-#include <math.h>
-#include <DxLib.h>
-#include <EffekseerForDXLib.h>
 #include "../Utility/AsoUtility.h"
 #include "../Manager/InputManager.h"
-#include "../Object/Common/Transform.h"
 #include "Camera.h"
 
 Camera::Camera(void)
 {
-	angles_ = VECTOR();
-	cameraUp_ = VECTOR();
-	mode_ = MODE::NONE;
-	pos_ = AsoUtility::VECTOR_ZERO;
-	targetPos_ = AsoUtility::VECTOR_ZERO;
-	followTransform_ = nullptr;
+	// DxLibの初期設定では、
+	// カメラの位置が x = 320.0f, y = 240.0f, z = (画面のサイズによって変化)、
+	// 注視点の位置は x = 320.0f, y = 240.0f, z = 1.0f
+	// カメラの上方向は x = 0.0f, y = 1.0f, z = 0.0f
+	// 右上位置からZ軸のプラス方向を見るようなカメラ
 }
 
 Camera::~Camera(void)
@@ -22,9 +17,11 @@ Camera::~Camera(void)
 
 void Camera::Init(void)
 {
+	// カメラ初期位置
+	pos_ = DEFAULT_POS;
 
-	ChangeMode(MODE::FIXED_POINT);
-
+	// カメラの初期角度
+	angles_ = DEFAULT_ANGLES;
 }
 
 void Camera::Update(void)
@@ -33,78 +30,113 @@ void Camera::Update(void)
 
 void Camera::SetBeforeDraw(void)
 {
-
-	// クリップ距離を設定する(SetDrawScreenでリセットされる)
-	SetCameraNearFar(CAMERA_NEAR, CAMERA_FAR);
+	// クリップ距離を設定する
+	SetCameraNearFar(VIEW_NEAR, VIEW_FAR);
 
 	switch (mode_)
 	{
-	case Camera::MODE::FIXED_POINT:
+
+	case MODE::FIXED_POINT:
 		SetBeforeDrawFixedPoint();
 		break;
-	case Camera::MODE::FOLLOW:
-		SetBeforeDrawFollow();
+
+	case MODE::FREE:
+		// 移動方向移動
+		MoveXYZDirection();
+
+		// カメラ固定時のみ使用
+		/*SetBeforeDrawFree();*/
 		break;
 	}
 
-	// カメラの設定(位置と注視点による制御)
-	SetCameraPositionAndTargetAndUpVec(
+	// カメラの設定
+	SetCameraPositionAndAngle(
 		pos_,
-		targetPos_,
-		cameraUp_
+		angles_.x,
+		angles_.y,
+		angles_.z
 	);
+}
 
-	// DXライブラリのカメラとEffekseerのカメラを同期する。
-	Effekseer_Sync3DSetting();
+void Camera::SetBeforeDrawFixedPoint(void)
+{
+	// 何も処理しない
+}
+
+// カメラの方向移動
+void Camera::MoveXYZDirection(void)
+{
+	auto& ins = InputManager::GetInstance();
+	// 矢印キーでカメラの角度を変える
+	float rotPow = 1.0f * DX_PI_F / 180.0f;
+	if (ins.IsNew(KEY_INPUT_DOWN)) { angles_.x += rotPow; }
+	if (ins.IsNew(KEY_INPUT_UP)) { angles_.x -= rotPow; }
+	if (ins.IsNew(KEY_INPUT_RIGHT)) { angles_.y += rotPow; }
+	if (ins.IsNew(KEY_INPUT_LEFT)) { angles_.y -= rotPow; }
+	// WASDでカメラを移動させる
+	const float movePow = 3.0f;
+	VECTOR dir = AsoUtility::VECTOR_ZERO;
+	if (ins.IsNew(KEY_INPUT_I)) { dir = { 0.0f, 0.0f, 1.0f }; }
+	if (ins.IsNew(KEY_INPUT_J)) { dir = { -1.0f, 0.0f, 0.0f }; }
+	if (ins.IsNew(KEY_INPUT_K)) { dir = { 0.0f, 0.0f, -1.0f }; }
+	if (ins.IsNew(KEY_INPUT_L)) { dir = { 1.0f, 0.0f, 0.0f }; }
+	if (!AsoUtility::EqualsVZero(dir))
+	{
+		// XYZの回転行列
+		// XZ平面移動にする場合は、XZの回転を考慮しないようにする
+		MATRIX mat = MGetIdent();
+		mat = MMult(mat, MGetRotX(angles_.x));
+		mat = MMult(mat, MGetRotY(angles_.y));
+		//mat = MMult(mat, MGetRotZ(angles_.z));
+		// 回転行列を使用して、ベクトルを回転させる
+		VECTOR moveDir = VTransform(dir, mat);
+		// 方向×スピードで移動量を作って、座標に足して移動
+		pos_ = VAdd(pos_, VScale(moveDir, movePow));
+	}
+}
+
+void Camera::SetBeforeDrawFree(void)
+{
+	// InputManagerのインスタンス取得
+	auto& input = InputManager::GetInstance();
+
+	// カメラ角度変更
+	float rotPow = 1.f * DX_PI_F / 180.f;
+	if (input.IsNew(KEY_INPUT_DOWN)) { angles_.x += rotPow; }
+	if (input.IsNew(KEY_INPUT_UP)) { angles_.x -= rotPow; }
+	if (input.IsNew(KEY_INPUT_LEFT)) { angles_.y += rotPow; }
+	if (input.IsNew(KEY_INPUT_RIGHT)) { angles_.y -= rotPow; }
+
+	// カメラ位置変更
+	float movePow = 3.f;
+	if (input.IsNew(KEY_INPUT_W)) { pos_.z += movePow; }
+	if (input.IsNew(KEY_INPUT_A)) { pos_.x -= movePow; }
+	if (input.IsNew(KEY_INPUT_S)) { pos_.z -= movePow; }
+	if (input.IsNew(KEY_INPUT_D)) { pos_.x += movePow; }
+
+	// 高さ変更
+	if (input.IsNew(KEY_INPUT_Q)) { pos_.y += movePow; }
+	if (input.IsNew(KEY_INPUT_E)) { pos_.y -= movePow; }
 
 }
 
-void Camera::Draw(void)
+void Camera::DrawDebug(void)
 {
-}
+	//#ifdef DEBUG
+		// デバッグ用描画
+	DrawFormatString(0, 600, GetColor(255, 0, 0),
+		"Camera Pos:(%.1f, %.1f, %.1f)", pos_.x, pos_.y, pos_.z);
 
-void Camera::SetFollow(const Transform* follow)
-{
-	followTransform_ = follow;
-}
+	// 角度はラジアン表示
+	/*DrawFormatString(0, 620, GetColor(255, 255, 255),
+		"Camera Angles:(%.2f, %.2f, %.2f)", AsoUtility::Rad2DegF(angles_.x), AsoUtility::Rad2DegF(angles_.y), AsoUtility::Rad2DegF(angles_.z));*/
 
-VECTOR Camera::GetPos(void) const
-{
-	return pos_;
-}
+	//#endif //DEBUG
 
-VECTOR Camera::GetAngles(void) const
-{
-	return angles_;
-}
-
-VECTOR Camera::GetTargetPos(void) const
-{
-	return targetPos_;
-}
-
-Quaternion Camera::GetQuaRot(void) const
-{
-	return rot_;
-}
-
-Quaternion Camera::GetQuaRotOutX(void) const
-{
-	return rotOutX_;
-}
-
-VECTOR Camera::GetForward(void) const
-{
-	return VNorm(VSub(targetPos_, pos_));
 }
 
 void Camera::ChangeMode(MODE mode)
 {
-
-	// カメラの初期設定
-	SetDefault();
-
-	// カメラモードの変更
 	mode_ = mode;
 
 	// 変更時の初期化処理
@@ -112,117 +144,23 @@ void Camera::ChangeMode(MODE mode)
 	{
 	case Camera::MODE::FIXED_POINT:
 		break;
-	case Camera::MODE::FOLLOW:
+	case Camera::MODE::FREE:
 		break;
 	}
+}
+
+
+void Camera::Release(void)
+{
 
 }
 
-void Camera::SetDefault(void)
+const VECTOR& Camera::GetPos(void) const
 {
-
-	// カメラの初期設定
-	pos_ = DEFAULT_CAMERA_POS;
-
-	// 注視点
-	targetPos_ = AsoUtility::VECTOR_ZERO;
-
-	// カメラの上方向
-	cameraUp_ = AsoUtility::DIR_U;
-
-	angles_.x = AsoUtility::Deg2RadF(30.0f);
-	angles_.y = 0.0f;
-	angles_.z = 0.0f;
-
-	rot_ = Quaternion();
-
+	return pos_;
 }
 
-void Camera::SyncFollow(void)
+const VECTOR& Camera::GetAngles(void) const
 {
-
-	// 同期先の位置
-	VECTOR pos = followTransform_->pos;
-
-	// 重力の方向制御に従う
-	// 正面から設定されたY軸分、回転させる
-	rotOutX_ = Quaternion::AngleAxis(angles_.y, AsoUtility::AXIS_Y);
-
-	// 正面から設定されたX軸分、回転させる
-	rot_ = rotOutX_.Mult(Quaternion::AngleAxis(angles_.x, AsoUtility::AXIS_X));
-
-	VECTOR localPos;
-
-	// 注視点(通常重力でいうところのY値を追従対象と同じにする)
-	localPos = rotOutX_.PosAxis(LOCAL_F2T_POS);
-	targetPos_ = VAdd(pos, localPos);
-
-	// カメラ位置
-	localPos = rot_.PosAxis(LOCAL_F2C_POS);
-	pos_ = VAdd(pos, localPos);
-
-	// カメラの上方向
-	cameraUp_ = AsoUtility::DIR_U;
-
-}
-
-void Camera::ProcessRot(void)
-{
-
-	auto& ins = InputManager::GetInstance();
-
-	float movePow = 5.0f;
-
-	// カメラ回転
-	if (ins.IsNew(KEY_INPUT_RIGHT))
-	{
-		// 右回転
-		angles_.y += AsoUtility::Deg2RadF(1.0f);
-	}
-	if (ins.IsNew(KEY_INPUT_LEFT))
-	{
-		// 左回転
-		angles_.y += AsoUtility::Deg2RadF(-1.0f);
-	}
-
-	// 上回転
-	if (ins.IsNew(KEY_INPUT_UP))
-	{
-		angles_.x += AsoUtility::Deg2RadF(1.0f);
-		if (angles_.x > LIMIT_X_UP_RAD)
-		{
-			angles_.x = LIMIT_X_UP_RAD;
-		}
-	}
-
-	// 下回転
-	if (ins.IsNew(KEY_INPUT_DOWN))
-	{
-		angles_.x += AsoUtility::Deg2RadF(-1.0f);
-		if (angles_.x < -LIMIT_X_DW_RAD)
-		{
-			angles_.x = -LIMIT_X_DW_RAD;
-		}
-	}
-
-}
-
-void Camera::SetBeforeDrawFixedPoint(void)
-{
-	// 何もしない
-}
-
-void Camera::SetBeforeDrawFollow(void)
-{
-
-	// カメラ操作
-	ProcessRot();
-
-	// 追従対象との相対位置を同期
-	SyncFollow();
-
-}
-
-void Camera::SetBeforeDrawSelfShot(void)
-{
+	return angles_;
 }
