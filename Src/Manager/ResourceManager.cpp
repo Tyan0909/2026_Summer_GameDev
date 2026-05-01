@@ -33,7 +33,7 @@ void ResourceManager::Init(void)
 
 	// ステージ
 	res = new RES(RES_T::MODEL,PATH_MDL + 
-	"Stage/m.mv1");
+	"Stage/map.mv1");
 	resourcesMap_.emplace(SRC::MAIN_STAGE, res);
 	
 	// プレイヤー

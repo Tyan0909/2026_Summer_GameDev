@@ -1,11 +1,13 @@
 #include "Player.h"
 #include "../../../../Manager/ResourceManager.h"
 #include "../../../../Object/Collider/ColliderModel.h"
+#include "../../../../Object/Collider/ColliderCapsule.h"
 #include "../../../../Utility/AsoUtility.h"
 
 Player::Player(void)
 	:
-	ActorBase()
+	ActorBase(),
+	gravityVelocity_(0.0f)
 {
 }
 
@@ -15,6 +17,29 @@ Player::~Player(void)
 
 void Player::Update(void)
 {
+	const VECTOR prevPos = transform_.pos;
+
+	// ä»à’ìIÇ»à⁄ìÆèàóù
+	if(CheckHitKey(KEY_INPUT_W))
+	{
+		transform_.pos.z += 1.0f;
+	}
+	if(CheckHitKey(KEY_INPUT_S))
+	{
+		transform_.pos.z -= 1.0f;
+	}
+	if(CheckHitKey(KEY_INPUT_A))
+	{
+		transform_.pos.x -= 1.0f;
+	}
+	if(CheckHitKey(KEY_INPUT_D))
+	{
+		transform_.pos.x += 1.0f;
+	}
+
+	ResolveWallCollision(prevPos);
+	ApplyGravity();
+	transform_.Update();
 }
 
 void Player::InitLoad(void)
@@ -57,5 +82,110 @@ void Player::InitAnimation(void)
 
 void Player::InitPost(void)
 {
+}
+
+void Player::ApplyGravity(void)
+{
+	VECTOR hitPos = AsoUtility::VECTOR_ZERO;
+	if (CheckGround(hitPos) && gravityVelocity_ <= 0.0f)
+	{
+		transform_.pos.y = hitPos.y + GROUND_OFFSET;
+		gravityVelocity_ = 0.0f;
+		return;
+	}
+
+	gravityVelocity_ -= GRAVITY;
+	if (gravityVelocity_ < GRAVITY_TERMINAL)
+	{
+		gravityVelocity_ = GRAVITY_TERMINAL;
+	}
+
+	transform_.pos.y += gravityVelocity_;
+
+	if (CheckGround(hitPos) && gravityVelocity_ <= 0.0f)
+	{
+		transform_.pos.y = hitPos.y + GROUND_OFFSET;
+		gravityVelocity_ = 0.0f;
+	}
+}
+
+bool Player::CheckGround(VECTOR& hitPos) const
+{
+	const VECTOR start = VAdd(transform_.pos, VGet(0.0f, 10.0f, 0.0f));
+	const VECTOR end = VAdd(transform_.pos, VGet(0.0f, -GROUND_CHECK_DISTANCE, 0.0f));
+
+	for (const auto& hitCollider : hitColliders_)
+	{
+		if (hitCollider == nullptr ||
+			hitCollider->GetShape() != ColliderBase::SHAPE::MODEL)
+		{
+			continue;
+		}
+
+		const auto* modelCollider = static_cast<const ColliderModel*>(hitCollider);
+		auto hit = modelCollider->GetNearestHitPolyLine(start, end, true);
+		if (hit.HitFlag)
+		{
+			hitPos = hit.HitPosition;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void Player::ResolveWallCollision(const VECTOR& prevPos)
+{
+	VECTOR hitPos = AsoUtility::VECTOR_ZERO;
+
+	const VECTOR xMovedPos = VGet(transform_.pos.x, prevPos.y, prevPos.z);
+	if (CheckWallSegment(
+		VAdd(prevPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
+		VAdd(xMovedPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
+		hitPos))
+	{
+		transform_.pos.x = prevPos.x;
+	}
+
+	const VECTOR zStartPos = VGet(transform_.pos.x, prevPos.y, prevPos.z);
+	const VECTOR zMovedPos = VGet(transform_.pos.x, prevPos.y, transform_.pos.z);
+	if (CheckWallSegment(
+		VAdd(zStartPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
+		VAdd(zMovedPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
+		hitPos))
+	{
+		transform_.pos.z = prevPos.z;
+	}
+}
+
+bool Player::CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const
+{
+	const VECTOR move = VSub(end, start);
+	if (AsoUtility::EqualsVZero(move))
+	{
+		return false;
+	}
+
+	const VECTOR dir = AsoUtility::VNormalize(move);
+	const VECTOR checkEnd = VAdd(end, VScale(dir, WALL_PUSH_BACK));
+
+	for (const auto& hitCollider : hitColliders_)
+	{
+		if (hitCollider == nullptr ||
+			hitCollider->GetShape() != ColliderBase::SHAPE::MODEL)
+		{
+			continue;
+		}
+
+		const auto* modelCollider = static_cast<const ColliderModel*>(hitCollider);
+		auto hit = modelCollider->GetNearestHitPolyLine(start, checkEnd, true);
+		if (hit.HitFlag)
+		{
+			hitPos = hit.HitPosition;
+			return true;
+		}
+	}
+
+	return false;
 }
 

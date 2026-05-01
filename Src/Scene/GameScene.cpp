@@ -35,6 +35,8 @@ void GameScene::Init()
 	// ƒvƒŒƒCƒ„[
 	player_ = new Player();
 	player_->Init();
+	player_->AddHitCollider(
+		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL)));
 }
 
 void GameScene::Update()
