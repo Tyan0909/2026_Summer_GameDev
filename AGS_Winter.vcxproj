@@ -142,14 +142,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Object\Common\Capsule.cpp" />
+    <ClCompile Include="Src\Object\Common\Collider.cpp" />
     <ClCompile Include="Src\Object\Actor\ActorBase.cpp" />
     <ClCompile Include="Src\Manager\ResourceManager.cpp" />
     <ClCompile Include="Src\Manager\Resource.cpp" />
-    <ClCompile Include="Src\Object\Collider\ColliderBase.cpp" />
-    <ClCompile Include="Src\Object\Collider\ColliderCapsule.cpp" />
-    <ClCompile Include="Src\Object\Collider\ColliderLine.cpp" />
-    <ClCompile Include="Src\Object\Collider\ColliderModel.cpp" />
-    <ClCompile Include="Src\Object\Collider\ColliderSphere.cpp" />
     <ClCompile Include="Src\Object\Actor\Charactor\Player\Player.cpp" />
     <ClCompile Include="Src\Scene\BuySelect.cpp" />
     <ClCompile Include="Src\Scene\ExampleScene.cpp" />
@@ -176,14 +173,11 @@
     <ClCompile Include="Src\Object\Common\Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Object\Common\Capsule.h" />
+    <ClInclude Include="Src\Object\Common\Collider.h" />
     <ClInclude Include="Src\Object\Actor\ActorBase.h" />
     <ClInclude Include="Src\Manager\ResourceManager.h" />
     <ClInclude Include="Src\Manager\Resource.h" />
-    <ClInclude Include="Src\Object\Collider\ColliderBase.h" />
-    <ClInclude Include="Src\Object\Collider\ColliderCapsule.h" />
-    <ClInclude Include="Src\Object\Collider\ColliderLine.h" />
-    <ClInclude Include="Src\Object\Collider\ColliderModel.h" />
-    <ClInclude Include="Src\Object\Collider\ColliderSphere.h" />
     <ClInclude Include="Src\Object\Actor\Charactor\Player\Player.h" />
     <ClInclude Include="Src\Scene\BuySelect.h" />
     <ClInclude Include="Src\Scene\ExampleScene.h" />
