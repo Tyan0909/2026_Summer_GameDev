@@ -2,6 +2,9 @@
 #include "../../../../Manager/ResourceManager.h"
 #include "../../../../Object/Collider/ColliderModel.h"
 #include "../../../../Object/Collider/ColliderCapsule.h"
+#include "../../../../Object/Collider/ColliderLine.h"
+#include "../../../../Object/Collider/ColliderCapsule.h"
+
 #include "../../../../Utility/AsoUtility.h"
 
 Player::Player(void)
@@ -57,7 +60,7 @@ void Player::InitLoad(void)
 
 void Player::InitTransform(void)
 {
-	transform_.scl = { 0.01f,0.01f,0.01f };
+	transform_.scl = { 1.0f, 1.0f, 1.0f };
 	transform_.quaRot = Quaternion::Identity();
 	transform_.quaRotLocal = Quaternion::Identity();
 	transform_.pos = INIT_POS;
@@ -66,14 +69,28 @@ void Player::InitTransform(void)
 
 void Player::InitCollider(void)
 {
-	// DxLib側の衝突判定をセットアップ
-	MV1SetupCollInfo(transform_.modelId);
-	// モデルのコライダー
-	ColliderModel* colModel =
-		new ColliderModel(ColliderBase::TAG::STAGE, &transform_);
+	//// DxLib側の衝突判定をセットアップ
+	//MV1SetupCollInfo(transform_.modelId);
+	//
+	//// モデルのコライダー
+	//ColliderModel* colModel =
+	//	new ColliderModel(ColliderBase::TAG::STAGE, &transform_);
 
-	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::MODEL), colModel);
+	//ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::MODEL), colModel);
 
+
+		// 主に地面との衝突で仕様する線分コライダ
+	ColliderLine* colLine = new ColliderLine(
+		ColliderBase::TAG::PLAYER, &transform_,
+		COL_LINE_START_LOCAL_POS, COL_LINE_END_LOCAL_POS);
+	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::LINE), colLine);
+
+	// 主に壁や木などの衝突で仕様するカプセルコライダ
+	ColliderCapsule* colCapsule = new ColliderCapsule(
+		ColliderBase::TAG::PLAYER, &transform_,
+		COL_CAPSULE_TOP_LOCAL_POS, COL_CAPSULE_DOWN_LOCAL_POS,
+		COL_CAPSULE_RADIUS);
+	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::CAPSULE), colCapsule);
 }
 
 void Player::InitAnimation(void)

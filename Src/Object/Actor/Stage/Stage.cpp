@@ -63,7 +63,7 @@ void Stage::InitLoad(void)
 
 void Stage::InitTransform(void)
 {
-	transform_.scl = { 0.1f,0.1f,0.1f };
+	transform_.scl = { 0.5f,0.5f,0.5f };
 	transform_.quaRot = Quaternion::Identity();
 	transform_.quaRotLocal = Quaternion::Identity();
 	transform_.pos = INIT_POS;

@@ -35,4 +35,6 @@ private:
 	Stage* stage_;
 
 	Player* player_;
+
+	
 };

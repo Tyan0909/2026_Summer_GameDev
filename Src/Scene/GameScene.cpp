@@ -37,6 +37,12 @@ void GameScene::Init()
 	player_->Init();
 	player_->AddHitCollider(
 		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL)));
+
+	// ステージモデルのコライダーをプレイヤーに登録
+	const ColliderBase* stageCollider =
+		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
+	player_->AddHitCollider(stageCollider);
+
 }
 
 void GameScene::Update()

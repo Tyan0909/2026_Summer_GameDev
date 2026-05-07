@@ -6,7 +6,6 @@
 #include "../../../../Object/Collider/ColliderModel.h"
 
 class ColliderBase;
-
 class ResourceManager;
 
 class Player : public ActorBase
@@ -17,10 +16,29 @@ public:
 	// 定数
 	static constexpr float GRAVITY = 0.5f;		// 重力
 
+	// 衝突判定用線分開始
+	static constexpr VECTOR
+		COL_LINE_START_LOCAL_POS = { 0.0f, 80.0f, 0.0f };
+
+	// 衝突判定用線分終了
+	static constexpr VECTOR
+		COL_LINE_END_LOCAL_POS = { 0.0f, -10.0f, 0.0f };
+
+	// 衝突判定用カプセル上部球体
+	static constexpr VECTOR COL_CAPSULE_TOP_LOCAL_POS = { 0.0f, 110.0f, 0.0f };
+
+	// 衝突判定用カプセル下部球体
+	static constexpr VECTOR COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
+
+	// 衝突判定用カプセル球体半径
+	static constexpr float COL_CAPSULE_RADIUS = 20.0f;
+
 	// 衝突判定種別
 	enum class COLLIDER_TYPE
 	{
 		MODEL,		// モデル
+		LINE,		// 線分
+		CAPSULE,	// カプセル
 		MAX,
 	};
 
@@ -60,7 +78,7 @@ private:
 	static constexpr float WALL_PUSH_BACK = 2.0f;
 
 	// 座標の衝突判定の初期座標
-	static constexpr VECTOR INIT_POS = { 0.0f, 400.0f, 0.0f };
+	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
 
 	// 落下速度
 	float gravityVelocity_;

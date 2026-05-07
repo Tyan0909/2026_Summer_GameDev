@@ -38,7 +38,7 @@ void ResourceManager::Init(void)
 	
 	// ÉvÉåÉCÉÑÅ[
 	res = new RES(RES_T::MODEL, PATH_MDL +
-		"Player/AlienGrub1.mv1");
+		"Player/Player.mv1");
 	resourcesMap_.emplace(SRC::PLAYER, res);
 }
 
