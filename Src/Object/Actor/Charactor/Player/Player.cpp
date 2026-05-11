@@ -1,5 +1,7 @@
 #include "Player.h"
+#include "../../../../Manager/Camera.h"
 #include "../../../../Manager/ResourceManager.h"
+#include "../../../../Manager/SceneManager.h"
 #include "../../../../Object/Collider/ColliderModel.h"
 #include "../../../../Object/Collider/ColliderCapsule.h"
 #include "../../../../Object/Collider/ColliderLine.h"
@@ -10,7 +12,8 @@
 Player::Player(void)
 	:
 	ActorBase(),
-	gravityVelocity_(0.0f)
+	gravityVelocity_(0.0f),
+	isInputEnabled_(true)
 {
 }
 
@@ -23,26 +26,48 @@ void Player::Update(void)
 	const VECTOR prevPos = transform_.pos;
 
 	// ŠÈˆÕ“I‚ÈˆÚ“®ˆ—
-	if(CheckHitKey(KEY_INPUT_W))
+	VECTOR inputDir = AsoUtility::VECTOR_ZERO;
+	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_W))
 	{
-		transform_.pos.z += 1.0f;
+		inputDir.z += 1.0f;
 	}
-	if(CheckHitKey(KEY_INPUT_S))
+	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_S))
 	{
-		transform_.pos.z -= 1.0f;
+		inputDir.z -= 1.0f;
 	}
-	if(CheckHitKey(KEY_INPUT_A))
+	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_A))
 	{
-		transform_.pos.x -= 1.0f;
+		inputDir.x -= 1.0f;
 	}
-	if(CheckHitKey(KEY_INPUT_D))
+	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_D))
 	{
-		transform_.pos.x += 1.0f;
+		inputDir.x += 1.0f;
+	}
+
+	if (!AsoUtility::EqualsVZero(inputDir))
+	{
+		const float moveSpeed = 1.0f;
+		const float yaw = SceneManager::GetInstance().GetCamera()->GetAngles().y;
+		VECTOR moveDir = AsoUtility::VNormalize(inputDir);
+		moveDir = VTransform(moveDir, MGetRotY(yaw));
+		moveDir.y = 0.0f;
+		transform_.pos = VAdd(transform_.pos, VScale(moveDir, moveSpeed));
 	}
 
 	ResolveWallCollision(prevPos);
 	ApplyGravity();
 	transform_.Update();
+}
+
+void Player::SetPos(const VECTOR& pos)
+{
+	transform_.pos = pos;
+	transform_.Update();
+}
+
+void Player::SetInputEnabled(bool isEnabled)
+{
+	isInputEnabled_ = isEnabled;
 }
 
 void Player::InitLoad(void)

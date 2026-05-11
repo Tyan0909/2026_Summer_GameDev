@@ -149,6 +149,16 @@ void Camera::ChangeMode(MODE mode)
 	}
 }
 
+void Camera::SetPos(const VECTOR& pos)
+{
+	pos_ = pos;
+}
+
+void Camera::SetAngles(const VECTOR& angles)
+{
+	angles_ = angles;
+}
+
 
 void Camera::Release(void)
 {

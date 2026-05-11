@@ -50,6 +50,8 @@ public:
 
 	// 更新
 	void Update(void) override;
+	void SetPos(const VECTOR& pos);
+	void SetInputEnabled(bool isEnabled);
 protected:
 
 	// リソースロード
@@ -82,6 +84,7 @@ private:
 
 	// 落下速度
 	float gravityVelocity_;
+	bool isInputEnabled_;
 
 	// 重力適用
 	void ApplyGravity(void);
