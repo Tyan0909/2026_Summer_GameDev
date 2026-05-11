@@ -13,13 +13,16 @@ GameScene::GameScene()
 	stage_(nullptr),
 	player_(nullptr),
 	player2_(nullptr),
+	subject_(nullptr),
 	leftScreenHandle_(-1),
 	rightScreenHandle_(-1),
 	screenWidth_(0),
 	screenHeight_(0),
 	player1CameraAngles_(VGet(0.0f, 0.0f, 0.0f)),
 	player2CameraAngles_(VGet(0.0f, DX_PI_F, 0.0f)),
-	isSplitScreenEnabled_(true)	
+	isSplitScreenEnabled_(true),
+	lastPhotoScore_(0),
+	photoCount_(0)
 {
 }
 
@@ -60,9 +63,10 @@ void GameScene::Init()
 	// サブジェクト
 	subject_ = new Subject();
 	subject_->Init();
-	const ColliderBase* subjectCollider =
-		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
-	subject_->AddHitCollider(subjectCollider);
+	subject_->AddHitCollider(stageCollider);
+
+	lastPhotoScore_ = 0;
+	photoCount_ = 0;
 }
 
 void GameScene::Update()
@@ -108,6 +112,11 @@ void GameScene::Update()
 	if (player1CameraAngles_.x > FPS_CAMERA_PITCH_MAX)
 	{
 		player1CameraAngles_.x = FPS_CAMERA_PITCH_MAX;
+	}
+
+	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	{
+		TryTakePhoto();
 	}
 }
 
@@ -209,7 +218,11 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	{
 		player2_->Draw();
 	}
+
 	DrawString(20, 20, targetPlayer == player_ ? "PLAYER 1" : "PLAYER 2", GetColor(255, 255, 255));
+	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
+	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore_);
+	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
 }
 
 void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer)
@@ -240,6 +253,127 @@ void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraA
 	{
 		player2_->Draw();
 	}
+
 	DrawString(20, 20, "PLAYER 1", GetColor(255, 255, 255));
+	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
+	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore_);
+	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
+}
+
+VECTOR GameScene::GetCameraWorldPos(const Player* targetPlayer, const VECTOR& cameraAngles) const
+{
+	if (targetPlayer == nullptr)
+	{
+		return VGet(0.0f, 0.0f, 0.0f);
+	}
+
+	VECTOR eyeOffset = FPS_CAMERA_LOCAL_POS;
+	eyeOffset = VTransform(eyeOffset, MGetRotY(cameraAngles.y));
+
+	return VAdd(targetPlayer->GetTransform().pos, eyeOffset);
+}
+
+VECTOR GameScene::GetCameraForward(const VECTOR& cameraAngles) const
+{
+	const float pitch = cameraAngles.x;
+	const float yaw = cameraAngles.y;
+
+	VECTOR forward = VGet(
+		sinf(yaw) * cosf(pitch),
+		-sinf(pitch),
+		cosf(yaw) * cosf(pitch));
+
+	const float length = VSize(forward);
+	if (length <= 0.0001f)
+	{
+		return VGet(0.0f, 0.0f, 1.0f);
+	}
+
+	return VScale(forward, 1.0f / length);
+}
+
+bool GameScene::IsSubjectInView(const Player* targetPlayer, const VECTOR& cameraAngles, const Subject* targetSubject) const
+{
+	if (targetPlayer == nullptr || targetSubject == nullptr)
+	{
+		return false;
+	}
+
+	const VECTOR cameraPos = GetCameraWorldPos(targetPlayer, cameraAngles);
+	const VECTOR toSubject = VSub(targetSubject->GetTransform().pos, cameraPos);
+	const float distance = VSize(toSubject);
+
+	if (distance <= 0.0001f)
+	{
+		return true;
+	}
+
+	const VECTOR subjectDir = VScale(toSubject, 1.0f / distance);
+	const VECTOR cameraForward = GetCameraForward(cameraAngles);
+
+	const float dot =
+		cameraForward.x * subjectDir.x +
+		cameraForward.y * subjectDir.y +
+		cameraForward.z * subjectDir.z;
+
+	return dot >= PHOTO_SCORE_VIEW_DOT_MIN;
+}
+
+int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const
+{
+	const float distance = VSize(VSub(targetPos, shotPos));
+
+	if (distance <= PHOTO_SCORE_NEAR_DISTANCE)
+	{
+		return PHOTO_SCORE_MAX;
+	}
+
+	if (distance >= PHOTO_SCORE_FAR_DISTANCE)
+	{
+		return PHOTO_SCORE_MIN;
+	}
+
+	const float t =
+		(distance - PHOTO_SCORE_NEAR_DISTANCE) /
+		(PHOTO_SCORE_FAR_DISTANCE - PHOTO_SCORE_NEAR_DISTANCE);
+
+	int score = static_cast<int>(
+		PHOTO_SCORE_MAX - (PHOTO_SCORE_MAX - PHOTO_SCORE_MIN) * t);
+
+	if (score < PHOTO_SCORE_MIN)
+	{
+		score = PHOTO_SCORE_MIN;
+	}
+	if (score > PHOTO_SCORE_MAX)
+	{
+		score = PHOTO_SCORE_MAX;
+	}
+
+	return score;
+}
+
+void GameScene::TryTakePhoto(void)
+{
+	if (player_ == nullptr || subject_ == nullptr)
+	{
+		return;
+	}
+
+	photoCount_++;
+
+	if (!IsSubjectInView(player_, player1CameraAngles_, subject_))
+	{
+		lastPhotoScore_ = 0;
+		return;
+	}
+
+	SceneManager& scene = SceneManager::GetInstance();
+
+	const VECTOR shotPos = GetCameraWorldPos(player_, player1CameraAngles_);
+	const VECTOR subjectPos = subject_->GetTransform().pos;
+	const int addScore = CalculatePhotoScore(shotPos, subjectPos);
+
+	lastPhotoScore_ = addScore;
+	scene.SetCarryMoney(scene.GetCarryMoney() + addScore);
 }
 

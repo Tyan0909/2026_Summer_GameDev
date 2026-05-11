@@ -29,8 +29,20 @@ private:
 	static constexpr float FPS_CAMERA_PITCH_MAX = DX_PI_F * 0.45f;
 	static constexpr VECTOR PLAYER2_INIT_POS = { 200.0f, 1000.0f, 0.0f };
 
+	static constexpr int PHOTO_SCORE_MAX = 1000;
+	static constexpr int PHOTO_SCORE_MIN = 100;
+	static constexpr float PHOTO_SCORE_NEAR_DISTANCE = 100.0f;
+	static constexpr float PHOTO_SCORE_FAR_DISTANCE = 1200.0f;
+	static constexpr float PHOTO_SCORE_VIEW_DOT_MIN = 0.7f;
+
 	void DrawSplitView(int screenHandle, const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer);
 	void DrawSingleView(const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer);
+
+	void TryTakePhoto(void);
+	VECTOR GetCameraWorldPos(const Player* targetPlayer, const VECTOR& cameraAngles) const;
+	VECTOR GetCameraForward(const VECTOR& cameraAngles) const;
+	bool IsSubjectInView(const Player* targetPlayer, const VECTOR& cameraAngles, const Subject* targetSubject) const;
+	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 
 	Stage* stage_;
 
@@ -44,4 +56,6 @@ private:
 	VECTOR player1CameraAngles_;
 	VECTOR player2CameraAngles_;
 	bool isSplitScreenEnabled_;
+	int lastPhotoScore_;
+	int photoCount_;
 };
