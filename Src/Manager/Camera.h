@@ -57,6 +57,8 @@ public:
 
 	// カメラモードの変更
 	void ChangeMode(MODE mode);
+	void SetPos(const VECTOR& pos);
+	void SetAngles(const VECTOR& angles);
 
 	void MoveXYZDirection(void);
 
