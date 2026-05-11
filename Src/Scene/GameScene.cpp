@@ -3,6 +3,7 @@
 #include "GameScene.h"
 #include "../Object/Actor/Stage/Stage.h"
 #include "../Object/Actor/Charactor/Player/Player.h"
+#include "../Object/Actor/Charactor/Subject/Subject.h"
 #include "../Manager/Camera.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
@@ -17,7 +18,8 @@ GameScene::GameScene()
 	screenWidth_(0),
 	screenHeight_(0),
 	player1CameraAngles_(VGet(0.0f, 0.0f, 0.0f)),
-	player2CameraAngles_(VGet(0.0f, DX_PI_F, 0.0f))
+	player2CameraAngles_(VGet(0.0f, DX_PI_F, 0.0f)),
+	isSplitScreenEnabled_(true)	
 {
 }
 
@@ -45,10 +47,22 @@ void GameScene::Init()
 	player2_->SetPos(PLAYER2_INIT_POS);
 	player2_->AddHitCollider(stageCollider);
 
-	GetDrawScreenSize(&screenWidth_, &screenHeight_);
-	leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
-	rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
+	isSplitScreenEnabled_ = SceneManager::GetInstance().IsSplitScreenEnabled();
 
+	GetDrawScreenSize(&screenWidth_, &screenHeight_);
+
+	if (isSplitScreenEnabled_)
+	{
+		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
+		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
+	}
+
+	// サブジェクト
+	subject_ = new Subject();
+	subject_->Init();
+	const ColliderBase* subjectCollider =
+		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
+	subject_->AddHitCollider(subjectCollider);
 }
 
 void GameScene::Update()
@@ -69,6 +83,7 @@ void GameScene::Update()
 	stage_->Update();
 	player_->Update();
 	player2_->Update();
+	subject_->Update();
 
 	if (ins.IsNew(KEY_INPUT_UP))
 	{
@@ -98,6 +113,12 @@ void GameScene::Update()
 
 void GameScene::Draw()
 {
+	if (!isSplitScreenEnabled_)
+	{
+		DrawSingleView(player_, player1CameraAngles_, player_);
+		return;
+	}
+
 	DrawSplitView(leftScreenHandle_, player_, player1CameraAngles_, player_);
 	DrawSplitView(rightScreenHandle_, player2_, player2CameraAngles_, player2_);
 
@@ -106,6 +127,8 @@ void GameScene::Draw()
 	DrawGraph(0, 0, leftScreenHandle_, FALSE);
 	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
 	DrawBox(screenWidth_ / 2 - 1, 0, screenWidth_ / 2 + 1, screenHeight_, GetColor(255, 255, 255), TRUE);
+
+	//subject_->Draw();
 }
 
 void GameScene::Draw3D()
@@ -148,6 +171,13 @@ void GameScene::Release()
 		DeleteGraph(rightScreenHandle_);
 		rightScreenHandle_ = -1;
 	}
+
+	if (subject_)
+	{
+		subject_->Release();
+		delete subject_;
+		subject_ = nullptr;
+	}
 }
 
 void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer)
@@ -170,6 +200,7 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	camera->SetBeforeDraw();
 
 	stage_->Draw();
+	subject_->Draw();
 	if (player_ != hidePlayer)
 	{
 		player_->Draw();
@@ -179,5 +210,36 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 		player2_->Draw();
 	}
 	DrawString(20, 20, targetPlayer == player_ ? "PLAYER 1" : "PLAYER 2", GetColor(255, 255, 255));
+}
+
+void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer)
+{
+	if (targetPlayer == nullptr)
+	{
+		return;
+	}
+
+	auto* camera = SceneManager::GetInstance().GetCamera();
+	VECTOR eyeOffset = FPS_CAMERA_LOCAL_POS;
+	eyeOffset = VTransform(eyeOffset, MGetRotY(cameraAngles.y));
+
+	SetDrawScreen(DX_SCREEN_BACK);
+	SetDrawArea(0, 0, screenWidth_, screenHeight_);
+
+	camera->SetPos(VAdd(targetPlayer->GetTransform().pos, eyeOffset));
+	camera->SetAngles(cameraAngles);
+	camera->SetBeforeDraw();
+
+	stage_->Draw();
+	subject_->Draw();
+	if (player_ != hidePlayer)
+	{
+		player_->Draw();
+	}
+	if (player2_ != hidePlayer)
+	{
+		player2_->Draw();
+	}
+	DrawString(20, 20, "PLAYER 1", GetColor(255, 255, 255));
 }
 

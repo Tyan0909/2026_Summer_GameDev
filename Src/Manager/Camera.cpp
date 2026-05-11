@@ -109,10 +109,10 @@ void Camera::SetBeforeDrawFree(void)
 
 	// カメラ位置変更
 	float movePow = 3.f;
-	if (input.IsNew(KEY_INPUT_W)) { pos_.z += movePow; }
+	/*if (input.IsNew(KEY_INPUT_W)) { pos_.z += movePow; }
 	if (input.IsNew(KEY_INPUT_A)) { pos_.x -= movePow; }
 	if (input.IsNew(KEY_INPUT_S)) { pos_.z -= movePow; }
-	if (input.IsNew(KEY_INPUT_D)) { pos_.x += movePow; }
+	if (input.IsNew(KEY_INPUT_D)) { pos_.x += movePow; }*/
 
 	// 高さ変更
 	if (input.IsNew(KEY_INPUT_Q)) { pos_.y += movePow; }

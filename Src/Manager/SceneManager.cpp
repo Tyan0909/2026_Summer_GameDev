@@ -134,9 +134,9 @@ SceneManager::SceneManager(void)
 
 	camera_ = nullptr;
 
-	// š”O‚Ì‚½‚ß–¾¦‰Šú‰»
 	carryMoney_ = 0;
 	playerNum_ = 0;
+	isSplitScreenEnabled_ = true;
 }
 
 void SceneManager::ResetDeltaTime(void)

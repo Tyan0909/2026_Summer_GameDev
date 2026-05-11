@@ -8,9 +8,8 @@
 class ColliderBase;
 class ResourceManager;
 
-class Player : public ActorBase
+class Subject : public ActorBase
 {
-	
 public:
 
 	// 定数
@@ -46,15 +45,16 @@ public:
 	};
 
 	// コンストラクタ
-	Player(void);
+	Subject(void);
 
 	// デストラクタ
-	~Player(void);
+	~Subject(void);
 
 	// 更新
 	void Update(void) override;
 	void SetPos(const VECTOR& pos);
 	void SetInputEnabled(bool isEnabled);
+
 protected:
 
 	// リソースロード
@@ -72,7 +72,6 @@ protected:
 	// 初期化後の個別処理
 	void InitPost(void) override;
 
-
 private:
 
 	// 定数
@@ -87,18 +86,20 @@ private:
 
 	// 落下速度
 	float gravityVelocity_;
-	bool isInputEnabled_;
+	bool isInoputEnabled_;
 
-	// 重力適用
+	// 重力
+	/*static constexpr float GRAVITY = 0.98f;*/
+
+	// 重力適応
 	void ApplyGravity(void);
 
-	// 地面との当たり判定
+	// 地面との接地判定
 	bool CheckGround(VECTOR& hitPos) const;
 
 	// 壁との当たり判定
 	void ResolveWallCollision(const VECTOR& prevPos);
 	bool CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const;
-
 
 };
 
