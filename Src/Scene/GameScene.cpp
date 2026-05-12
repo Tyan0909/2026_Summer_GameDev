@@ -33,6 +33,9 @@ GameScene::~GameScene()
 
 void GameScene::Init()
 {
+
+	SceneManager& scene = SceneManager::GetInstance();
+
 	// ステージ初期化
 	stage_ = new Stage();
 	stage_->Init();
@@ -67,6 +70,10 @@ void GameScene::Init()
 
 	lastPhotoScore_ = 0;
 	photoCount_ = 0;
+
+	auto* camera = scene.GetCamera();
+	camera->SetAngles(player1CameraAngles_);
+	camera->ChangeMode(Camera::MODE::FREE);
 }
 
 void GameScene::Update()
@@ -81,8 +88,9 @@ void GameScene::Update()
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 	}
 
-	auto* camera = scene.GetCamera();
-	camera->SetAngles(player1CameraAngles_);
+	
+
+	
 
 	stage_->Update();
 	player_->Update();

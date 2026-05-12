@@ -81,9 +81,10 @@ private:
 	static constexpr float GROUND_OFFSET = 1.0f;
 	static constexpr float WALL_CHECK_HEIGHT = 30.0f;
 	static constexpr float WALL_PUSH_BACK = 2.0f;
+	static constexpr float WALL_NORMAL_Y_MAX = 0.4f;
 
 	// À•W‚ÌÕ“Ë”»’è‚Ì‰ŠúÀ•W
-	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
+	static constexpr VECTOR INIT_POS = { 300.0f, 100.0f, 100.0f };
 
 	// —‰º‘¬“x
 	float gravityVelocity_;
@@ -96,9 +97,6 @@ private:
 	bool CheckGround(VECTOR& hitPos) const;
 
 	// •Ç‚Æ‚Ì“–‚½‚è”»’è
-	void ResolveWallCollision(const VECTOR& prevPos);
-	bool CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const;
-
-
+	void ResolveWallCollision(void);
 };
 

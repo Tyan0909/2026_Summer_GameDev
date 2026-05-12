@@ -22,23 +22,21 @@ Player::~Player(void)
 
 void Player::Update(void)
 {
-	const VECTOR prevPos = transform_.pos;
-
 	// 簡易的な移動処理
 	VECTOR inputDir = AsoUtility::VECTOR_ZERO;
-	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_W))
+	if (isInputEnabled_ && CheckHitKey(KEY_INPUT_W))
 	{
 		inputDir.z += MOVE_SPEED;
 	}
-	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_S))
+	if (isInputEnabled_ && CheckHitKey(KEY_INPUT_S))
 	{
 		inputDir.z -= MOVE_SPEED;
 	}
-	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_A))
+	if (isInputEnabled_ && CheckHitKey(KEY_INPUT_A))
 	{
 		inputDir.x -= MOVE_SPEED;
 	}
-	if(isInputEnabled_ && CheckHitKey(KEY_INPUT_D))
+	if (isInputEnabled_ && CheckHitKey(KEY_INPUT_D))
 	{
 		inputDir.x += MOVE_SPEED;
 	}
@@ -53,8 +51,9 @@ void Player::Update(void)
 		transform_.pos = VAdd(transform_.pos, VScale(moveDir, moveSpeed));
 	}
 
-	ResolveWallCollision(prevPos);
+	ResolveWallCollision();
 	ApplyGravity();
+	ResolveWallCollision();
 	transform_.Update();
 }
 
@@ -93,23 +92,13 @@ void Player::InitTransform(void)
 
 void Player::InitCollider(void)
 {
-	//// DxLib側の衝突判定をセットアップ
-	//MV1SetupCollInfo(transform_.modelId);
-	//
-	//// モデルのコライダー
-	//ColliderModel* colModel =
-	//	new ColliderModel(ColliderBase::TAG::STAGE, &transform_);
-
-	//ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::MODEL), colModel);
-
-
-		// 主に地面との衝突で仕様する線分コライダ
+	// 主に地面との衝突で使用する線分コライダ
 	ColliderLine* colLine = new ColliderLine(
 		ColliderBase::TAG::PLAYER, &transform_,
 		COL_LINE_START_LOCAL_POS, COL_LINE_END_LOCAL_POS);
 	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::LINE), colLine);
 
-	// 主に壁や木などの衝突で仕様するカプセルコライダ
+	// 主に壁や木などの衝突で使用するカプセルコライダ
 	ColliderCapsule* colCapsule = new ColliderCapsule(
 		ColliderBase::TAG::PLAYER, &transform_,
 		COL_CAPSULE_TOP_LOCAL_POS, COL_CAPSULE_DOWN_LOCAL_POS,
@@ -123,6 +112,7 @@ void Player::InitAnimation(void)
 
 void Player::InitPost(void)
 {
+	// 初期座標に移動
 }
 
 void Player::ApplyGravity(void)
@@ -168,6 +158,7 @@ bool Player::CheckGround(VECTOR& hitPos) const
 		if (hit.HitFlag)
 		{
 			hitPos = hit.HitPosition;
+			hitPos.y += 5.0f;
 			return true;
 		}
 	}
@@ -175,40 +166,15 @@ bool Player::CheckGround(VECTOR& hitPos) const
 	return false;
 }
 
-void Player::ResolveWallCollision(const VECTOR& prevPos)
+void Player::ResolveWallCollision(void)
 {
-	VECTOR hitPos = AsoUtility::VECTOR_ZERO;
+	const auto* capsule = static_cast<const ColliderCapsule*>(
+		GetOwnCollider(static_cast<int>(COLLIDER_TYPE::CAPSULE)));
 
-	const VECTOR xMovedPos = VGet(transform_.pos.x, prevPos.y, prevPos.z);
-	if (CheckWallSegment(
-		VAdd(prevPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
-		VAdd(xMovedPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
-		hitPos))
+	if (capsule == nullptr)
 	{
-		transform_.pos.x = prevPos.x;
+		return;
 	}
-
-	const VECTOR zStartPos = VGet(transform_.pos.x, prevPos.y, prevPos.z);
-	const VECTOR zMovedPos = VGet(transform_.pos.x, prevPos.y, transform_.pos.z);
-	if (CheckWallSegment(
-		VAdd(zStartPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
-		VAdd(zMovedPos, VGet(0.0f, WALL_CHECK_HEIGHT, 0.0f)),
-		hitPos))
-	{
-		transform_.pos.z = prevPos.z;
-	}
-}
-
-bool Player::CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const
-{
-	const VECTOR move = VSub(end, start);
-	if (AsoUtility::EqualsVZero(move))
-	{
-		return false;
-	}
-
-	const VECTOR dir = AsoUtility::VNormalize(move);
-	const VECTOR checkEnd = VAdd(end, VScale(dir, WALL_PUSH_BACK));
 
 	for (const auto& hitCollider : hitColliders_)
 	{
@@ -219,14 +185,33 @@ bool Player::CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hi
 		}
 
 		const auto* modelCollider = static_cast<const ColliderModel*>(hitCollider);
-		auto hit = modelCollider->GetNearestHitPolyLine(start, checkEnd, true);
-		if (hit.HitFlag)
-		{
-			hitPos = hit.HitPosition;
-			return true;
-		}
-	}
 
-	return false;
+		auto hits = MV1CollCheck_Capsule(
+			modelCollider->GetFollow()->modelId,
+			-1,
+			capsule->GetPosTop(),
+			capsule->GetPosDown(),
+			capsule->GetRadius());
+
+		for (int i = 0; i < hits.HitNum; i++)
+		{
+			const auto& hitPoly = hits.Dim[i];
+
+			if (modelCollider->IsExcludeFrame(hitPoly.FrameIndex))
+			{
+				continue;
+			}
+
+			if (fabsf(hitPoly.Normal.y) > WALL_NORMAL_Y_MAX)
+			{
+				continue;
+			}
+
+			transform_.pos =
+				capsule->GetPosPushBackAlongNormal(hitPoly, 16, WALL_PUSH_BACK);
+		}
+
+		MV1CollResultPolyDimTerminate(hits);
+	}
 }
 
