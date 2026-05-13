@@ -23,7 +23,12 @@ public:
 	void Release(void) override;
 
 private:
-	static constexpr VECTOR FPS_CAMERA_LOCAL_POS = { 0.0f, 90.0f, 5.0f };
+	// 三人称視点
+	static constexpr VECTOR TPS_CAMERA_LOCAL_POS = { 0.0f, 120.0f, -180.0f };
+
+	// 一人称視点
+	// static constexpr VECTOR FPS_CAMERA_LOCAL_POS = { 0.0f, 90.0f, 5.0f };
+
 	static constexpr float FPS_CAMERA_ROT_SPEED = DX_PI_F / 180.0f;
 	static constexpr float FPS_CAMERA_PITCH_MIN = -DX_PI_F * 0.45f;
 	static constexpr float FPS_CAMERA_PITCH_MAX = DX_PI_F * 0.45f;

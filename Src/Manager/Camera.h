@@ -15,8 +15,8 @@ public:
 	};
 
 	// カメラのクリップ範囲
-	static constexpr float VIEW_NEAR = 1.f;		// ニアクリップ
-	static constexpr float VIEW_FAR = 30000.f;	// ファークリップ
+	static constexpr float VIEW_NEAR = 10.0f;		// ニアクリップ
+	static constexpr float VIEW_FAR = 5000.0f;	// ファークリップ
 
 	// カメラモード
 	enum class MODE
@@ -74,5 +74,3 @@ private:
 	VECTOR angles_;
 
 };
-
-

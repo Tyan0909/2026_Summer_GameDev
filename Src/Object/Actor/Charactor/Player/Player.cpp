@@ -83,7 +83,7 @@ void Player::InitLoad(void)
 
 void Player::InitTransform(void)
 {
-	transform_.scl = { 1.0f, 1.0f, 1.0f };
+	transform_.scl = { 0.5f,0.5f,0.5f };
 	transform_.quaRot = Quaternion::Identity();
 	transform_.quaRotLocal = Quaternion::Identity();
 	transform_.pos = INIT_POS;
@@ -186,32 +186,14 @@ void Player::ResolveWallCollision(void)
 
 		const auto* modelCollider = static_cast<const ColliderModel*>(hitCollider);
 
-		auto hits = MV1CollCheck_Capsule(
-			modelCollider->GetFollow()->modelId,
-			-1,
-			capsule->GetPosTop(),
-			capsule->GetPosDown(),
-			capsule->GetRadius());
-
-		for (int i = 0; i < hits.HitNum; i++)
-		{
-			const auto& hitPoly = hits.Dim[i];
-
-			if (modelCollider->IsExcludeFrame(hitPoly.FrameIndex))
-			{
-				continue;
-			}
-
-			if (fabsf(hitPoly.Normal.y) > WALL_NORMAL_Y_MAX)
-			{
-				continue;
-			}
-
-			transform_.pos =
-				capsule->GetPosPushBackAlongNormal(hitPoly, 16, WALL_PUSH_BACK);
-		}
-
-		MV1CollResultPolyDimTerminate(hits);
+		capsule->PushBackAlongNormal(
+			modelCollider,
+			transform_,
+			8,
+			WALL_PUSH_BACK,
+			true,
+			false,
+			WALL_NORMAL_Y_MAX);
 	}
 }
 

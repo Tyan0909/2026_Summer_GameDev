@@ -18,6 +18,13 @@ void Stage::Update(void)
 {
 }
 
+void Stage::Draw(void)
+{
+	SetUseLighting(FALSE);
+	ActorBase::Draw();
+	SetUseLighting(TRUE);
+}
+
 void Stage::InitLoad(void)
 {
 	transform_.SetModel(

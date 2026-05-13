@@ -132,20 +132,25 @@ void GameScene::Draw()
 {
 	if (!isSplitScreenEnabled_)
 	{
-		DrawSingleView(player_, player1CameraAngles_, player_);
+		DrawSingleView(player_, player1CameraAngles_, nullptr);
+
+		// 一人称視点に戻す場合
+		// DrawSingleView(player_, player1CameraAngles_, player_);
 		return;
 	}
 
-	DrawSplitView(leftScreenHandle_, player_, player1CameraAngles_, player_);
-	DrawSplitView(rightScreenHandle_, player2_, player2CameraAngles_, player2_);
+	DrawSplitView(leftScreenHandle_, player_, player1CameraAngles_, nullptr);
+	DrawSplitView(rightScreenHandle_, player2_, player2CameraAngles_, nullptr);
+
+	// 一人称視点に戻す場合
+	// DrawSplitView(leftScreenHandle_, player_, player1CameraAngles_, player_);
+	// DrawSplitView(rightScreenHandle_, player2_, player2CameraAngles_, player2_);
 
 	SetDrawScreen(DX_SCREEN_BACK);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 	DrawGraph(0, 0, leftScreenHandle_, FALSE);
 	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
 	DrawBox(screenWidth_ / 2 - 1, 0, screenWidth_ / 2 + 1, screenHeight_, GetColor(255, 255, 255), TRUE);
-
-	//subject_->Draw();
 }
 
 void GameScene::Draw3D()
@@ -205,14 +210,13 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	}
 
 	auto* camera = SceneManager::GetInstance().GetCamera();
-	VECTOR eyeOffset = FPS_CAMERA_LOCAL_POS;
-	eyeOffset = VTransform(eyeOffset, MGetRotY(cameraAngles.y));
+	const VECTOR cameraPos = GetCameraWorldPos(targetPlayer, cameraAngles);
 
 	SetDrawScreen(screenHandle);
 	ClearDrawScreen();
 	SetDrawArea(0, 0, screenWidth_ / 2, screenHeight_);
 
-	camera->SetPos(VAdd(targetPlayer->GetTransform().pos, eyeOffset));
+	camera->SetPos(cameraPos);
 	camera->SetAngles(cameraAngles);
 	camera->SetBeforeDraw();
 
@@ -241,13 +245,12 @@ void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraA
 	}
 
 	auto* camera = SceneManager::GetInstance().GetCamera();
-	VECTOR eyeOffset = FPS_CAMERA_LOCAL_POS;
-	eyeOffset = VTransform(eyeOffset, MGetRotY(cameraAngles.y));
+	const VECTOR cameraPos = GetCameraWorldPos(targetPlayer, cameraAngles);
 
 	SetDrawScreen(DX_SCREEN_BACK);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 
-	camera->SetPos(VAdd(targetPlayer->GetTransform().pos, eyeOffset));
+	camera->SetPos(cameraPos);
 	camera->SetAngles(cameraAngles);
 	camera->SetBeforeDraw();
 
@@ -275,10 +278,15 @@ VECTOR GameScene::GetCameraWorldPos(const Player* targetPlayer, const VECTOR& ca
 		return VGet(0.0f, 0.0f, 0.0f);
 	}
 
-	VECTOR eyeOffset = FPS_CAMERA_LOCAL_POS;
-	eyeOffset = VTransform(eyeOffset, MGetRotY(cameraAngles.y));
+	// 三人称視点
+	VECTOR cameraOffset = TPS_CAMERA_LOCAL_POS;
+	cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles.y));
+	return VAdd(targetPlayer->GetTransform().pos, cameraOffset);
 
-	return VAdd(targetPlayer->GetTransform().pos, eyeOffset);
+	// 一人称視点に戻す場合
+	// VECTOR cameraOffset = FPS_CAMERA_LOCAL_POS;
+	// cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles.y));
+	// return VAdd(targetPlayer->GetTransform().pos, cameraOffset);
 }
 
 VECTOR GameScene::GetCameraForward(const VECTOR& cameraAngles) const
