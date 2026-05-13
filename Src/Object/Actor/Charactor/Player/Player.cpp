@@ -5,14 +5,14 @@
 #include "../../../../Object/Collider/ColliderModel.h"
 #include "../../../../Object/Collider/ColliderCapsule.h"
 #include "../../../../Object/Collider/ColliderLine.h"
-
 #include "../../../../Utility/AsoUtility.h"
 
 Player::Player(void)
 	:
 	ActorBase(),
 	gravityVelocity_(0.0f),
-	isInputEnabled_(true)
+	isInputEnabled_(true),
+	cameraAngles_(VGet(0.0f, 0.0f, 0.0f))
 {
 }
 
@@ -22,8 +22,19 @@ Player::~Player(void)
 
 void Player::Update(void)
 {
-	// 簡易的な移動処理
+	UpdateCameraInput();
+	UpdateMoveInput();
+
+	ResolveWallCollision();
+	ApplyGravity();
+	ResolveWallCollision();
+	transform_.Update();
+}
+
+void Player::UpdateMoveInput(void)
+{
 	VECTOR inputDir = AsoUtility::VECTOR_ZERO;
+
 	if (isInputEnabled_ && CheckHitKey(KEY_INPUT_W))
 	{
 		inputDir.z += MOVE_SPEED;
@@ -44,17 +55,104 @@ void Player::Update(void)
 	if (!AsoUtility::EqualsVZero(inputDir))
 	{
 		const float moveSpeed = 1.0f;
-		const float yaw = SceneManager::GetInstance().GetCamera()->GetAngles().y;
 		VECTOR moveDir = AsoUtility::VNormalize(inputDir);
-		moveDir = VTransform(moveDir, MGetRotY(yaw));
+		moveDir = VTransform(moveDir, MGetRotY(cameraAngles_.y));
 		moveDir.y = 0.0f;
+
+		if (!AsoUtility::EqualsVZero(moveDir))
+		{
+			const Quaternion targetRot = Quaternion::LookRotation(moveDir);
+
+			float turnT = SceneManager::GetInstance().GetDeltaTime() * TURN_SPEED;
+			if (turnT < 0.0f)
+			{
+				turnT = 0.0f;
+			}
+			if (turnT > 1.0f)
+			{
+				turnT = 1.0f;
+			}
+
+			transform_.quaRot = Quaternion::Slerp(transform_.quaRot, targetRot, turnT);
+		}
+
 		transform_.pos = VAdd(transform_.pos, VScale(moveDir, moveSpeed));
 	}
+}
 
-	ResolveWallCollision();
-	ApplyGravity();
-	ResolveWallCollision();
-	transform_.Update();
+void Player::UpdateCameraInput(void)
+{
+	if (!isInputEnabled_)
+	{
+		return;
+	}
+
+	if (CheckHitKey(KEY_INPUT_UP))
+	{
+		cameraAngles_.x -= CAMERA_ROT_SPEED;
+	}
+	if (CheckHitKey(KEY_INPUT_DOWN))
+	{
+		cameraAngles_.x += CAMERA_ROT_SPEED;
+	}
+	if (CheckHitKey(KEY_INPUT_LEFT))
+	{
+		cameraAngles_.y -= CAMERA_ROT_SPEED;
+	}
+	if (CheckHitKey(KEY_INPUT_RIGHT))
+	{
+		cameraAngles_.y += CAMERA_ROT_SPEED;
+	}
+
+	if (cameraAngles_.x < CAMERA_PITCH_MIN)
+	{
+		cameraAngles_.x = CAMERA_PITCH_MIN;
+	}
+	if (cameraAngles_.x > CAMERA_PITCH_MAX)
+	{
+		cameraAngles_.x = CAMERA_PITCH_MAX;
+	}
+}
+
+const VECTOR& Player::GetCameraAngles(void) const
+{
+	return cameraAngles_;
+}
+
+void Player::SetCameraAngles(const VECTOR& angles)
+{
+	cameraAngles_ = angles;
+}
+
+VECTOR Player::GetCameraWorldPos(void) const
+{
+	VECTOR cameraOffset = TPS_CAMERA_LOCAL_POS;
+	cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles_.y));
+	return VAdd(transform_.pos, cameraOffset);
+
+	// 一人称視点に戻す場合
+	// VECTOR cameraOffset = FPS_CAMERA_LOCAL_POS;
+	// cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles_.y));
+	// return VAdd(transform_.pos, cameraOffset);
+}
+
+VECTOR Player::GetCameraForward(void) const
+{
+	const float pitch = cameraAngles_.x;
+	const float yaw = cameraAngles_.y;
+
+	VECTOR forward = VGet(
+		sinf(yaw) * cosf(pitch),
+		-sinf(pitch),
+		cosf(yaw) * cosf(pitch));
+
+	const float length = VSize(forward);
+	if (length <= 0.0001f)
+	{
+		return VGet(0.0f, 0.0f, 1.0f);
+	}
+
+	return VScale(forward, 1.0f / length);
 }
 
 void Player::SetPos(const VECTOR& pos)
@@ -73,10 +171,8 @@ void Player::InitLoad(void)
 	transform_.SetModel(
 		resMng_.LoadModelDuplicate(ResourceManager::SRC::PLAYER));
 
-	// 描画されているかチェック
 	if (transform_.modelId == -1)
 	{
-		// ロード失敗
 		return;
 	}
 }
@@ -85,20 +181,20 @@ void Player::InitTransform(void)
 {
 	transform_.scl = { 0.5f,0.5f,0.5f };
 	transform_.quaRot = Quaternion::Identity();
-	transform_.quaRotLocal = Quaternion::Identity();
+
+	transform_.quaRotLocal = Quaternion::AngleAxis(DX_PI_F, VGet(0.0f, 1.0f, 0.0f));
+
 	transform_.pos = INIT_POS;
 	transform_.Update();
 }
 
 void Player::InitCollider(void)
 {
-	// 主に地面との衝突で使用する線分コライダ
 	ColliderLine* colLine = new ColliderLine(
 		ColliderBase::TAG::PLAYER, &transform_,
 		COL_LINE_START_LOCAL_POS, COL_LINE_END_LOCAL_POS);
 	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::LINE), colLine);
 
-	// 主に壁や木などの衝突で使用するカプセルコライダ
 	ColliderCapsule* colCapsule = new ColliderCapsule(
 		ColliderBase::TAG::PLAYER, &transform_,
 		COL_CAPSULE_TOP_LOCAL_POS, COL_CAPSULE_DOWN_LOCAL_POS,
@@ -112,7 +208,6 @@ void Player::InitAnimation(void)
 
 void Player::InitPost(void)
 {
-	// 初期座標に移動
 }
 
 void Player::ApplyGravity(void)

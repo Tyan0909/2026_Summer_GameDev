@@ -1,4 +1,3 @@
-#include <cmath>
 #include <DxLib.h>
 #include "GameScene.h"
 #include "../Object/Actor/Stage/Stage.h"
@@ -18,8 +17,6 @@ GameScene::GameScene()
 	rightScreenHandle_(-1),
 	screenWidth_(0),
 	screenHeight_(0),
-	player1CameraAngles_(VGet(0.0f, 0.0f, 0.0f)),
-	player2CameraAngles_(VGet(0.0f, DX_PI_F, 0.0f)),
 	isSplitScreenEnabled_(true),
 	lastPhotoScore_(0),
 	photoCount_(0)
@@ -28,32 +25,34 @@ GameScene::GameScene()
 
 GameScene::~GameScene()
 {
-
 }
 
 void GameScene::Init()
 {
-
 	SceneManager& scene = SceneManager::GetInstance();
 
-	// ステージ初期化
 	stage_ = new Stage();
 	stage_->Init();
 
-	// プレイヤー
-	player_ = new Player();
-	player_->Init();
 	const ColliderBase* stageCollider =
 		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
+
+	player_ = new Player();
+	player_->Init();
 	player_->AddHitCollider(stageCollider);
 
 	player2_ = new Player();
 	player2_->Init();
 	player2_->SetInputEnabled(false);
 	player2_->SetPos(PLAYER2_INIT_POS);
+	player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
 	player2_->AddHitCollider(stageCollider);
 
-	isSplitScreenEnabled_ = SceneManager::GetInstance().IsSplitScreenEnabled();
+	subject_ = new Subject();
+	subject_->Init();
+	subject_->AddHitCollider(stageCollider);
+
+	isSplitScreenEnabled_ = scene.IsSplitScreenEnabled();
 
 	GetDrawScreenSize(&screenWidth_, &screenHeight_);
 
@@ -63,64 +62,28 @@ void GameScene::Init()
 		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
 	}
 
-	// サブジェクト
-	subject_ = new Subject();
-	subject_->Init();
-	subject_->AddHitCollider(stageCollider);
-
 	lastPhotoScore_ = 0;
 	photoCount_ = 0;
 
 	auto* camera = scene.GetCamera();
-	camera->SetAngles(player1CameraAngles_);
+	camera->SetAngles(player_->GetCameraAngles());
 	camera->ChangeMode(Camera::MODE::FREE);
 }
 
 void GameScene::Update()
 {
-	// シーン遷移
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	// スペースキーで結果シーンへ遷移
 	if (ins.IsTrgDown(KEY_INPUT_SPACE))
 	{
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 	}
 
-	
-
-	
-
 	stage_->Update();
 	player_->Update();
 	player2_->Update();
 	subject_->Update();
-
-	if (ins.IsNew(KEY_INPUT_UP))
-	{
-		player1CameraAngles_.x -= FPS_CAMERA_ROT_SPEED;
-	}
-	if (ins.IsNew(KEY_INPUT_DOWN))
-	{
-		player1CameraAngles_.x += FPS_CAMERA_ROT_SPEED;
-	}
-	if (ins.IsNew(KEY_INPUT_LEFT))
-	{
-		player1CameraAngles_.y -= FPS_CAMERA_ROT_SPEED;
-	}
-	if (ins.IsNew(KEY_INPUT_RIGHT))
-	{
-		player1CameraAngles_.y += FPS_CAMERA_ROT_SPEED;
-	}
-	if (player1CameraAngles_.x < FPS_CAMERA_PITCH_MIN)
-	{
-		player1CameraAngles_.x = FPS_CAMERA_PITCH_MIN;
-	}
-	if (player1CameraAngles_.x > FPS_CAMERA_PITCH_MAX)
-	{
-		player1CameraAngles_.x = FPS_CAMERA_PITCH_MAX;
-	}
 
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
@@ -132,19 +95,19 @@ void GameScene::Draw()
 {
 	if (!isSplitScreenEnabled_)
 	{
-		DrawSingleView(player_, player1CameraAngles_, nullptr);
+		DrawSingleView(player_, nullptr);
 
 		// 一人称視点に戻す場合
-		// DrawSingleView(player_, player1CameraAngles_, player_);
+		// DrawSingleView(player_, player_);
 		return;
 	}
 
-	DrawSplitView(leftScreenHandle_, player_, player1CameraAngles_, nullptr);
-	DrawSplitView(rightScreenHandle_, player2_, player2CameraAngles_, nullptr);
+	DrawSplitView(leftScreenHandle_, player_, nullptr);
+	DrawSplitView(rightScreenHandle_, player2_, nullptr);
 
 	// 一人称視点に戻す場合
-	// DrawSplitView(leftScreenHandle_, player_, player1CameraAngles_, player_);
-	// DrawSplitView(rightScreenHandle_, player2_, player2CameraAngles_, player2_);
+	// DrawSplitView(leftScreenHandle_, player_, player_);
+	// DrawSplitView(rightScreenHandle_, player2_, player2_);
 
 	SetDrawScreen(DX_SCREEN_BACK);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
@@ -156,7 +119,6 @@ void GameScene::Draw()
 void GameScene::Draw3D()
 {
 	// 3D描画が必要な場合はここに追加
-	
 }
 
 void GameScene::Release()
@@ -173,6 +135,13 @@ void GameScene::Release()
 		player2_->Release();
 		delete player2_;
 		player2_ = nullptr;
+	}
+
+	if (subject_)
+	{
+		subject_->Release();
+		delete subject_;
+		subject_ = nullptr;
 	}
 
 	if (stage_)
@@ -193,16 +162,9 @@ void GameScene::Release()
 		DeleteGraph(rightScreenHandle_);
 		rightScreenHandle_ = -1;
 	}
-
-	if (subject_)
-	{
-		subject_->Release();
-		delete subject_;
-		subject_ = nullptr;
-	}
 }
 
-void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer)
+void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, const Player* hidePlayer)
 {
 	if (screenHandle == -1 || targetPlayer == nullptr)
 	{
@@ -210,18 +172,18 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	}
 
 	auto* camera = SceneManager::GetInstance().GetCamera();
-	const VECTOR cameraPos = GetCameraWorldPos(targetPlayer, cameraAngles);
 
 	SetDrawScreen(screenHandle);
 	ClearDrawScreen();
 	SetDrawArea(0, 0, screenWidth_ / 2, screenHeight_);
 
-	camera->SetPos(cameraPos);
-	camera->SetAngles(cameraAngles);
+	camera->SetPos(targetPlayer->GetCameraWorldPos());
+	camera->SetAngles(targetPlayer->GetCameraAngles());
 	camera->SetBeforeDraw();
 
 	stage_->Draw();
 	subject_->Draw();
+
 	if (player_ != hidePlayer)
 	{
 		player_->Draw();
@@ -237,7 +199,7 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
 }
 
-void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraAngles, const Player* hidePlayer)
+void GameScene::DrawSingleView(const Player* targetPlayer, const Player* hidePlayer)
 {
 	if (targetPlayer == nullptr)
 	{
@@ -245,17 +207,17 @@ void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraA
 	}
 
 	auto* camera = SceneManager::GetInstance().GetCamera();
-	const VECTOR cameraPos = GetCameraWorldPos(targetPlayer, cameraAngles);
 
 	SetDrawScreen(DX_SCREEN_BACK);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 
-	camera->SetPos(cameraPos);
-	camera->SetAngles(cameraAngles);
+	camera->SetPos(targetPlayer->GetCameraWorldPos());
+	camera->SetAngles(targetPlayer->GetCameraAngles());
 	camera->SetBeforeDraw();
 
 	stage_->Draw();
 	subject_->Draw();
+
 	if (player_ != hidePlayer)
 	{
 		player_->Draw();
@@ -271,51 +233,14 @@ void GameScene::DrawSingleView(const Player* targetPlayer, const VECTOR& cameraA
 	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
 }
 
-VECTOR GameScene::GetCameraWorldPos(const Player* targetPlayer, const VECTOR& cameraAngles) const
-{
-	if (targetPlayer == nullptr)
-	{
-		return VGet(0.0f, 0.0f, 0.0f);
-	}
-
-	// 三人称視点
-	VECTOR cameraOffset = TPS_CAMERA_LOCAL_POS;
-	cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles.y));
-	return VAdd(targetPlayer->GetTransform().pos, cameraOffset);
-
-	// 一人称視点に戻す場合
-	// VECTOR cameraOffset = FPS_CAMERA_LOCAL_POS;
-	// cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles.y));
-	// return VAdd(targetPlayer->GetTransform().pos, cameraOffset);
-}
-
-VECTOR GameScene::GetCameraForward(const VECTOR& cameraAngles) const
-{
-	const float pitch = cameraAngles.x;
-	const float yaw = cameraAngles.y;
-
-	VECTOR forward = VGet(
-		sinf(yaw) * cosf(pitch),
-		-sinf(pitch),
-		cosf(yaw) * cosf(pitch));
-
-	const float length = VSize(forward);
-	if (length <= 0.0001f)
-	{
-		return VGet(0.0f, 0.0f, 1.0f);
-	}
-
-	return VScale(forward, 1.0f / length);
-}
-
-bool GameScene::IsSubjectInView(const Player* targetPlayer, const VECTOR& cameraAngles, const Subject* targetSubject) const
+bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const
 {
 	if (targetPlayer == nullptr || targetSubject == nullptr)
 	{
 		return false;
 	}
 
-	const VECTOR cameraPos = GetCameraWorldPos(targetPlayer, cameraAngles);
+	const VECTOR cameraPos = targetPlayer->GetCameraWorldPos();
 	const VECTOR toSubject = VSub(targetSubject->GetTransform().pos, cameraPos);
 	const float distance = VSize(toSubject);
 
@@ -325,7 +250,7 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const VECTOR& camera
 	}
 
 	const VECTOR subjectDir = VScale(toSubject, 1.0f / distance);
-	const VECTOR cameraForward = GetCameraForward(cameraAngles);
+	const VECTOR cameraForward = targetPlayer->GetCameraForward();
 
 	const float dot =
 		cameraForward.x * subjectDir.x +
@@ -368,7 +293,7 @@ int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPo
 	return score;
 }
 
-void GameScene::TryTakePhoto(void)
+void GameScene::TryTakePhoto()
 {
 	if (player_ == nullptr || subject_ == nullptr)
 	{
@@ -377,7 +302,7 @@ void GameScene::TryTakePhoto(void)
 
 	photoCount_++;
 
-	if (!IsSubjectInView(player_, player1CameraAngles_, subject_))
+	if (!IsSubjectInView(player_, subject_))
 	{
 		lastPhotoScore_ = 0;
 		return;
@@ -385,7 +310,7 @@ void GameScene::TryTakePhoto(void)
 
 	SceneManager& scene = SceneManager::GetInstance();
 
-	const VECTOR shotPos = GetCameraWorldPos(player_, player1CameraAngles_);
+	const VECTOR shotPos = player_->GetCameraWorldPos();
 	const VECTOR subjectPos = subject_->GetTransform().pos;
 	const int addScore = CalculatePhotoScore(shotPos, subjectPos);
 
