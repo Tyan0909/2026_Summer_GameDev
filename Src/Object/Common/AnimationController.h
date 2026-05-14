@@ -1,13 +1,13 @@
 #pragma once
 #include <string>
 #include <map>
-#include <DxLib.h>
-//#include "../Player.h"
+class SceneManager;
 
-class Player;
 class AnimationController
 {
+
 public:
+
 	// アニメーションデータ
 	struct Animation
 	{
@@ -17,57 +17,55 @@ public:
 		float speed = 0.0f;
 		float totalTime = 0.0f;
 		float step = 0.0f;
-		bool loop = true;
 	};
-
-
 
 	// コンストラクタ
 	AnimationController(int modelId);
 	// デストラクタ
 	~AnimationController(void);
 
-	// 外部FBXからアニメーション追加
-	void Add(int type, float speed, const std::string path);
-
-	// 同じFBX内のアニメーションを準備
-	void AddInFbx(int type, float speed, int animIndex);
+	// アニメーション追加
+	void Add(int type, const std::string& path, float speed);
 
 	// アニメーション再生
-	void Play(int type, bool isLoop = true);
+	void Play(int type, bool isLoop = true,
+		float startStep = 0.0f, float endStep = -1.0f, bool isStop = false, bool isForce = false);
 
-	// アニメーションの初期化
-	void Init(void);
 	void Update(void);
-	void Release(void);
 
-	bool IsEnd(void);
-
-private:
-
-	// アニメーション再生
-	void UpdateAnimation(void);
-
+	// アニメーション終了後に繰り返すループステップ
+	void SetEndLoop(float startStep, float endStep, float speed);
 
 	// 再生中のアニメーション
 	int GetPlayType(void) const;
 
-	// アニメーション追加の共通処理
-	void Add(int type, float speed, Animation animation);
+	// 再生終了
+	bool IsEnd(void) const;
 
-	// 再生中のアニメーションタッチNo
-	int attachNo_;
+private:
 
-	// アニメーションするモデルのハンドルID
+	// モデルのハンドルID
 	int modelId_;
+
 	// 種類別のアニメーションデータ
 	std::map<int, Animation> animations_;
 
-	bool isLoop_;
-
-	// 再生中のアニメーション
 	int playType_;
 	Animation playAnim_;
+
+	// アニメーションをループするかしないか
+	bool isLoop_;
+
+	// アニメーションを止めたままにする
+	bool isStop_;
+
+	// アニメーション終了後に繰り返すループステップ
+	float stepEndLoopStart_;
+	float stepEndLoopEnd_;
+	float endLoopSpeed_;
+
+	// 逆再生
+	float switchLoopReverse_;
 
 };
 

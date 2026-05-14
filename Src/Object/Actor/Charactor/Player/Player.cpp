@@ -2,10 +2,12 @@
 #include "../../../../Manager/Camera.h"
 #include "../../../../Manager/ResourceManager.h"
 #include "../../../../Manager/SceneManager.h"
+#include "../../../../Object/Common/AnimationController.h"
 #include "../../../../Object/Collider/ColliderModel.h"
 #include "../../../../Object/Collider/ColliderCapsule.h"
 #include "../../../../Object/Collider/ColliderLine.h"
 #include "../../../../Utility/AsoUtility.h"
+#include "../../../../Application.h"
 
 Player::Player(void)
 	:
@@ -14,21 +16,41 @@ Player::Player(void)
 	isInputEnabled_(true),
 	cameraAngles_(VGet(0.0f, 0.0f, 0.0f))
 {
+	animController_ = nullptr;
 }
 
 Player::~Player(void)
 {
+	delete animController_;
+}
+
+void Player::Init(void)
+{
+	animController_ = new AnimationController(transform_.modelId);
+
+	// 画像ロード
+	InitLoad();
+	// 大きさ、回転、座標の初期化
+	InitTransform();
+	// 衝突判定の初期化
+	InitCollider();
+	// アニメーションの初期化
+	InitAnimation();
+	// 座標初期化
+	InitPost();
 }
 
 void Player::Update(void)
 {
 	UpdateCameraInput();
 	UpdateMoveInput();
-
 	ResolveWallCollision();
 	ApplyGravity();
 	ResolveWallCollision();
 	transform_.Update();
+	animController_->Update();
+
+
 }
 
 void Player::UpdateMoveInput(void)
@@ -204,6 +226,14 @@ void Player::InitCollider(void)
 
 void Player::InitAnimation(void)
 {
+	std::string path = Application::PATH_MODEL + "Player/Animation/";
+
+	animController_->Add((int)ANIM_TYPE::IDLE, path + "Idle.mv1", 20.0f);
+	animController_->Add((int)ANIM_TYPE::CROUCHED, path + "Crouched.mv1", 20.0f);
+	animController_->Add((int)ANIM_TYPE::WALK, path + "Walking.mv1", 20.0f);
+	//animController_->Add((int)ANIM_TYPE::RUN, path + "Run.mv1", 20.0f);
+	
+
 }
 
 void Player::InitPost(void)

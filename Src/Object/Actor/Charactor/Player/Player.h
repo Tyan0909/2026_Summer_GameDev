@@ -7,6 +7,7 @@
 
 class ColliderBase;
 class ResourceManager;
+class AnimationController;
 
 class Player : public ActorBase
 {
@@ -37,9 +38,30 @@ public:
 		MAX,
 	};
 
+	enum class ANIM_TYPE
+	{
+		IDLE,
+		RUN,
+		JUMP,
+		CROUCHED,
+		WALK,
+		MAX,
+
+	};
+
+	enum class STATE
+	{
+		IDLE,
+		WALK,
+		RUN,
+		JUMP,
+		CROUCHED,
+	};
+
 	Player(void);
 	~Player(void);
 
+	void Init(void) ;
 	void Update(void) override;
 	void SetPos(const VECTOR& pos);
 	void SetInputEnabled(bool isEnabled);
@@ -48,6 +70,8 @@ public:
 	void SetCameraAngles(const VECTOR& angles);
 	VECTOR GetCameraWorldPos(void) const;
 	VECTOR GetCameraForward(void) const;
+
+
 
 protected:
 	void InitLoad(void) override;
@@ -75,10 +99,14 @@ private:
 	bool isInputEnabled_;
 	VECTOR cameraAngles_;
 
+	AnimationController* animController_;
+
 	void UpdateMoveInput(void);
 	void UpdateCameraInput(void);
 	void ApplyGravity(void);
 	bool CheckGround(VECTOR& hitPos) const;
 	void ResolveWallCollision(void);
+
+	STATE state_;
 };
 
