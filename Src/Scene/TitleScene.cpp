@@ -32,7 +32,7 @@ void TitleScene::Init(void)
     pointerHandle_ = LoadGraph("data/pointer.png");
     shutterSE_ = LoadSoundMem("data/shutter.wav");
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
 	logoHandle_ = LoadGraph("data/logo.png");
 	pointerHandle_ = LoadGraph("data/pointer.png");
 	shutterSE_ = LoadSoundMem("data/shutter.wav");
@@ -45,13 +45,12 @@ void TitleScene::Init(void)
 	pointerPos_ = VGet(200, 200, 0);
 	targetPos_ = VGet(640, 360, 0); // 画面中央
 
-=======
+//=======
     shutterScale_ = 1.0f;
     isShutter_ = false;
     flashAlpha_ = 0;
     pointerPos_ = VGet(200, 200, 0);
     targetPos_ = VGet(640, 360, 0); // 画面中央
->>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
 }
 
 void TitleScene::Update(void)
@@ -60,7 +59,7 @@ void TitleScene::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
     // スペース押したら演出開始
     if (ins.IsTrgDown(KEY_INPUT_SPACE))
     {
@@ -100,7 +99,7 @@ void TitleScene::Update(void)
     pointerPos_.y += (targetPos_.y - pointerPos_.y) * 0.1f;
 
     debugGrid_->Update();
-=======
+//=======
 	// Enterキーで分割なしのままゲームへ直接遷移
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
@@ -148,12 +147,12 @@ void TitleScene::Update(void)
 	pointerPos_.y += (targetPos_.y - pointerPos_.y) * 0.1f;
 
 	debugGrid_->Update();
->>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
+//>>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
 }
 
 void TitleScene::Draw(void)
 {
-<<<<<<< HEAD
+//<<<<<<< HEAD
 
     // 3D
     debugGrid_->Draw();
@@ -187,7 +186,7 @@ void TitleScene::Draw(void)
 
 	// タイトル画面の描画
 	DrawString(200, 200, "タイトルシーン", GetColor(255, 255, 255));
-=======
+//=======
 	// 3D
 	debugGrid_->Draw();
 
@@ -208,7 +207,7 @@ void TitleScene::Draw(void)
 	DrawString(200, 200, "タイトルシーン", GetColor(255, 255, 255));
 	DrawString(200, 240, "SPACE : 通常開始", GetColor(255, 255, 255));
 	DrawString(200, 280, "ENTER : 分割なしで直接ゲーム開始", GetColor(255, 255, 255));
->>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
+//>>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
 
 	debugGrid_->Draw();
 }
@@ -219,13 +218,13 @@ void TitleScene::Release(void)
     delete debugGrid_;
     debugGrid_ = nullptr;
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
 	delete debugGrid_;
 	debugGrid_ = nullptr;
 
-=======
+//=======
     // 画像開放
->>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
+//>>>>>>> 1616d7e963e19ada95cddc598bfac7ee8a1be71e
     DeleteGraph(logoHandle_);
     DeleteGraph(pointerHandle_);
     DeleteSoundMem(shutterSE_);

@@ -145,6 +145,7 @@
     <ClCompile Include="Src\Object\Actor\ActorBase.cpp" />
     <ClCompile Include="Src\Manager\ResourceManager.cpp" />
     <ClCompile Include="Src\Manager\Resource.cpp" />
+    <ClCompile Include="Src\Object\Actor\Charactor\Subject\Subject.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderBase.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderCapsule.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderLine.cpp" />
@@ -174,7 +175,6 @@
     <ClCompile Include="Src\Object\Actor\Stage\StageManager.cpp" />
     <ClCompile Include="Src\Object\Actor\Stage\Stage.cpp" />
     <ClCompile Include="Src\Object\Common\Transform.cpp" />
-    <ClCompile Include="Src\Object\Actor\Charactor\Subject\Subject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Object\Actor\ActorBase.h" />
