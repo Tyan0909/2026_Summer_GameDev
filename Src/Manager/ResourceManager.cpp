@@ -21,8 +21,6 @@ ResourceManager& ResourceManager::GetInstance(void)
 
 void ResourceManager::Init(void)
 {
-
-	// 推奨しませんが、どうしても使いたい方は
 	using RES = Resource;
 	using RES_T = RES::TYPE;
 	static std::string PATH_IMG = Application::PATH_IMAGE;
@@ -31,11 +29,16 @@ void ResourceManager::Init(void)
 
 	Resource* res;
 
-	// ステージ
-	res = new RES(RES_T::MODEL,PATH_MDL + 
-	"Stage/GameObject.mv1");
+	// ステージ(近景フル)
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"Stage/GameObject.mv1");
 	resourcesMap_.emplace(SRC::MAIN_STAGE, res);
-	
+
+	// ステージ(遠景ローポリ)
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"Stage/GameObject_Low.mv1");
+	resourcesMap_.emplace(SRC::MAIN_STAGE_FAR, res);
+
 	// プレイヤー
 	res = new RES(RES_T::MODEL, PATH_MDL +
 		"Player/Player_1.mv1");
@@ -99,28 +102,20 @@ ResourceManager::ResourceManager(void)
 
 Resource& ResourceManager::_Load(SRC src)
 {
-
-	// ロード済みチェック
 	const auto& lPair = loadedMap_.find(src);
 	if (lPair != loadedMap_.end())
 	{
 		return *resourcesMap_.find(src)->second;
 	}
 
-	// リソース登録チェック
 	const auto& rPair = resourcesMap_.find(src);
 	if (rPair == resourcesMap_.end())
 	{
-		// 登録されていない
 		return dummy_;
 	}
 
-	// ロード処理
 	rPair->second->Load();
-
-	// 念のためコピーコンストラクタ
 	loadedMap_.emplace(src, *rPair->second);
 
 	return *rPair->second;
-
 }

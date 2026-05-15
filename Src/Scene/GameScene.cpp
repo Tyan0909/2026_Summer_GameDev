@@ -58,6 +58,23 @@ void GameScene::Init()
 		ResourceManager::SRC::SUBJECT,
 		VGet(0.0f, 1000.0f, 0.0f));
 
+	subjectManager_->CreateSubject(
+		ResourceManager::SRC::SUBJECT,
+		VGet(250.0f, 1000.0f, 100.0f));
+
+	subjectManager_->CreateSubject(
+		ResourceManager::SRC::SUBJECT,
+		VGet(-250.0f, 1000.0f, -100.0f));
+	/*subjectManager_->CreateSubject(
+		ResourceManager::SRC::SUBJECT,
+		VGet(-250.0f, 1000.0f, -100.0f));
+	subjectManager_->CreateSubject(
+		ResourceManager::SRC::SUBJECT,
+		VGet(-100.0f, 1000.0f, -100.0f));*/
+	/*subjectManager_->CreateSubject(
+		ResourceManager::SRC::SUBJECT,
+		VGet(100.0f, 1000.0f, -100.0f));*/
+
 	isSplitScreenEnabled_ = scene.IsSplitScreenEnabled();
 
 	GetDrawScreenSize(&screenWidth_, &screenHeight_);
