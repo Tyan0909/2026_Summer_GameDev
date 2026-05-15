@@ -11,7 +11,8 @@ Subject::Subject(void)
 	:
 	ActorBase(),
 	gravityVelocity_(0.0f),
-	isInoputEnabled_(true)
+	isInoputEnabled_(true),
+	modelSrc_(ResourceManager::SRC::SUBJECT)
 {
 	// 初期化はActorBaseのInitで行う
 }
@@ -37,10 +38,16 @@ void Subject::SetInputEnabled(bool isEnabled)
 	isInoputEnabled_ = isEnabled;
 }
 
+void Subject::SetModelSrc(ResourceManager::SRC modelSrc)
+{
+	modelSrc_ = modelSrc;
+}
+
 void Subject::InitLoad(void)
 {
 	transform_.SetModel(
-		resMng_.LoadModelDuplicate(ResourceManager::SRC::SUBJECT));
+		resMng_.LoadModelDuplicate(modelSrc_));
+
 	// 描画されているかチェック
 	if (transform_.modelId == -1)
 	{
@@ -60,11 +67,12 @@ void Subject::InitTransform(void)
 
 void Subject::InitCollider(void)
 {
-	// 主に地面との衝突で仕様する線分コライダ
+	// 主に地面との衝突で使用する線分コライダ
 	ColliderLine* colLine = new ColliderLine(
 		ColliderBase::TAG::STAGE, &transform_,
 		COL_LINE_START_LOCAL_POS, COL_LINE_END_LOCAL_POS);
 	ownColliders_.emplace(static_cast<int>(COLLIDER_TYPE::LINE), colLine);
+
 	// 主に壁との衝突で使用するカプセルコライダ
 	ColliderCapsule* colCapsule = new ColliderCapsule(
 		ColliderBase::TAG::STAGE, &transform_,

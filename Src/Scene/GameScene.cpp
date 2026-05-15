@@ -6,13 +6,15 @@
 #include "../Manager/Camera.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
+#include "../Manager/ResourceManager.h"
+#include "../Manager/SubjectManager.h"
 
 GameScene::GameScene()
 	:
 	stage_(nullptr),
 	player_(nullptr),
 	player2_(nullptr),
-	subject_(nullptr),
+	subjectManager_(nullptr),
 	leftScreenHandle_(-1),
 	rightScreenHandle_(-1),
 	screenWidth_(0),
@@ -48,9 +50,13 @@ void GameScene::Init()
 	player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
 	player2_->AddHitCollider(stageCollider);
 
-	subject_ = new Subject();
-	subject_->Init();
-	subject_->AddHitCollider(stageCollider);
+	subjectManager_ = new SubjectManager();
+	subjectManager_->Init();
+	subjectManager_->AddHitCollider(stageCollider);
+
+	subjectManager_->CreateSubject(
+		ResourceManager::SRC::SUBJECT,
+		VGet(0.0f, 1000.0f, 0.0f));
 
 	isSplitScreenEnabled_ = scene.IsSplitScreenEnabled();
 
@@ -83,7 +89,11 @@ void GameScene::Update()
 	stage_->Update();
 	player_->Update();
 	player2_->Update();
-	subject_->Update();
+
+	if (subjectManager_ != nullptr)
+	{
+		subjectManager_->Update();
+	}
 
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
@@ -96,18 +106,11 @@ void GameScene::Draw()
 	if (!isSplitScreenEnabled_)
 	{
 		DrawSingleView(player_, nullptr);
-
-		// 一人称視点に戻す場合
-		// DrawSingleView(player_, player_);
 		return;
 	}
 
 	DrawSplitView(leftScreenHandle_, player_, nullptr);
 	DrawSplitView(rightScreenHandle_, player2_, nullptr);
-
-	// 一人称視点に戻す場合
-	// DrawSplitView(leftScreenHandle_, player_, player_);
-	// DrawSplitView(rightScreenHandle_, player2_, player2_);
 
 	SetDrawScreen(DX_SCREEN_BACK);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
@@ -137,11 +140,11 @@ void GameScene::Release()
 		player2_ = nullptr;
 	}
 
-	if (subject_)
+	if (subjectManager_)
 	{
-		subject_->Release();
-		delete subject_;
-		subject_ = nullptr;
+		subjectManager_->Release();
+		delete subjectManager_;
+		subjectManager_ = nullptr;
 	}
 
 	if (stage_)
@@ -182,7 +185,13 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	camera->SetBeforeDraw();
 
 	stage_->Draw();
-	subject_->Draw();
+
+	if (subjectManager_ != nullptr)
+	{
+		subjectManager_->Draw();
+	}
+
+	DrawSubjectDistanceGuide(targetPlayer);
 
 	if (player_ != hidePlayer)
 	{
@@ -216,7 +225,13 @@ void GameScene::DrawSingleView(const Player* targetPlayer, const Player* hidePla
 	camera->SetBeforeDraw();
 
 	stage_->Draw();
-	subject_->Draw();
+
+	if (subjectManager_ != nullptr)
+	{
+		subjectManager_->Draw();
+	}
+
+	DrawSubjectDistanceGuide(targetPlayer);
 
 	if (player_ != hidePlayer)
 	{
@@ -295,26 +310,83 @@ int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPo
 
 void GameScene::TryTakePhoto()
 {
-	if (player_ == nullptr || subject_ == nullptr)
+	if (player_ == nullptr || subjectManager_ == nullptr)
+	{
+		return;
+	}
+
+	const auto& subjects = subjectManager_->GetSubjects();
+	if (subjects.empty())
 	{
 		return;
 	}
 
 	photoCount_++;
 
-	if (!IsSubjectInView(player_, subject_))
-	{
-		lastPhotoScore_ = 0;
-		return;
-	}
-
 	SceneManager& scene = SceneManager::GetInstance();
-
 	const VECTOR shotPos = player_->GetCameraWorldPos();
-	const VECTOR subjectPos = subject_->GetTransform().pos;
-	const int addScore = CalculatePhotoScore(shotPos, subjectPos);
+
+	int addScore = 0;
+
+	for (const auto* subject : subjects)
+	{
+		if (subject == nullptr)
+		{
+			continue;
+		}
+
+		if (!IsSubjectInView(player_, subject))
+		{
+			continue;
+		}
+
+		addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+	}
 
 	lastPhotoScore_ = addScore;
 	scene.SetCarryMoney(scene.GetCarryMoney() + addScore);
+}
+
+void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
+{
+	if (targetPlayer == nullptr || subjectManager_ == nullptr)
+	{
+		return;
+	}
+
+	const auto& subjects = subjectManager_->GetSubjects();
+	if (subjects.empty())
+	{
+		return;
+	}
+
+	const VECTOR playerPos = targetPlayer->GetTransform().pos;
+	const int lineColor = GetColor(0, 255, 0);
+	const int textColor = GetColor(255, 255, 0);
+
+	for (const auto* subject : subjects)
+	{
+		if (subject == nullptr)
+		{
+			continue;
+		}
+
+		const VECTOR subjectPos = subject->GetTransform().pos;
+		const float distance = VSize(VSub(subjectPos, playerPos));
+
+		// プレイヤーと被写体を3Dラインで結ぶ
+		DrawLine3D(playerPos, subjectPos, lineColor);
+
+		// 中点に距離を表示する
+		const VECTOR midPos = VScale(VAdd(playerPos, subjectPos), 0.5f);
+		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
+
+		DrawFormatString(
+			static_cast<int>(screenPos.x),
+			static_cast<int>(screenPos.y),
+			textColor,
+			"%.0f",
+			distance);
+	}
 }
 
