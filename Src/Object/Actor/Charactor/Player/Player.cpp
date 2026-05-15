@@ -324,7 +324,7 @@ void Player::InitAnimation(void)
 	// ‚µ‚á‚ª‚ÝƒAƒjƒ[ƒVƒ‡ƒ“‚ð“o˜^‚·‚é
 	animController_->Add((int)ANIM_TYPE::CROUCHED, path + "Crouched.mv1", 20.0f);
 	// •à‚«ƒAƒjƒ[ƒVƒ‡ƒ“‚ð“o˜^‚·‚é
-	animController_->Add((int)ANIM_TYPE::WALK, path + "Walking.mv1", 20.0f);
+	animController_->Add((int)ANIM_TYPE::WALK, path + "Walking.mv1", 60.0f);
 	// ‘–‚èƒAƒjƒ[ƒVƒ‡ƒ“‚Í–¢“o˜^
 	// animController_->Add((int)ANIM_TYPE::RUN, path + "Run.mv1", 20.0f);
 }
