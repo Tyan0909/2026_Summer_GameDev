@@ -44,6 +44,9 @@ public:
 	void SetCarryMoney(int money) { carryMoney_ = money; }
 	int GetCarryMoney(void) const { return carryMoney_; }
 
+	void SetSplitScreenEnabled(bool isEnabled) { isSplitScreenEnabled_ = isEnabled; }
+	bool IsSplitScreenEnabled(void) const { return isSplitScreenEnabled_; }
+
 private:
 	static SceneManager* instance_;
 
@@ -72,6 +75,7 @@ private:
 	int carryMoney_ = 0;
 
 	std::vector<int> selectedPlayerNums_;
+	bool isSplitScreenEnabled_ = true;
 
 public:
 

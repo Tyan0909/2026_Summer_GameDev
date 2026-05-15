@@ -33,9 +33,18 @@ void ResourceManager::Init(void)
 
 	// ステージ
 	res = new RES(RES_T::MODEL,PATH_MDL + 
-	"Stage/m.mv1");
+	"Stage/GameObject.mv1");
 	resourcesMap_.emplace(SRC::MAIN_STAGE, res);
+	
+	// プレイヤー
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"Player/Player_1.mv1");
+	resourcesMap_.emplace(SRC::PLAYER, res);
 
+	// サブジェクト
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"Subject/Subject.mv1");
+	resourcesMap_.emplace(SRC::SUBJECT, res);
 }
 
 void ResourceManager::Release(void)

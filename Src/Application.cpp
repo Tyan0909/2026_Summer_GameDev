@@ -123,6 +123,9 @@ void Application::Destroy(void)
 	// 入力制御解放
 	InputManager::GetInstance().Destroy();
 
+	// リソース管理解放
+	ResourceManager::GetInstance().Destroy();
+
 	// DxLib終了
 	if (DxLib_End() == -1)
 	{

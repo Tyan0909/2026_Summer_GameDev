@@ -9,18 +9,15 @@
 class Stage : public ActorBase
 {
 public:
-
-
 	// 定数
-	const static float GRAVITY;		// 重力
-	
+	const static float GRAVITY;
+
 	// 衝突判定種別
 	enum class COLLIDER_TYPE
 	{
-		MODEL,		// モデル
+		MODEL,
 		MAX,
 	};
-
 
 	// コンストラクタ
 	Stage(void);
@@ -29,11 +26,12 @@ public:
 	~Stage(void);
 
 	// 更新
-	void Update(void) override;	
+	void Update(void) override;
 
+	// 描画
+	void Draw(void) override;
 
 protected:
-
 	// リソースロード
 	void InitLoad(void) override;
 
@@ -50,10 +48,7 @@ protected:
 	void InitPost(void) override;
 
 private:
-
-
 	// 定数
-	// ステージモデルの拡散光の強さ
 	static constexpr float DIFFUSE_STRENGTH = 0.8f;
 
 	// 座標の初期座標
@@ -62,8 +57,7 @@ private:
 	// 除外フレーム
 	const std::vector<std::string> EXCLUDE_FRAMES =
 	{
-		"Mush",
-		"Grass"
+		"Mush"
 	};
 
 	// 対象フレーム
@@ -74,17 +68,14 @@ private:
 
 	// ステージモデルID
 	int modelId_;
-	
-	// 位置・角度・拡縮
+
 	VECTOR pos_;
 	VECTOR angle_;
 	VECTOR scale_;
 
-	// ライトハンドル
-	int lightHandle_;		// 上から下
-	int lightHandle2_;		// 右から左
-	int lightHandle3_;		// 左から右
-	int lightHandle4_;		// 右上から中央
-	int lightHandle5_;		// 左上から中央
-
+	int lightHandle_;
+	int lightHandle2_;
+	int lightHandle3_;
+	int lightHandle4_;
+	int lightHandle5_;
 };
