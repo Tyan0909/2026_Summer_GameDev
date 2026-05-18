@@ -18,6 +18,7 @@ public:
 		PLAYER,
 		SUBJECT,
 		MAIN_STAGE,
+		MAIN_STAGE_FAR,
 		SKY_DOME,
 		PLAYER_SHADOW,
 		ENEMY_RAT,
@@ -25,7 +26,7 @@ public:
 		VIEW_RANGE,
 	};
 
-	// 明示的にインステンスを生成する
+	// 静的にインスタンスを生成する
 	static void CreateInstance(void);
 
 	// 静的インスタンスの取得
@@ -34,7 +35,7 @@ public:
 	// 初期化
 	void Init(void);
 
-	// 解放(シーン切替時に一旦解放)
+	// 解放(シーン切り替え時に一旦解放)
 	void Release(void);
 
 	// リソースの完全破棄
@@ -43,7 +44,7 @@ public:
 	// リソースのロード
 	const Resource& Load(SRC src);
 
-	// リソースの複製ロード(モデル用)
+	// リソースの複製ロード(3Dモデル用)
 	int LoadModelDuplicate(SRC src);
 
 private:
@@ -51,7 +52,7 @@ private:
 	// 静的インスタンス
 	static ResourceManager* instance_;
 
-	// リソース管理の対象
+	// リソース管理対象
 	std::map<SRC, Resource*> resourcesMap_;
 
 	// 読み込み済みリソース
@@ -59,13 +60,11 @@ private:
 
 	Resource dummy_;
 
-	// デフォルトコンストラクタをprivateにして、
-	// 外部から生成できない様にする
 	ResourceManager(void);
 	ResourceManager(const ResourceManager& manager) = default;
 	~ResourceManager(void) = default;
 
-	// 内部ロード
+	// 実ロード
 	Resource& _Load(SRC src);
 
 };

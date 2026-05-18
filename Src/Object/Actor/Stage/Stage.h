@@ -1,5 +1,4 @@
 #pragma once
-//#include "../Scene/GameScene.h"
 #include <DxLib.h>
 #include <vector>
 #include <string>
@@ -50,8 +49,11 @@ protected:
 private:
 	// 定数
 	static constexpr float DIFFUSE_STRENGTH = 0.8f;
+	static constexpr float LOD_SWITCH_DISTANCE = 1800.0f;
+	static constexpr float FOG_START_DISTANCE = 1200.0f;
+	static constexpr float FOG_END_DISTANCE = 3500.0f;
 
-	// 座標の初期座標
+	// 初期座標
 	static constexpr VECTOR INIT_POS = { 0.0f, 0.0f, 0.0f };
 
 	// 除外フレーム
@@ -66,7 +68,9 @@ private:
 		"Ground"
 	};
 
-	// ステージモデルID
+	// 遠景ローポリモデルID
+	int farModelId_;
+
 	int modelId_;
 
 	VECTOR pos_;
@@ -78,4 +82,6 @@ private:
 	int lightHandle3_;
 	int lightHandle4_;
 	int lightHandle5_;
+
+	void ApplyFarModelTransform(void);
 };

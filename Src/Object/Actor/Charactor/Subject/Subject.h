@@ -3,17 +3,17 @@
 #include <vector>
 #include <string>
 #include "../../ActorBase.h"
+#include "../../../../Manager/ResourceManager.h"
 #include "../../../../Object/Collider/ColliderModel.h"
 
 class ColliderBase;
-class ResourceManager;
 
 class Subject : public ActorBase
 {
 public:
 
 	// 定数
-	static constexpr float GRAVITY = 0.5f;		// 重力
+	static constexpr float GRAVITY = 0.5f;
 
 	// 移動速度
 	static constexpr float MOVE_SPEED = 150.f;
@@ -26,21 +26,21 @@ public:
 	static constexpr VECTOR
 		COL_LINE_END_LOCAL_POS = { 0.0f, -10.0f, 0.0f };
 
-	// 衝突判定用カプセル上部球体
+	// 衝突判定用カプセル上部位置
 	static constexpr VECTOR COL_CAPSULE_TOP_LOCAL_POS = { 0.0f, 110.0f, 0.0f };
 
-	// 衝突判定用カプセル下部球体
+	// 衝突判定用カプセル下部位置
 	static constexpr VECTOR COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
 
-	// 衝突判定用カプセル球体半径
+	// 衝突判定用カプセル半径
 	static constexpr float COL_CAPSULE_RADIUS = 20.0f;
 
 	// 衝突判定種別
 	enum class COLLIDER_TYPE
 	{
-		MODEL,		// モデル
-		LINE,		// 線分
-		CAPSULE,	// カプセル
+		MODEL,
+		LINE,
+		CAPSULE,
 		MAX,
 	};
 
@@ -54,6 +54,7 @@ public:
 	void Update(void) override;
 	void SetPos(const VECTOR& pos);
 	void SetInputEnabled(bool isEnabled);
+	void SetModelSrc(ResourceManager::SRC modelSrc);
 
 protected:
 
@@ -81,17 +82,15 @@ private:
 	static constexpr float WALL_CHECK_HEIGHT = 30.0f;
 	static constexpr float WALL_PUSH_BACK = 2.0f;
 
-	// 座標の衝突判定の初期座標
+	// 初期位置
 	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
 
-	// 落下速度
+	// 重力速度
 	float gravityVelocity_;
 	bool isInoputEnabled_;
+	ResourceManager::SRC modelSrc_;
 
-	// 重力
-	/*static constexpr float GRAVITY = 0.98f;*/
-
-	// 重力適応
+	// 重力適用
 	void ApplyGravity(void);
 
 	// 地面との接地判定
@@ -100,6 +99,5 @@ private:
 	// 壁との当たり判定
 	void ResolveWallCollision(const VECTOR& prevPos);
 	bool CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const;
-
 };
 

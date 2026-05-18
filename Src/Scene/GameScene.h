@@ -5,6 +5,7 @@
 class Stage;
 class Player;
 class Subject;
+class SubjectManager;
 
 class GameScene : public SceneBase
 {
@@ -29,6 +30,7 @@ private:
 
 	void DrawSplitView(int screenHandle, const Player* targetPlayer, const Player* hidePlayer);
 	void DrawSingleView(const Player* targetPlayer, const Player* hidePlayer);
+	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
 	void TryTakePhoto(void);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
@@ -37,7 +39,7 @@ private:
 	Stage* stage_;
 	Player* player_;
 	Player* player2_;
-	Subject* subject_;
+	SubjectManager* subjectManager_;
 	int leftScreenHandle_;
 	int rightScreenHandle_;
 	int screenWidth_;
