@@ -16,7 +16,7 @@ public:
 	static constexpr float GRAVITY = 0.5f;
 
 	// 移動速度
-	static constexpr float MOVE_SPEED = 150.f;
+	static constexpr float MOVE_SPEED = 1.5f;
 
 	// 衝突判定用線分開始
 	static constexpr VECTOR
@@ -55,6 +55,7 @@ public:
 	void SetPos(const VECTOR& pos);
 	void SetInputEnabled(bool isEnabled);
 	void SetModelSrc(ResourceManager::SRC modelSrc);
+	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
 
 protected:
 
@@ -81,6 +82,8 @@ private:
 	static constexpr float GROUND_OFFSET = 1.0f;
 	static constexpr float WALL_CHECK_HEIGHT = 30.0f;
 	static constexpr float WALL_PUSH_BACK = 2.0f;
+	static constexpr int RANDOM_DIR_CHANGE_MIN = 60;
+	static constexpr int RANDOM_DIR_CHANGE_MAX = 180;
 
 	// 初期位置
 	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
@@ -89,6 +92,11 @@ private:
 	float gravityVelocity_;
 	bool isInoputEnabled_;
 	ResourceManager::SRC modelSrc_;
+
+	VECTOR moveAreaMin_;
+	VECTOR moveAreaMax_;
+	VECTOR moveDir_;
+	int moveDirChangeFrame_;
 
 	// 重力適用
 	void ApplyGravity(void);
@@ -99,5 +107,10 @@ private:
 	// 壁との当たり判定
 	void ResolveWallCollision(const VECTOR& prevPos);
 	bool CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const;
+
+	void UpdateRandomMove(void);
+	void PickRandomMoveDirection(void);
+	void FaceMoveDirection(void);
+	void ClampToMoveArea(void);
 };
 

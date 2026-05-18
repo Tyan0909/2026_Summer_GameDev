@@ -53,27 +53,12 @@ void GameScene::Init()
 	subjectManager_ = new SubjectManager();
 	subjectManager_->Init();
 	subjectManager_->AddHitCollider(stageCollider);
+	subjectManager_->SetMoveArea(SUBJECT_AREA_MIN, SUBJECT_AREA_MAX);
 
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(0.0f, 1000.0f, 0.0f));
-
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(250.0f, 1000.0f, 100.0f));
-
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(-250.0f, 1000.0f, -100.0f));
-	/*subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(-250.0f, 1000.0f, -100.0f));
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(-100.0f, 1000.0f, -100.0f));*/
-	/*subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(100.0f, 1000.0f, -100.0f));*/
+	for (int i = 0; i < SUBJECT_COUNT; i++)
+	{
+		subjectManager_->CreateRandomSubject(ResourceManager::SRC::SUBJECT);
+	}
 
 	isSplitScreenEnabled_ = scene.IsSplitScreenEnabled();
 
@@ -377,7 +362,10 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		return;
 	}
 
-	const VECTOR playerPos = targetPlayer->GetTransform().pos;
+	const VECTOR playerHeadPos = VAdd(
+		targetPlayer->GetTransform().pos,
+		Player::COL_CAPSULE_TOP_LOCAL_POS);
+
 	const int lineColor = GetColor(0, 255, 0);
 	const int textColor = GetColor(255, 255, 0);
 
@@ -388,14 +376,17 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 			continue;
 		}
 
-		const VECTOR subjectPos = subject->GetTransform().pos;
-		const float distance = VSize(VSub(subjectPos, playerPos));
+		const VECTOR subjectHeadPos = VAdd(
+			subject->GetTransform().pos,
+			Subject::COL_CAPSULE_TOP_LOCAL_POS);
 
-		// プレイヤーと被写体を3Dラインで結ぶ
-		DrawLine3D(playerPos, subjectPos, lineColor);
+		const float distance = VSize(VSub(subjectHeadPos, playerHeadPos));
+
+		// プレイヤー頭頂部と被写体頭頂部を3Dラインで結ぶ
+		DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
 
 		// 中点に距離を表示する
-		const VECTOR midPos = VScale(VAdd(playerPos, subjectPos), 0.5f);
+		const VECTOR midPos = VScale(VAdd(playerHeadPos, subjectHeadPos), 0.5f);
 		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
 
 		DrawFormatString(

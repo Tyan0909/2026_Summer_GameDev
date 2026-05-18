@@ -22,6 +22,10 @@ public:
 private:
 	static constexpr VECTOR PLAYER2_INIT_POS = { 200.0f, 1000.0f, 0.0f };
 
+	static constexpr VECTOR SUBJECT_AREA_MIN = { -600.0f, 0.0f, -600.0f };
+	static constexpr VECTOR SUBJECT_AREA_MAX = { 600.0f, 0.0f, 600.0f };
+	static constexpr int SUBJECT_COUNT = 6;
+
 	static constexpr int PHOTO_SCORE_MAX = 1000;
 	static constexpr int PHOTO_SCORE_MIN = 100;
 	static constexpr float PHOTO_SCORE_NEAR_DISTANCE = 100.0f;
