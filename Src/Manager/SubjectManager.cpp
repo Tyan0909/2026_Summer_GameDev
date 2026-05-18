@@ -3,6 +3,9 @@
 #include "../Object/Collider/ColliderBase.h"
 
 SubjectManager::SubjectManager(void)
+	:
+	moveAreaMin_(VGet(-500.0f, 0.0f, -500.0f)),
+	moveAreaMax_(VGet(500.0f, 0.0f, 500.0f))
 {
 }
 
@@ -60,6 +63,7 @@ Subject* SubjectManager::CreateSubject(ResourceManager::SRC modelSrc, const VECT
 {
 	Subject* subject = new Subject();
 	subject->SetModelSrc(modelSrc);
+	subject->SetMoveArea(moveAreaMin_, moveAreaMax_);
 	subject->Init();
 	subject->SetPos(pos);
 
@@ -70,6 +74,16 @@ Subject* SubjectManager::CreateSubject(ResourceManager::SRC modelSrc, const VECT
 
 	subjects_.emplace_back(subject);
 	return subject;
+}
+
+Subject* SubjectManager::CreateRandomSubject(ResourceManager::SRC modelSrc)
+{
+	const VECTOR pos = VGet(
+		GetRandomRange(moveAreaMin_.x, moveAreaMax_.x),
+		SUBJECT_SPAWN_HEIGHT,
+		GetRandomRange(moveAreaMin_.z, moveAreaMax_.z));
+
+	return CreateSubject(modelSrc, pos);
 }
 
 void SubjectManager::AddHitCollider(const ColliderBase* hitCollider)
@@ -100,7 +114,34 @@ void SubjectManager::AddHitCollider(const ColliderBase* hitCollider)
 	}
 }
 
+void SubjectManager::SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos)
+{
+	moveAreaMin_ = minPos;
+	moveAreaMax_ = maxPos;
+
+	for (auto* subject : subjects_)
+	{
+		if (subject == nullptr)
+		{
+			continue;
+		}
+
+		subject->SetMoveArea(moveAreaMin_, moveAreaMax_);
+	}
+}
+
 const std::vector<Subject*>& SubjectManager::GetSubjects(void) const
 {
 	return subjects_;
+}
+
+float SubjectManager::GetRandomRange(float minValue, float maxValue) const
+{
+	if (maxValue <= minValue)
+	{
+		return minValue;
+	}
+
+	const float t = static_cast<float>(GetRand(10000)) / 10000.0f;
+	return minValue + (maxValue - minValue) * t;
 }

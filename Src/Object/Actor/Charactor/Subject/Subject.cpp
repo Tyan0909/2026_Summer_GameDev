@@ -1,4 +1,5 @@
 #include "Subject.h"
+#include <cmath>
 #include "../../../../Manager/Camera.h"
 #include "../../../../Manager/ResourceManager.h"
 #include "../../../../Manager/SceneManager.h"
@@ -12,7 +13,11 @@ Subject::Subject(void)
 	ActorBase(),
 	gravityVelocity_(0.0f),
 	isInoputEnabled_(true),
-	modelSrc_(ResourceManager::SRC::SUBJECT)
+	modelSrc_(ResourceManager::SRC::SUBJECT),
+	moveAreaMin_(VGet(-500.0f, 0.0f, -500.0f)),
+	moveAreaMax_(VGet(500.0f, 0.0f, 500.0f)),
+	moveDir_(VGet(0.0f, 0.0f, 1.0f)),
+	moveDirChangeFrame_(0)
 {
 	// 初期化はActorBaseのInitで行う
 }
@@ -23,6 +28,11 @@ Subject::~Subject(void)
 
 void Subject::Update(void)
 {
+	const VECTOR prevPos = transform_.pos;
+
+	UpdateRandomMove();
+	ClampToMoveArea();
+	ResolveWallCollision(prevPos);
 	ApplyGravity();
 	transform_.Update();
 }
@@ -41,6 +51,13 @@ void Subject::SetInputEnabled(bool isEnabled)
 void Subject::SetModelSrc(ResourceManager::SRC modelSrc)
 {
 	modelSrc_ = modelSrc;
+}
+
+void Subject::SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos)
+{
+	moveAreaMin_ = minPos;
+	moveAreaMax_ = maxPos;
+	ClampToMoveArea();
 }
 
 void Subject::InitLoad(void)
@@ -88,6 +105,7 @@ void Subject::InitPost(void)
 {
 	// サブジェクトの初期座標を設定
 	transform_.pos = INIT_POS;
+	PickRandomMoveDirection();
 }
 
 void Subject::ApplyGravity(void)
@@ -151,6 +169,7 @@ void Subject::ResolveWallCollision(const VECTOR& prevPos)
 		hitPos))
 	{
 		transform_.pos.x = prevPos.x;
+		PickRandomMoveDirection();
 	}
 
 	const VECTOR zStartPos = VGet(transform_.pos.x, prevPos.y, prevPos.z);
@@ -161,6 +180,7 @@ void Subject::ResolveWallCollision(const VECTOR& prevPos)
 		hitPos))
 	{
 		transform_.pos.z = prevPos.z;
+		PickRandomMoveDirection();
 	}
 }
 
@@ -193,5 +213,83 @@ bool Subject::CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& h
 	}
 
 	return false;
+}
+
+void Subject::UpdateRandomMove(void)
+{
+	if (moveDirChangeFrame_ <= 0)
+	{
+		PickRandomMoveDirection();
+	}
+
+	transform_.pos = VAdd(transform_.pos, VScale(moveDir_, MOVE_SPEED));
+	moveDirChangeFrame_--;
+}
+
+void Subject::PickRandomMoveDirection(void)
+{
+	const float angle = static_cast<float>(GetRand(359)) * DX_PI_F / 180.0f;
+	moveDir_ = VGet(cosf(angle), 0.0f, sinf(angle));
+
+	moveDirChangeFrame_ =
+		RANDOM_DIR_CHANGE_MIN +
+		GetRand(RANDOM_DIR_CHANGE_MAX - RANDOM_DIR_CHANGE_MIN);
+
+	FaceMoveDirection();
+}
+
+void Subject::FaceMoveDirection(void)
+{
+	if (AsoUtility::EqualsVZero(moveDir_))
+	{
+		return;
+	}
+
+	transform_.quaRot = Quaternion::LookRotation(moveDir_);
+}
+
+void Subject::ClampToMoveArea(void)
+{
+	bool isOut = false;
+
+	if (transform_.pos.x < moveAreaMin_.x)
+	{
+		transform_.pos.x = moveAreaMin_.x;
+		isOut = true;
+	}
+	else if (transform_.pos.x > moveAreaMax_.x)
+	{
+		transform_.pos.x = moveAreaMax_.x;
+		isOut = true;
+	}
+
+	if (transform_.pos.z < moveAreaMin_.z)
+	{
+		transform_.pos.z = moveAreaMin_.z;
+		isOut = true;
+	}
+	else if (transform_.pos.z > moveAreaMax_.z)
+	{
+		transform_.pos.z = moveAreaMax_.z;
+		isOut = true;
+	}
+
+	if (!isOut)
+	{
+		return;
+	}
+
+	const VECTOR center = VScale(VAdd(moveAreaMin_, moveAreaMax_), 0.5f);
+	VECTOR toCenter = VSub(center, transform_.pos);
+	toCenter.y = 0.0f;
+
+	if (!AsoUtility::EqualsVZero(toCenter))
+	{
+		moveDir_ = AsoUtility::VNormalize(toCenter);
+		moveDirChangeFrame_ =
+			RANDOM_DIR_CHANGE_MIN +
+			GetRand(RANDOM_DIR_CHANGE_MAX - RANDOM_DIR_CHANGE_MIN);
+		FaceMoveDirection();
+	}
 }
 
