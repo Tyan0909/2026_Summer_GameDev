@@ -33,6 +33,10 @@ private:
 	float shutterScale_;  // シャッター縮小
 	bool isShutter_;      // シャッター中
 	int flashAlpha_;      // フラッシュ
+	int fadeAlpha_;       // フェード
+	float pointerAnim_;   // ポインタアニメーション
+	int logoAlpha_;
+	int pressHandle_;
 
 	VECTOR pointerPos_;   // ポインタ位置
 	VECTOR targetPos_;    // ロックオン先
