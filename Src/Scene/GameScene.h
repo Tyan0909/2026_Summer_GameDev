@@ -38,6 +38,7 @@ private:
 
 	void TryTakePhoto(void);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
+	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 
 	Stage* stage_;

@@ -48,6 +48,19 @@ void ResourceManager::Init(void)
 	res = new RES(RES_T::MODEL, PATH_MDL +
 		"Subject/Subject.mv1");
 	resourcesMap_.emplace(SRC::SUBJECT, res);
+
+	// É^ÉCÉgÉãÉçÉS
+	res = new RES(RES_T::IMG, PATH_IMG +
+		"Title/Title Logo.png");
+	resourcesMap_.emplace(SRC::TITLE, res);
+
+	// PRESS SPACE
+	res = new RES(RES_T::IMG, PATH_IMG +
+		"Title/press_space.png.png");
+	resourcesMap_.emplace(SRC::TITLE, res);
+
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"SkyDome/SkyDome.mv1");
 }
 
 void ResourceManager::Release(void)

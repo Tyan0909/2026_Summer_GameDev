@@ -3,6 +3,7 @@
 #include "../Object/Actor/Stage/Stage.h"
 #include "../Object/Actor/Charactor/Player/Player.h"
 #include "../Object/Actor/Charactor/Subject/Subject.h"
+#include "../Object/Collider/ColliderModel.h"
 #include "../Manager/Camera.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
@@ -258,7 +259,11 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targe
 	}
 
 	const VECTOR cameraPos = targetPlayer->GetCameraWorldPos();
-	const VECTOR toSubject = VSub(targetSubject->GetTransform().pos, cameraPos);
+	const VECTOR subjectHeadPos = VAdd(
+		targetSubject->GetTransform().pos,
+		Subject::COL_CAPSULE_TOP_LOCAL_POS);
+
+	const VECTOR toSubject = VSub(subjectHeadPos, cameraPos);
 	const float distance = VSize(toSubject);
 
 	if (distance <= 0.0001f)
@@ -274,7 +279,12 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targe
 		cameraForward.y * subjectDir.y +
 		cameraForward.z * subjectDir.z;
 
-	return dot >= PHOTO_SCORE_VIEW_DOT_MIN;
+	if (dot < PHOTO_SCORE_VIEW_DOT_MIN)
+	{
+		return false;
+	}
+
+	return IsSubjectVisible(targetPlayer, targetSubject);
 }
 
 int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const
@@ -366,7 +376,8 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		targetPlayer->GetTransform().pos,
 		Player::COL_CAPSULE_TOP_LOCAL_POS);
 
-	const int lineColor = GetColor(0, 255, 0);
+	const int visibleLineColor = GetColor(255, 0, 0);
+	const int hiddenLineColor = GetColor(0, 0, 255);
 	const int textColor = GetColor(255, 255, 0);
 
 	for (const auto* subject : subjects)
@@ -381,6 +392,8 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 			Subject::COL_CAPSULE_TOP_LOCAL_POS);
 
 		const float distance = VSize(VSub(subjectHeadPos, playerHeadPos));
+		const bool isVisible = IsSubjectVisible(targetPlayer, subject);
+		const int lineColor = isVisible ? visibleLineColor : hiddenLineColor;
 
 		// プレイヤー頭頂部と被写体頭頂部を3Dラインで結ぶ
 		DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
@@ -398,3 +411,38 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 	}
 }
 
+bool GameScene::IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const
+{
+	if (targetPlayer == nullptr || targetSubject == nullptr || stage_ == nullptr)
+	{
+		return false;
+	}
+
+	const ColliderBase* stageColliderBase =
+		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
+
+	if (stageColliderBase == nullptr ||
+		stageColliderBase->GetShape() != ColliderBase::SHAPE::MODEL)
+	{
+		return true;
+	}
+
+	const auto* stageCollider = static_cast<const ColliderModel*>(stageColliderBase);
+
+	const VECTOR cameraPos = targetPlayer->GetCameraWorldPos();
+	const VECTOR subjectHeadPos = VAdd(
+		targetSubject->GetTransform().pos,
+		Subject::COL_CAPSULE_TOP_LOCAL_POS);
+
+	auto hit = stageCollider->GetNearestHitPolyLine(cameraPos, subjectHeadPos, true);
+
+	if (!hit.HitFlag)
+	{
+		return true;
+	}
+
+	const float hitDistance = VSize(VSub(hit.HitPosition, cameraPos));
+	const float subjectDistance = VSize(VSub(subjectHeadPos, cameraPos));
+
+	return hitDistance >= subjectDistance - 1.0f;
+}
