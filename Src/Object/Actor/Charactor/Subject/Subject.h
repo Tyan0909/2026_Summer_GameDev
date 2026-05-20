@@ -14,25 +14,17 @@ public:
 
 	// 定数
 	static constexpr float GRAVITY = 0.5f;
-
-	// 移動速度
 	static constexpr float MOVE_SPEED = 1.5f;
 
-	// 衝突判定用線分開始
+	// 移動範囲チェック用
 	static constexpr VECTOR
 		COL_LINE_START_LOCAL_POS = { 0.0f, 80.0f, 0.0f };
-
-	// 衝突判定用線分終了
 	static constexpr VECTOR
 		COL_LINE_END_LOCAL_POS = { 0.0f, -10.0f, 0.0f };
-
-	// 衝突判定用カプセル上部位置
-	static constexpr VECTOR COL_CAPSULE_TOP_LOCAL_POS = { 0.0f, 110.0f, 0.0f };
-
-	// 衝突判定用カプセル下部位置
-	static constexpr VECTOR COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
-
-	// 衝突判定用カプセル半径
+	static constexpr VECTOR
+		COL_CAPSULE_TOP_LOCAL_POS = { 0.0f, 110.0f, 0.0f };
+	static constexpr VECTOR
+		COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
 	static constexpr float COL_CAPSULE_RADIUS = 20.0f;
 
 	// 衝突判定種別
@@ -42,6 +34,13 @@ public:
 		LINE,
 		CAPSULE,
 		MAX,
+	};
+
+	// 行動状態
+	enum class ACTION_STATE
+	{
+		MOVE,
+		ATTACK,
 	};
 
 	// コンストラクタ
@@ -56,6 +55,11 @@ public:
 	void SetInputEnabled(bool isEnabled);
 	void SetModelSrc(ResourceManager::SRC modelSrc);
 	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
+
+	bool IsInAttackRange(const VECTOR& targetPos) const;
+	bool CanStartAttack(void) const;
+	bool StartAttack(const VECTOR& targetPos);
+	bool ConsumeAttackHit(void) ;
 
 protected:
 
@@ -88,6 +92,13 @@ private:
 	// 初期位置
 	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
 
+	// 攻撃
+	static constexpr float ATTACK_RANGE = 85.0f;
+	static constexpr int ATTACK_COOLDOWN_MAX = 90;
+	static constexpr int ATTACK_FRAME_MAX = 24;
+	static constexpr int ATTACK_HIT_FRAME = 12;
+	static constexpr float ATTACK_STRETCH_MAX = 0.4f;
+
 	// 重力速度
 	float gravityVelocity_;
 	bool isInoputEnabled_;
@@ -97,6 +108,13 @@ private:
 	VECTOR moveAreaMax_;
 	VECTOR moveDir_;
 	int moveDirChangeFrame_;
+
+	VECTOR baseScale_;
+	ACTION_STATE actionState_;
+	int attackCooldownFrame_;
+	int attackFrame_;
+	VECTOR attackTargetPos_;
+	bool isAttackHitPending_;
 
 	// 重力適用
 	void ApplyGravity(void);
@@ -109,8 +127,10 @@ private:
 	bool CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const;
 
 	void UpdateRandomMove(void);
+	void UpdateAttack(void);
 	void PickRandomMoveDirection(void);
 	void FaceMoveDirection(void);
+	void FaceTarget(const VECTOR& targetPos);
 	void ClampToMoveArea(void);
 };
 

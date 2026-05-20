@@ -27,9 +27,6 @@ public:
 	// 三人称視点でのカメラ相対位置
 	static constexpr VECTOR TPS_CAMERA_LOCAL_POS = { 0.0f, 120.0f, -180.0f };
 
-	// 一人称視点
-	// static constexpr VECTOR FPS_CAMERA_LOCAL_POS = { 0.0f, 90.0f, 5.0f };
-
 	enum class COLLIDER_TYPE
 	{
 		MODEL,
@@ -89,6 +86,24 @@ public:
 	// カメラが向いている前方ベクトルを取得する
 	VECTOR GetCameraForward(void) const;
 
+	// ダメージを受ける
+	void TakeDamage(int damage);
+
+	// ダメージを受けることができるかどうか
+	bool CanTakeDamage(void) const;
+
+	// プレイヤーが死亡しているか
+	bool IsDead(void) const;
+
+	// 現在のHP
+	int GetHp(void) const;
+
+	// 最大HP
+	int GetHpMax(void) const;
+
+	// HPの割合 (0.0f~1.0f)
+	float GetHpRate(void) const;
+
 protected:
 	// プレイヤーモデルの読み込みを行う
 	void InitLoad(void) override;
@@ -120,9 +135,15 @@ private:
 
 	static constexpr VECTOR INIT_POS = { 300.0f, 100.0f, 100.0f };
 
+	static constexpr int HP_MAX = 3;
+	static constexpr int DAMAGE_COOLDOWN_MAX = 60;
+
 	float gravityVelocity_;
 	bool isInputEnabled_;
 	VECTOR cameraAngles_;
+
+	int hp_;
+	int damageCooldownFrame_;
 
 	AnimationController* animController_;
 
