@@ -43,6 +43,10 @@ public:
 	// 解放失敗の判定
 	bool IsReleaseFail(void) const;
 
+	void RequestScreenshot(void);
+	bool HasScreenshot(void) const;
+	int GetScreenshotHandle(void) const;
+
 private:
 
 	// 静的インスタンス
@@ -60,5 +64,9 @@ private:
 
 	// ポーズ判定
 	bool isPaused_ = false;
+
+	bool isScreenshotRequested_;
+	bool hasScreenshot_;
+	int screenshotHandle_;
 
 };

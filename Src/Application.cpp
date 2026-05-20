@@ -34,7 +34,7 @@ void Application::Init(void)
 
 	// ウィンドウサイズ
 	SetGraphMode(SCREEN_SIZE_X, SCREEN_SIZE_Y, 32);
-	ChangeWindowMode(false);
+	ChangeWindowMode(true);
 
 	// DxLibの初期化
 	SetUseDirect3DVersion(DX_DIRECT3D_11);
@@ -45,6 +45,10 @@ void Application::Init(void)
 		return;
 	}
 
+	screenshotHandle_ = MakeScreen(SCREEN_SIZE_X, SCREEN_SIZE_Y, TRUE);
+	isScreenshotRequested_ = false;
+	hasScreenshot_ = false;
+
 	// 乱数のシード値を設定する
 	DATEDATA date;
 
@@ -54,7 +58,6 @@ void Application::Init(void)
 	// 乱数の初期値を設定する
 	// 設定する数値によって、ランダムの出方が変わる
 	SRand(date.Year + date.Mon + date.Day + date.Hour + date.Min + date.Sec);
-
 
 	// リソース管理初期化
 	ResourceManager::CreateInstance();
@@ -90,6 +93,20 @@ void Application::Run(void)
 		// 画面左上に表示
 		DrawFormatString(450, 620, GetColor(255, 255, 255), "FPS: %.15f", GetFPS());
 
+		if (isScreenshotRequested_ && screenshotHandle_ != -1)
+		{
+			GetDrawScreenGraph(
+				0,
+				0,
+				SCREEN_SIZE_X - 1,
+				SCREEN_SIZE_Y - 1,
+				screenshotHandle_,
+				FALSE);
+
+			hasScreenshot_ = true;
+			isScreenshotRequested_ = false;
+		}
+
 		ScreenFlip();
 
 		// フレームレート制御
@@ -114,6 +131,21 @@ void Application::Run(void)
 
 }
 
+void Application::RequestScreenshot(void)
+{
+	isScreenshotRequested_ = true;
+}
+
+bool Application::HasScreenshot(void) const
+{
+	return hasScreenshot_;
+}
+
+int Application::GetScreenshotHandle(void) const
+{
+	return screenshotHandle_;
+}
+
 void Application::Destroy(void)
 {
 
@@ -125,6 +157,12 @@ void Application::Destroy(void)
 
 	// リソース管理解放
 	ResourceManager::GetInstance().Destroy();
+
+	if (screenshotHandle_ != -1)
+	{
+		DeleteGraph(screenshotHandle_);
+		screenshotHandle_ = -1;
+	}
 
 	// DxLib終了
 	if (DxLib_End() == -1)
@@ -151,4 +189,7 @@ Application::Application(void)
 {
 	isInitFail_ = false;
 	isReleaseFail_ = false;
+	isScreenshotRequested_ = false;
+	hasScreenshot_ = false;
+	screenshotHandle_ = -1;
 }

@@ -11,7 +11,7 @@ public:
 	// 定数
 	const static float GRAVITY;
 
-	// 衝突判定種別
+	// 衝突判定用
 	enum class COLLIDER_TYPE
 	{
 		MODEL,
@@ -30,6 +30,8 @@ public:
 	// 描画
 	void Draw(void) override;
 
+	void SetOpacityRate(float opacityRate);
+
 protected:
 	// リソースロード
 	void InitLoad(void) override;
@@ -43,7 +45,7 @@ protected:
 	// アニメーションの初期化
 	void InitAnimation(void) override;
 
-	// 初期化後の個別処理
+	// 後処理の個別初期化
 	void InitPost(void) override;
 
 private:
@@ -68,7 +70,7 @@ private:
 		"Ground"
 	};
 
-	// 遠景ローポリモデルID
+	// 遠景用ローポリモデルID
 	int farModelId_;
 
 	int modelId_;
@@ -82,6 +84,8 @@ private:
 	int lightHandle3_;
 	int lightHandle4_;
 	int lightHandle5_;
+
+	float opacityRate_;
 
 	void ApplyFarModelTransform(void);
 };
