@@ -44,5 +44,12 @@ private:
 
 	// l”‘I‘ğ‚µ‚Ä‚Ë‰æ‘œ
 	int selectPromptImg_;
+
+	int useImg_;
+	int notUseImg_;
+	int decideSE_;
+
+	bool isUsePlayer_[4];
+	int cursor_;
 };
 
