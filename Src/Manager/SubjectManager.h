@@ -18,11 +18,19 @@ public:
 	void Release(void);
 
 	Subject* CreateSubject(ResourceManager::SRC modelSrc, const VECTOR& pos);
+	Subject* CreateRandomSubject(ResourceManager::SRC modelSrc);
 	void AddHitCollider(const ColliderBase* hitCollider);
+	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
 
 	const std::vector<Subject*>& GetSubjects(void) const;
 
 private:
+	static constexpr float SUBJECT_SPAWN_HEIGHT = 1000.0f;
+
 	std::vector<Subject*> subjects_;
 	std::vector<const ColliderBase*> hitColliders_;
+	VECTOR moveAreaMin_;
+	VECTOR moveAreaMax_;
+
+	float GetRandomRange(float minValue, float maxValue) const;
 };

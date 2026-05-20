@@ -3,6 +3,7 @@
 #include "../Object/Actor/Stage/Stage.h"
 #include "../Object/Actor/Charactor/Player/Player.h"
 #include "../Object/Actor/Charactor/Subject/Subject.h"
+#include "../Object/Collider/ColliderModel.h"
 #include "../Manager/Camera.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
@@ -17,9 +18,15 @@ GameScene::GameScene()
 	subjectManager_(nullptr),
 	leftScreenHandle_(-1),
 	rightScreenHandle_(-1),
+	sceneScreenHandle_(-1),
+	screenshotScreenHandle_(-1),
 	screenWidth_(0),
 	screenHeight_(0),
 	isSplitScreenEnabled_(true),
+	isScreenshotRequested_(false),
+	hasScreenshot_(false),
+	isScreenshotPreviewEnabled_(false),
+	flashFrame_(0),
 	lastPhotoScore_(0),
 	photoCount_(0)
 {
@@ -53,27 +60,12 @@ void GameScene::Init()
 	subjectManager_ = new SubjectManager();
 	subjectManager_->Init();
 	subjectManager_->AddHitCollider(stageCollider);
+	subjectManager_->SetMoveArea(SUBJECT_AREA_MIN, SUBJECT_AREA_MAX);
 
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(0.0f, 1000.0f, 0.0f));
-
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(250.0f, 1000.0f, 100.0f));
-
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(-250.0f, 1000.0f, -100.0f));
-	/*subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(-250.0f, 1000.0f, -100.0f));
-	subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(-100.0f, 1000.0f, -100.0f));*/
-	/*subjectManager_->CreateSubject(
-		ResourceManager::SRC::SUBJECT,
-		VGet(100.0f, 1000.0f, -100.0f));*/
+	for (int i = 0; i < SUBJECT_COUNT; i++)
+	{
+		subjectManager_->CreateRandomSubject(ResourceManager::SRC::SUBJECT);
+	}
 
 	isSplitScreenEnabled_ = scene.IsSplitScreenEnabled();
 
@@ -85,8 +77,15 @@ void GameScene::Init()
 		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
 	}
 
+	sceneScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
+	screenshotScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
+
 	lastPhotoScore_ = 0;
 	photoCount_ = 0;
+	isScreenshotRequested_ = false;
+	hasScreenshot_ = false;
+	isScreenshotPreviewEnabled_ = false;
+	flashFrame_ = 0;
 
 	auto* camera = scene.GetCamera();
 	camera->SetAngles(player_->GetCameraAngles());
@@ -97,6 +96,11 @@ void GameScene::Update()
 {
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
+
+	if (flashFrame_ > 0)
+	{
+		flashFrame_--;
+	}
 
 	if (ins.IsTrgDown(KEY_INPUT_SPACE))
 	{
@@ -115,25 +119,46 @@ void GameScene::Update()
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
 		TryTakePhoto();
+		isScreenshotRequested_ = true;
+		flashFrame_ = FLASH_FRAME_MAX;
+	}
+
+	if (ins.IsTrgDown(KEY_INPUT_F1) && hasScreenshot_)
+	{
+		isScreenshotPreviewEnabled_ = !isScreenshotPreviewEnabled_;
 	}
 }
 
 void GameScene::Draw()
 {
-	if (!isSplitScreenEnabled_)
-	{
-		DrawSingleView(player_, nullptr);
-		return;
-	}
+	DrawCompositedScene();
 
-	DrawSplitView(leftScreenHandle_, player_, nullptr);
-	DrawSplitView(rightScreenHandle_, player2_, nullptr);
+	if (isScreenshotRequested_)
+	{
+		CaptureScreenshot();
+	}
 
 	SetDrawScreen(DX_SCREEN_BACK);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
-	DrawGraph(0, 0, leftScreenHandle_, FALSE);
-	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
-	DrawBox(screenWidth_ / 2 - 1, 0, screenWidth_ / 2 + 1, screenHeight_, GetColor(255, 255, 255), TRUE);
+	ClearDrawScreen();
+
+	if (isScreenshotPreviewEnabled_ && hasScreenshot_)
+	{
+		DrawGraph(0, 0, screenshotScreenHandle_, FALSE);
+		DrawString(20, 140, "F1 : CLOSE SCREENSHOT", GetColor(255, 255, 255));
+	}
+	else
+	{
+		DrawGraph(0, 0, sceneScreenHandle_, FALSE);
+
+		if (hasScreenshot_)
+		{
+			DrawScreenshotThumbnail();
+			DrawString(20, 140, "F1 : OPEN SCREENSHOT", GetColor(255, 255, 255));
+		}
+	}
+
+	DrawFlashEffect();
 }
 
 void GameScene::Draw3D()
@@ -182,9 +207,27 @@ void GameScene::Release()
 		DeleteGraph(rightScreenHandle_);
 		rightScreenHandle_ = -1;
 	}
+
+	if (sceneScreenHandle_ != -1)
+	{
+		DeleteGraph(sceneScreenHandle_);
+		sceneScreenHandle_ = -1;
+	}
+
+	if (screenshotScreenHandle_ != -1)
+	{
+		DeleteGraph(screenshotScreenHandle_);
+		screenshotScreenHandle_ = -1;
+	}
 }
 
-void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, const Player* hidePlayer)
+void GameScene::DrawView(
+	int screenHandle,
+	int drawWidth,
+	int drawHeight,
+	const Player* targetPlayer,
+	const Player* hidePlayer,
+	const char* playerName)
 {
 	if (screenHandle == -1 || targetPlayer == nullptr)
 	{
@@ -194,14 +237,16 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 	auto* camera = SceneManager::GetInstance().GetCamera();
 
 	SetDrawScreen(screenHandle);
+	SetDrawArea(0, 0, drawWidth, drawHeight);
 	ClearDrawScreen();
-	SetDrawArea(0, 0, screenWidth_ / 2, screenHeight_);
 
 	camera->SetPos(targetPlayer->GetCameraWorldPos());
 	camera->SetAngles(targetPlayer->GetCameraAngles());
 	camera->SetBeforeDraw();
 
+	ApplyStageOpacityForCamera(targetPlayer);
 	stage_->Draw();
+	stage_->SetOpacityRate(1.0f);
 
 	if (subjectManager_ != nullptr)
 	{
@@ -219,50 +264,135 @@ void GameScene::DrawSplitView(int screenHandle, const Player* targetPlayer, cons
 		player2_->Draw();
 	}
 
-	DrawString(20, 20, targetPlayer == player_ ? "PLAYER 1" : "PLAYER 2", GetColor(255, 255, 255));
+	DrawString(20, 20, playerName, GetColor(255, 255, 255));
 	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
 	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore_);
 	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
 }
 
-void GameScene::DrawSingleView(const Player* targetPlayer, const Player* hidePlayer)
+void GameScene::DrawCompositedScene(void)
 {
-	if (targetPlayer == nullptr)
+	if (sceneScreenHandle_ == -1)
 	{
 		return;
 	}
 
-	auto* camera = SceneManager::GetInstance().GetCamera();
+	if (!isSplitScreenEnabled_)
+	{
+		DrawView(
+			sceneScreenHandle_,
+			screenWidth_,
+			screenHeight_,
+			player_,
+			nullptr,
+			"PLAYER 1");
+		return;
+	}
 
-	SetDrawScreen(DX_SCREEN_BACK);
+	DrawView(
+		leftScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_,
+		player_,
+		nullptr,
+		"PLAYER 1");
+
+	DrawView(
+		rightScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_,
+		player2_,
+		nullptr,
+		"PLAYER 2");
+
+	SetDrawScreen(sceneScreenHandle_);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
+	ClearDrawScreen();
 
-	camera->SetPos(targetPlayer->GetCameraWorldPos());
-	camera->SetAngles(targetPlayer->GetCameraAngles());
-	camera->SetBeforeDraw();
+	DrawGraph(0, 0, leftScreenHandle_, FALSE);
+	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
+	DrawBox(
+		screenWidth_ / 2 - 1,
+		0,
+		screenWidth_ / 2 + 1,
+		screenHeight_,
+		GetColor(255, 255, 255),
+		TRUE);
+}
 
-	stage_->Draw();
-
-	if (subjectManager_ != nullptr)
+void GameScene::CaptureScreenshot(void)
+{
+	if (sceneScreenHandle_ == -1 || screenshotScreenHandle_ == -1)
 	{
-		subjectManager_->Draw();
+		isScreenshotRequested_ = false;
+		return;
 	}
 
-	DrawSubjectDistanceGuide(targetPlayer);
+	SetDrawScreen(screenshotScreenHandle_);
+	SetDrawArea(0, 0, screenWidth_, screenHeight_);
+	ClearDrawScreen();
+	DrawGraph(0, 0, sceneScreenHandle_, FALSE);
 
-	if (player_ != hidePlayer)
+	hasScreenshot_ = true;
+	isScreenshotRequested_ = false;
+}
+
+void GameScene::DrawScreenshotThumbnail(void) const
+{
+	if (!hasScreenshot_ || screenshotScreenHandle_ == -1)
 	{
-		player_->Draw();
-	}
-	if (player2_ != hidePlayer)
-	{
-		player2_->Draw();
+		return;
 	}
 
-	DrawString(20, 20, "PLAYER 1", GetColor(255, 255, 255));
-	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
-	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore_);
-	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
+	const int thumbnailRight = screenWidth_ - THUMBNAIL_MARGIN;
+	const int thumbnailLeft = thumbnailRight - THUMBNAIL_WIDTH;
+	const int thumbnailTop = THUMBNAIL_MARGIN + THUMBNAIL_LABEL_HEIGHT;
+	const int thumbnailBottom = thumbnailTop + THUMBNAIL_HEIGHT;
+	const int frameColor = GetColor(255, 255, 255);
+	const int backColor = GetColor(0, 0, 0);
+	const int labelColor = GetColor(255, 255, 0);
+
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 180);
+	DrawBox(
+		thumbnailLeft - THUMBNAIL_FRAME_THICKNESS,
+		THUMBNAIL_MARGIN - THUMBNAIL_FRAME_THICKNESS,
+		thumbnailRight + THUMBNAIL_FRAME_THICKNESS,
+		thumbnailBottom + THUMBNAIL_FRAME_THICKNESS,
+		backColor,
+		TRUE);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+	DrawBox(
+		thumbnailLeft - THUMBNAIL_FRAME_THICKNESS,
+		thumbnailTop - THUMBNAIL_FRAME_THICKNESS,
+		thumbnailRight + THUMBNAIL_FRAME_THICKNESS,
+		thumbnailBottom + THUMBNAIL_FRAME_THICKNESS,
+		frameColor,
+		TRUE);
+
+	DrawExtendGraph(
+		thumbnailLeft,
+		thumbnailTop,
+		thumbnailRight,
+		thumbnailBottom,
+		screenshotScreenHandle_,
+		FALSE);
+
+	DrawString(thumbnailLeft, THUMBNAIL_MARGIN, "LAST SHOT", labelColor);
+}
+
+void GameScene::DrawFlashEffect(void) const
+{
+	if (flashFrame_ <= 0)
+	{
+		return;
+	}
+
+	const int alpha = 255 * flashFrame_ / FLASH_FRAME_MAX;
+
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+	DrawBox(0, 0, screenWidth_, screenHeight_, GetColor(255, 255, 255), TRUE);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 }
 
 bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const
@@ -273,7 +403,11 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targe
 	}
 
 	const VECTOR cameraPos = targetPlayer->GetCameraWorldPos();
-	const VECTOR toSubject = VSub(targetSubject->GetTransform().pos, cameraPos);
+	const VECTOR subjectHeadPos = VAdd(
+		targetSubject->GetTransform().pos,
+		Subject::COL_CAPSULE_TOP_LOCAL_POS);
+
+	const VECTOR toSubject = VSub(subjectHeadPos, cameraPos);
 	const float distance = VSize(toSubject);
 
 	if (distance <= 0.0001f)
@@ -289,7 +423,12 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targe
 		cameraForward.y * subjectDir.y +
 		cameraForward.z * subjectDir.z;
 
-	return dot >= PHOTO_SCORE_VIEW_DOT_MIN;
+	if (dot < PHOTO_SCORE_VIEW_DOT_MIN)
+	{
+		return false;
+	}
+
+	return IsSubjectVisible(targetPlayer, targetSubject);
 }
 
 int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const
@@ -325,7 +464,7 @@ int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPo
 	return score;
 }
 
-void GameScene::TryTakePhoto()
+void GameScene::TryTakePhoto(void)
 {
 	if (player_ == nullptr || subjectManager_ == nullptr)
 	{
@@ -377,8 +516,12 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		return;
 	}
 
-	const VECTOR playerPos = targetPlayer->GetTransform().pos;
-	const int lineColor = GetColor(0, 255, 0);
+	const VECTOR playerHeadPos = VAdd(
+		targetPlayer->GetTransform().pos,
+		Player::COL_CAPSULE_TOP_LOCAL_POS);
+
+	const int visibleLineColor = GetColor(255, 0, 0);
+	const int hiddenLineColor = GetColor(0, 0, 255);
 	const int textColor = GetColor(255, 255, 0);
 
 	for (const auto* subject : subjects)
@@ -388,14 +531,17 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 			continue;
 		}
 
-		const VECTOR subjectPos = subject->GetTransform().pos;
-		const float distance = VSize(VSub(subjectPos, playerPos));
+		const VECTOR subjectHeadPos = VAdd(
+			subject->GetTransform().pos,
+			Subject::COL_CAPSULE_TOP_LOCAL_POS);
 
-		// プレイヤーと被写体を3Dラインで結ぶ
-		DrawLine3D(playerPos, subjectPos, lineColor);
+		const float distance = VSize(VSub(subjectHeadPos, playerHeadPos));
+		const bool isVisible = IsSubjectVisible(targetPlayer, subject);
+		const int lineColor = isVisible ? visibleLineColor : hiddenLineColor;
 
-		// 中点に距離を表示する
-		const VECTOR midPos = VScale(VAdd(playerPos, subjectPos), 0.5f);
+		DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
+
+		const VECTOR midPos = VScale(VAdd(playerHeadPos, subjectHeadPos), 0.5f);
 		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
 
 		DrawFormatString(
@@ -407,3 +553,92 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 	}
 }
 
+bool GameScene::IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const
+{
+	if (targetPlayer == nullptr || targetSubject == nullptr || stage_ == nullptr)
+	{
+		return false;
+	}
+
+	const ColliderBase* stageColliderBase =
+		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
+
+	if (stageColliderBase == nullptr ||
+		stageColliderBase->GetShape() != ColliderBase::SHAPE::MODEL)
+	{
+		return true;
+	}
+
+	const auto* stageCollider = static_cast<const ColliderModel*>(stageColliderBase);
+
+	const VECTOR cameraPos = targetPlayer->GetCameraWorldPos();
+	const VECTOR subjectHeadPos = VAdd(
+		targetSubject->GetTransform().pos,
+		Subject::COL_CAPSULE_TOP_LOCAL_POS);
+
+	auto hit = stageCollider->GetNearestHitPolyLine(cameraPos, subjectHeadPos, true);
+
+	if (!hit.HitFlag)
+	{
+		return true;
+	}
+
+	const float hitDistance = VSize(VSub(hit.HitPosition, cameraPos));
+	const float subjectDistance = VSize(VSub(subjectHeadPos, cameraPos));
+
+	return hitDistance >= subjectDistance - 1.0f;
+}
+
+bool GameScene::IsCameraOccludedByStage(const Player* targetPlayer) const
+{
+	if (targetPlayer == nullptr || stage_ == nullptr)
+	{
+		return false;
+	}
+
+	const ColliderBase* stageColliderBase =
+		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
+
+	if (stageColliderBase == nullptr ||
+		stageColliderBase->GetShape() != ColliderBase::SHAPE::MODEL)
+	{
+		return false;
+	}
+
+	const auto* stageCollider = static_cast<const ColliderModel*>(stageColliderBase);
+
+	const VECTOR focusPos = VAdd(
+		targetPlayer->GetTransform().pos,
+		Player::COL_CAPSULE_TOP_LOCAL_POS);
+
+	const VECTOR cameraPos = targetPlayer->GetCameraWorldPos();
+
+	auto hit = stageCollider->GetNearestHitPolyLine(focusPos, cameraPos, true);
+
+	if (!hit.HitFlag)
+	{
+		return false;
+	}
+
+	const float hitDistance = VSize(VSub(hit.HitPosition, focusPos));
+	const float cameraDistance = VSize(VSub(cameraPos, focusPos));
+
+	return hitDistance < cameraDistance - CAMERA_OCCLUDE_EPSILON;
+}
+
+void GameScene::ApplyStageOpacityForCamera(const Player* targetPlayer)
+{
+	if (stage_ == nullptr)
+	{
+		return;
+	}
+
+	if (IsCameraOccludedByStage(targetPlayer))
+	{
+		stage_->SetOpacityRate(CAMERA_OCCLUDED_OPACITY);
+	}
+	else
+	{
+		stage_->SetOpacityRate(1.0f);
+	}
+}

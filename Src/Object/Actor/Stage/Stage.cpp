@@ -16,7 +16,8 @@ Stage::Stage()
 	lightHandle2_(-1),
 	lightHandle3_(-1),
 	lightHandle4_(-1),
-	lightHandle5_(-1)
+	lightHandle5_(-1),
+	opacityRate_(1.0f)
 {
 }
 
@@ -41,6 +42,21 @@ void Stage::Draw(void)
 	const VECTOR cameraPos = GetCameraPosition();
 	const float cameraDistance = VSize(VSub(cameraPos, transform_.pos));
 
+	if (transform_.modelId != -1)
+	{
+		MV1SetOpacityRate(transform_.modelId, opacityRate_);
+	}
+	if (farModelId_ != -1)
+	{
+		MV1SetOpacityRate(farModelId_, opacityRate_);
+	}
+
+	const bool isTransparent = opacityRate_ < 0.999f;
+	if (isTransparent)
+	{
+		SetWriteZBuffer3D(FALSE);
+	}
+
 	if (cameraDistance <= LOD_SWITCH_DISTANCE || farModelId_ == -1)
 	{
 		if (transform_.modelId != -1)
@@ -51,6 +67,11 @@ void Stage::Draw(void)
 	else
 	{
 		MV1DrawModel(farModelId_);
+	}
+
+	if (isTransparent)
+	{
+		SetWriteZBuffer3D(TRUE);
 	}
 
 #ifdef _DEBUG
@@ -66,6 +87,22 @@ void Stage::Draw(void)
 	SetUseLighting(TRUE);
 }
 
+void Stage::SetOpacityRate(float opacityRate)
+{
+	if (opacityRate < 0.0f)
+	{
+		opacityRate_ = 0.0f;
+		return;
+	}
+	if (opacityRate > 1.0f)
+	{
+		opacityRate_ = 1.0f;
+		return;
+	}
+
+	opacityRate_ = opacityRate;
+}
+
 void Stage::InitLoad(void)
 {
 	transform_.SetModel(
@@ -74,13 +111,9 @@ void Stage::InitLoad(void)
 	farModelId_ =
 		resMng_.LoadModelDuplicate(ResourceManager::SRC::MAIN_STAGE_FAR);
 
-	// グローバルアンビエントライトの設定
 	SetGlobalAmbientLight(GetColorF(0.3f, 0.3f, 0.3f, 1.0f));
-
-	// デフォルトライトの影響を無効化
 	SetLightEnable(FALSE);
 
-	// ディレクショナルライトの作成
 	lightHandle_ = CreateDirLightHandle(VGet(0.0f, 1.0f, 0.0f));
 	lightHandle2_ = CreateDirLightHandle(VGet(1.0f, 0.0f, 0.0f));
 	lightHandle3_ = CreateDirLightHandle(VGet(-1.0f, 0.0f, 0.0f));
@@ -115,10 +148,8 @@ void Stage::InitTransform(void)
 
 void Stage::InitCollider(void)
 {
-	// DxLib側の衝突判定セットアップ
 	MV1SetupCollInfo(transform_.modelId);
 
-	// モデルコライダー
 	ColliderModel* colModel =
 		new ColliderModel(ColliderBase::TAG::STAGE, &transform_);
 
@@ -137,12 +168,10 @@ void Stage::InitCollider(void)
 
 void Stage::InitAnimation(void)
 {
-	// アニメーションの初期化は必要に応じて実装
 }
 
 void Stage::InitPost(void)
 {
-	// ステージの初期化後の個別処理は必要に応じて実装
 }
 
 void Stage::ApplyFarModelTransform(void)

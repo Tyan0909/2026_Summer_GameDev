@@ -10,7 +10,7 @@ public:
 	static constexpr int SCREEN_SIZE_X = 1280;
 	static constexpr int SCREEN_SIZE_Y = 720;
 
-	// FPS制御
+	// FPS関連
 	static constexpr float TARGET_FPS = 60.0f;
 	static constexpr float FRAME_TIME = 1000.0f / TARGET_FPS;
 
@@ -37,11 +37,15 @@ public:
 	// リソースの破棄
 	void Destroy(void);
 
-	// 初期化成功／失敗の判定
+	// 初期化失敗の判定
 	bool IsInitFail(void) const;
 
-	// 解放成功／失敗の判定
+	// 解放失敗の判定
 	bool IsReleaseFail(void) const;
+
+	void RequestScreenshot(void);
+	bool HasScreenshot(void) const;
+	int GetScreenshotHandle(void) const;
 
 private:
 
@@ -54,17 +58,15 @@ private:
 	// 解放失敗
 	bool isReleaseFail_;
 
-	// デフォルトコンストラクタをprivateにして、
-	// 外部から生成できない様にする
 	Application(void);
-
-	// コピーコンストラクタも同様
 	Application(const Application& instance) = default;
-
-	// デストラクタも同様
 	~Application(void) = default;
 
-	// ポーズ画面
+	// ポーズ判定
 	bool isPaused_ = false;
+
+	bool isScreenshotRequested_;
+	bool hasScreenshot_;
+	int screenshotHandle_;
 
 };

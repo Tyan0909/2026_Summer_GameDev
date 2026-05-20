@@ -28,10 +28,10 @@ void TitleScene::Init(void)
 	debugGrid_->Init();
 
 	// リソース読み込み
-	logoHandle_ = LoadGraph("data/Title logo.png");
-	pointerHandle_ = LoadGraph("data/pointer.png");
-	shutterSE_ = LoadSoundMem("data/shutter.wav");
-	pressHandle_ = LoadGraph("data/press_space.png");
+	logoHandle_ = LoadGraph("data/Image/Title/Title logo.png");
+	pointerHandle_ = LoadGraph("data/Image/Title/pointer.png");
+	shutterSE_ = LoadSoundMem("data/Sound/shutter.wav");
+	pressHandle_ = LoadGraph("data/Image/Title/press_space.png");
 
 	// 演出初期化
 	shutterScale_ = 1.0f;
