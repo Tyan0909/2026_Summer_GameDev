@@ -148,8 +148,8 @@ void TitleScene::Draw(void)
 	// ÉçÉS
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, logoAlpha_);
 	DrawRotaGraph(
-		520,
-		260,
+		630,
+		300,
 		0.7,
 		0.0,
 		logoHandle_,
@@ -197,7 +197,7 @@ void TitleScene::Draw(void)
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, textAlpha);
 
 	DrawRotaGraph(
-		500,
+		590,
 		520,
 		0.35,
 		0.0,
