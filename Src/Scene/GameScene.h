@@ -42,6 +42,9 @@ private:
 	static constexpr float CAMERA_OCCLUDED_OPACITY = 0.25f;
 	static constexpr float CAMERA_OCCLUDE_EPSILON = 1.0f;
 
+	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	static constexpr float GOAL_RADIUS = 80.0f;
+
 	void DrawView(
 		int screenHandle,
 		int drawWidth,
@@ -54,10 +57,14 @@ private:
 	void CaptureScreenshot(void);
 	void DrawScreenshotThumbnail(void) const;
 	void DrawFlashEffect(void) const;
+	void DrawGoalMarker(void) const;
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
 	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
 	void ApplyStageOpacityForCamera(const Player* targetPlayer);
+
+	void UpdateSubjectAttacks(void);
+	bool IsPlayerReachedGoal(void) const;
 
 	void TryTakePhoto(void);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;

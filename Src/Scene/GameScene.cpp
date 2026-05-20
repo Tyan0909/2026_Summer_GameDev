@@ -87,6 +87,10 @@ void GameScene::Init()
 	isScreenshotPreviewEnabled_ = false;
 	flashFrame_ = 0;
 
+	scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
+	scene.SetPhotoCount(0);
+	scene.SetLastPhotoScore(0);
+
 	auto* camera = scene.GetCamera();
 	camera->SetAngles(player_->GetCameraAngles());
 	camera->ChangeMode(Camera::MODE::FREE);
@@ -102,11 +106,6 @@ void GameScene::Update()
 		flashFrame_--;
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_SPACE))
-	{
-		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
-	}
-
 	stage_->Update();
 	player_->Update();
 	player2_->Update();
@@ -114,6 +113,26 @@ void GameScene::Update()
 	if (subjectManager_ != nullptr)
 	{
 		subjectManager_->Update();
+	}
+
+	UpdateSubjectAttacks();
+
+	if (IsPlayerReachedGoal())
+	{
+		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
+		scene.SetPhotoCount(photoCount_);
+		scene.SetLastPhotoScore(lastPhotoScore_);
+		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
+		return;
+	}
+
+	if (player_ != nullptr && player_->IsDead())
+	{
+		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
+		scene.SetPhotoCount(photoCount_);
+		scene.SetLastPhotoScore(lastPhotoScore_);
+		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
+		return;
 	}
 
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
@@ -248,6 +267,8 @@ void GameScene::DrawView(
 	stage_->Draw();
 	stage_->SetOpacityRate(1.0f);
 
+	DrawGoalMarker();
+
 	if (subjectManager_ != nullptr)
 	{
 		subjectManager_->Draw();
@@ -268,6 +289,37 @@ void GameScene::DrawView(
 	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
 	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore_);
 	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
+
+	if (targetPlayer == player_)
+	{
+		const int barX = 20;
+		const int barY = 145;
+		const int barWidth = drawWidth >= 900 ? 240 : 180;
+		const int barHeight = 18;
+		const int backColor = GetColor(40, 40, 40);
+		const int frameColor = GetColor(255, 255, 255);
+		const int hpColor = GetColor(80, 220, 80);
+		const int damageColor = GetColor(255, 90, 90);
+		const int fillWidth = static_cast<int>(barWidth * player_->GetHpRate());
+		const int currentColor = player_->CanTakeDamage() ? hpColor : damageColor;
+
+		DrawString(barX, barY, "HP", GetColor(255, 255, 255));
+		DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, backColor, TRUE);
+
+		if (fillWidth > 0)
+		{
+			DrawBox(barX, barY + 22, barX + fillWidth, barY + 22 + barHeight, currentColor, TRUE);
+		}
+
+		DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, frameColor, FALSE);
+		DrawFormatString(
+			barX + barWidth + 12,
+			barY + 22,
+			GetColor(255, 255, 255),
+			"%d / %d",
+			player_->GetHp(),
+			player_->GetHpMax());
+	}
 }
 
 void GameScene::DrawCompositedScene(void)
@@ -641,4 +693,57 @@ void GameScene::ApplyStageOpacityForCamera(const Player* targetPlayer)
 	{
 		stage_->SetOpacityRate(1.0f);
 	}
+}
+
+void GameScene::UpdateSubjectAttacks(void)
+{
+	if (player_ == nullptr || subjectManager_ == nullptr)
+	{
+		return;
+	}
+
+	const VECTOR playerPos = player_->GetTransform().pos;
+	const auto& subjects = subjectManager_->GetSubjects();
+
+	for (auto* subject : subjects)
+	{
+		if (subject == nullptr)
+		{
+			continue;
+		}
+
+		if (subject->CanStartAttack() && subject->IsInAttackRange(playerPos))
+		{
+			subject->StartAttack(playerPos);
+		}
+
+		if (subject->ConsumeAttackHit() &&
+			subject->IsInAttackRange(playerPos))
+		{
+			player_->TakeDamage(1);
+		}
+	}
+}
+
+bool GameScene::IsPlayerReachedGoal(void) const
+{
+	if (player_ == nullptr)
+	{
+		return false;
+	}
+
+	VECTOR diff = VSub(player_->GetTransform().pos, GOAL_POS);
+	diff.y = 0.0f;
+
+	return VSize(diff) <= GOAL_RADIUS;
+}
+
+void GameScene::DrawGoalMarker(void) const
+{
+	const VECTOR spherePos = VAdd(GOAL_POS, VGet(0.0f, 45.0f, 0.0f));
+	const VECTOR poleTop = VAdd(GOAL_POS, VGet(0.0f, 180.0f, 0.0f));
+	const int ringColor = GetColor(0, 255, 120);
+
+	DrawSphere3D(spherePos, GOAL_RADIUS, 16, ringColor, ringColor, FALSE);
+	DrawLine3D(GOAL_POS, poleTop, ringColor);
 }

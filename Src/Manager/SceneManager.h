@@ -25,6 +25,13 @@ public:
 		RESULT,
 	};
 
+	enum class GAME_RESULT
+	{
+		NONE,
+		CLEAR,
+		GAMEOVER,
+	};
+
 	static void CreateInstance(void);
 	static SceneManager& GetInstance(void);
 
@@ -40,12 +47,21 @@ public:
 	float GetDeltaTime(void) const { return deltaTime_; }
 	Camera* GetCamera(void) const { return camera_; }
 
-	// carryMoney_ は「最低保証1500を除いた持ち越し可変分」にして統一
+	// carryMoney_ は「ゲーム中に撮影で獲得した合計スコア」として扱う
 	void SetCarryMoney(int money) { carryMoney_ = money; }
 	int GetCarryMoney(void) const { return carryMoney_; }
 
 	void SetSplitScreenEnabled(bool isEnabled) { isSplitScreenEnabled_ = isEnabled; }
 	bool IsSplitScreenEnabled(void) const { return isSplitScreenEnabled_; }
+
+	void SetGameResult(GAME_RESULT result) { gameResult_ = result; }
+	GAME_RESULT GetGameResult(void) const { return gameResult_; }
+
+	void SetPhotoCount(int count) { photoCount_ = count; }
+	int GetPhotoCount(void) const { return photoCount_; }
+
+	void SetLastPhotoScore(int score) { lastPhotoScore_ = score; }
+	int GetLastPhotoScore(void) const { return lastPhotoScore_; }
 
 private:
 	static SceneManager* instance_;
@@ -71,11 +87,15 @@ private:
 
 	int playerNum_ = 0;
 
-	// 「最低保証を除いた持ち越し可変分」
+	// 「ゲーム中に撮影で獲得した合計スコア」
 	int carryMoney_ = 0;
 
 	std::vector<int> selectedPlayerNums_;
 	bool isSplitScreenEnabled_ = true;
+
+	GAME_RESULT gameResult_ = GAME_RESULT::NONE;
+	int photoCount_ = 0;
+	int lastPhotoScore_ = 0;
 
 public:
 

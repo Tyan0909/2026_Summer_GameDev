@@ -10,44 +10,63 @@ void Result::Init(void) {}
 
 void Result::Update(void)
 {
-    InputManager& ins = InputManager::GetInstance();
-    SceneManager& scene = SceneManager::GetInstance();
+	InputManager& ins = InputManager::GetInstance();
+	SceneManager& scene = SceneManager::GetInstance();
 
-    // 例：ゲームで獲得した金額
-    int resultAmount = 5000;
+	if (ins.IsTrgDown(KEY_INPUT_SPACE))
+	{
+		scene.SetCarryMoney(0);
+		scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
+		scene.SetPhotoCount(0);
+		scene.SetLastPhotoScore(0);
+		scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
+		return;
+	}
 
-    // SPACE：タイトルへ（リセット）
-    if (ins.IsTrgDown(KEY_INPUT_SPACE))
-    {
-        scene.SetCarryMoney(0);
-        scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
-    }
-
-    // ENTER：次の買い物へ（清算：あまり + 獲得 を carry に合算）
-    if (ins.IsTrgDown(KEY_INPUT_RETURN))
-    {
-        // 例：prevCarry = 1200（買い物後のあまり分）
-        int prevCarry = scene.GetCarryMoney();
-
-        // 例：carry = 1200 + 5000 = 6200
-        scene.SetCarryMoney(prevCarry + resultAmount);
-
-        scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
-    }
+	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	{
+		if (scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR)
+		{
+			scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
+		}
+		else
+		{
+			scene.SetCarryMoney(0);
+			scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
+			scene.SetPhotoCount(0);
+			scene.SetLastPhotoScore(0);
+			scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
+		}
+	}
 }
 
 void Result::Draw(void)
 {
-    int resultAmount = 5000;
-    int currentCarry = SceneManager::GetInstance().GetCarryMoney();
+	SceneManager& scene = SceneManager::GetInstance();
 
-    DrawString(200, 200, "リザルトシーン", GetColor(255, 255, 255));
-    DrawFormatString(200, 250, GetColor(255, 255, 255), "今回の獲得G: %d", resultAmount);
+	const int totalScore = scene.GetCarryMoney();
+	const int photoCount = scene.GetPhotoCount();
+	const int lastPhotoScore = scene.GetLastPhotoScore();
 
-    // 次回買い物で使える総額 = 最低保証1500 +（持ち越し可変分）+（今回獲得分）
-    // ※UpdateでENTER押下前なので、ここは「参考表示」になっています
-    DrawFormatString(200, 300, GetColor(0, 255, 255),
-        "次回の購入可能総額(目安): %d", (1500 + currentCarry + resultAmount));
+	const bool isClear = scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR;
+	const char* title = isClear ? "GAME CLEAR" : "GAME OVER";
+	const int titleColor = isClear ? GetColor(0, 255, 120) : GetColor(255, 80, 80);
+
+	DrawString(200, 160, title, titleColor);
+	DrawFormatString(200, 220, GetColor(255, 255, 0), "TOTAL SCORE : %d", totalScore);
+
+	if (isClear)
+	{
+		DrawFormatString(200, 270, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount);
+		DrawFormatString(200, 310, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore);
+		DrawString(200, 370, "ENTER : BUY SELECT", GetColor(255, 255, 255));
+	}
+	else
+	{
+		DrawString(200, 300, "ENTER : TITLE", GetColor(255, 255, 255));
+	}
+
+	DrawString(200, 420, "SPACE : TITLE", GetColor(255, 255, 255));
 }
 
 void Result::Release(void) {}

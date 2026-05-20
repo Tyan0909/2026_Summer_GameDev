@@ -17,7 +17,13 @@ Subject::Subject(void)
 	moveAreaMin_(VGet(-500.0f, 0.0f, -500.0f)),
 	moveAreaMax_(VGet(500.0f, 0.0f, 500.0f)),
 	moveDir_(VGet(0.0f, 0.0f, 1.0f)),
-	moveDirChangeFrame_(0)
+	moveDirChangeFrame_(0),
+	baseScale_(VGet(0.01f, 0.01f, 0.01f)),
+	actionState_(ACTION_STATE::MOVE),
+	attackCooldownFrame_(0),
+	attackFrame_(0),
+	attackTargetPos_(VGet(0.0f, 0.0f, 0.0f)),
+	isAttackHitPending_(false)
 {
 	// ‰Šú‰»‚ÍActorBase‚ÌInit‚Ås‚¤
 }
@@ -28,7 +34,20 @@ Subject::~Subject(void)
 
 void Subject::Update(void)
 {
+	if (attackCooldownFrame_ > 0)
+	{
+		attackCooldownFrame_--;
+	}
+
 	const VECTOR prevPos = transform_.pos;
+
+	if (actionState_ == ACTION_STATE::ATTACK)
+	{
+		UpdateAttack();
+		ApplyGravity();
+		transform_.Update();
+		return;
+	}
 
 	UpdateRandomMove();
 	ClampToMoveArea();
@@ -291,5 +310,102 @@ void Subject::ClampToMoveArea(void)
 			GetRand(RANDOM_DIR_CHANGE_MAX - RANDOM_DIR_CHANGE_MIN);
 		FaceMoveDirection();
 	}
+}
+
+bool Subject::IsInAttackRange(const VECTOR& targetPos) const
+{
+	VECTOR diff = VSub(targetPos, transform_.pos);
+	diff.y = 0.0f;
+	return VSize(diff) <= ATTACK_RANGE;
+}
+
+bool Subject::CanStartAttack(void) const
+{
+	return actionState_ != ACTION_STATE::ATTACK && attackCooldownFrame_ <= 0;
+}
+
+bool Subject::StartAttack(const VECTOR& targetPos)
+{
+	if (!CanStartAttack())
+	{
+		return false;
+	}
+
+	actionState_ = ACTION_STATE::ATTACK;
+	attackFrame_ = 0;
+	attackTargetPos_ = targetPos;
+	isAttackHitPending_ = false;
+	transform_.scl = baseScale_;
+	FaceTarget(targetPos);
+	return true;
+}
+
+bool Subject::ConsumeAttackHit(void)
+{
+	if (!isAttackHitPending_)
+	{
+		return false;
+	}
+
+	isAttackHitPending_ = false;
+	return true;
+}
+
+void Subject::UpdateAttack(void)
+{
+	attackFrame_++;
+	FaceTarget(attackTargetPos_);
+
+	float t = static_cast<float>(attackFrame_) / static_cast<float>(ATTACK_FRAME_MAX);
+	if (t < 0.0f)
+	{
+		t = 0.0f;
+	}
+	if (t > 1.0f)
+	{
+		t = 1.0f;
+	}
+
+	float stretch = 0.0f;
+	if (t < 0.5f)
+	{
+		stretch = (t / 0.5f) * ATTACK_STRETCH_MAX;
+	}
+	else
+	{
+		stretch = ((1.0f - t) / 0.5f) * ATTACK_STRETCH_MAX;
+	}
+
+	transform_.scl = VGet(
+		baseScale_.x * (1.0f + stretch),
+		baseScale_.y * (1.0f - stretch * 0.35f),
+		baseScale_.z * (1.0f + stretch * 1.5f));
+
+	if (attackFrame_ == ATTACK_HIT_FRAME)
+	{
+		isAttackHitPending_ = true;
+	}
+
+	if (attackFrame_ >= ATTACK_FRAME_MAX)
+	{
+		actionState_ = ACTION_STATE::MOVE;
+		attackCooldownFrame_ = ATTACK_COOLDOWN_MAX;
+		attackFrame_ = 0;
+		transform_.scl = baseScale_;
+		moveDirChangeFrame_ = 0;
+	}
+}
+
+void Subject::FaceTarget(const VECTOR& targetPos)
+{
+	VECTOR dir = VSub(targetPos, transform_.pos);
+	dir.y = 0.0f;
+
+	if (AsoUtility::EqualsVZero(dir))
+	{
+		return;
+	}
+
+	transform_.quaRot = Quaternion::LookRotation(AsoUtility::VNormalize(dir));
 }
 

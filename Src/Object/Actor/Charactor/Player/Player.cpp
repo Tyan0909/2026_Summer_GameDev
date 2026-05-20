@@ -15,9 +15,10 @@ Player::Player(void)
 	gravityVelocity_(0.0f),
 	isInputEnabled_(true),
 	cameraAngles_(VGet(0.0f, 0.0f, 0.0f)),
+	hp_(HP_MAX),
+	damageCooldownFrame_(0),
 	state_(STATE::IDLE)
 {
-	// アニメーションコントローラは初期化時に生成する
 	animController_ = nullptr;
 }
 
@@ -53,22 +54,20 @@ void Player::Init(void)
 
 void Player::Update(void)
 {
-	// カメラ操作入力を反映する
+	if (damageCooldownFrame_ > 0)
+	{
+		damageCooldownFrame_--;
+	}
+
 	UpdateCameraInput();
-	// 移動入力を反映する
 	UpdateMoveInput();
 
-	// 移動後に壁へめり込んだ場合の補正を行う
 	ResolveWallCollision();
-	// 重力を適用して落下・接地処理を行う
 	ApplyGravity();
-	// 重力適用後に再度壁との干渉を補正する
 	ResolveWallCollision();
 
-	// 現在の状況からステート遷移を判定する
 	UpdateState();
 
-	// 現在ステートに応じた更新処理を実行する
 	switch (state_)
 	{
 	case Player::STATE::IDLE:
@@ -90,10 +89,8 @@ void Player::Update(void)
 		break;
 	}
 
-	// 最終的な Transform をモデルへ反映する
 	transform_.Update();
 
-	// アニメーションが存在する場合は再生更新する
 	if (animController_ != nullptr)
 	{
 		animController_->Update();
@@ -586,5 +583,56 @@ void Player::OnEnterCrouched(void)
 		// しゃがみアニメーションをループ再生する
 		animController_->Play((int)ANIM_TYPE::CROUCHED, true);
 	}
+}
+
+void Player::TakeDamage(int damage)
+{
+	if (damage <= 0)
+	{
+		return;
+	}
+
+	if (!CanTakeDamage())
+	{
+		return;
+	}
+
+	hp_ -= damage;
+	if (hp_ < 0)
+	{
+		hp_ = 0;
+	}
+
+	damageCooldownFrame_ = DAMAGE_COOLDOWN_MAX;
+}
+
+bool Player::CanTakeDamage(void) const
+{
+	return hp_ > 0 && damageCooldownFrame_ <= 0;
+}
+
+bool Player::IsDead(void) const
+{
+	return hp_ <= 0;
+}
+
+int Player::GetHp(void) const
+{
+	return hp_;
+}
+
+int Player::GetHpMax(void) const
+{
+	return HP_MAX;
+}
+
+float Player::GetHpRate(void) const
+{
+	if (HP_MAX <= 0)
+	{
+		return 0.0f;
+	}
+
+	return static_cast<float>(hp_) / static_cast<float>(HP_MAX);
 }
 
