@@ -36,7 +36,7 @@ void PlayerNumScene::Init(void)
 	// 最初は1PだけON
 	isUsePlayer_[0] = true;
 
-	printfDx("bgImg = %d\n", bgImg_);
+	/*printfDx("bgImg = %d\n", bgImg_);*/
 }
 
 void PlayerNumScene::Update(void)
@@ -48,8 +48,30 @@ void PlayerNumScene::Update(void)
 	// Enterキーでゲームシーンへ遷移
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
-		PlaySoundMem(decideSE_, DX_PLAYTYPE_BACK);
+		// 選択中プレイヤー情報を SceneManager に保存
+		std::vector<int> selected;
+		for (int i = 0; i < SELECT_MAX; ++i)
+		{
+			if (isUsePlayer_[i])
+			{
+				// プレイヤー番号は 1 始まりで渡す (必要に応じて変更)
+				selected.push_back(i + 1);
+			}
+		}
 
+		// 選択人数を保存（selected.size() が 0 になる可能性は低いが安全策として 1 を保証）
+		int playerCount = static_cast<int>(selected.size());
+		if (playerCount <= 0)
+		{
+			playerCount = 1;
+			selected.clear();
+			selected.push_back(1);
+		}
+
+		scene.SetPlayerNum(playerCount);
+		scene.SetSelectedPlayerNums(selected);
+
+		PlaySoundMem(decideSE_, DX_PLAYTYPE_BACK);
 
 		scene.ChangeScene(SceneManager::SCENE_ID::EXAMPLE);
 	}

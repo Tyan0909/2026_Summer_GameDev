@@ -7,6 +7,7 @@
 #include "../Scene/BuySelect.h"
 #include "../Scene/ExampleScene.h"
 #include "../Scene/Result.h"
+#include "../Scene/LoadingScene.h"
 #include "Camera.h"
 #include "SceneManager.h"
 
@@ -168,6 +169,9 @@ void SceneManager::DoChangeScene(SCENE_ID sceneId)
 		break;
 	case SCENE_ID::BUYSELECT:
 		scene_ = new BuySelect();
+		break;
+	case SCENE_ID::LOADING:
+		scene_ = new LoadingScene();
 		break;
 	case SCENE_ID::GAME:
 		scene_ = new GameScene();

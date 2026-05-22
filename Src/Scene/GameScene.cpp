@@ -15,9 +15,13 @@ GameScene::GameScene()
 	stage_(nullptr),
 	player_(nullptr),
 	player2_(nullptr),
+	player3_(nullptr),
+	player4_(nullptr),
 	subjectManager_(nullptr),
 	leftScreenHandle_(-1),
 	rightScreenHandle_(-1),
+	bottomLeftScreenHandle_(-1),
+	bottomRightScreenHandle_(-1),
 	sceneScreenHandle_(-1),
 	screenshotScreenHandle_(-1),
 	screenWidth_(0),
@@ -28,7 +32,8 @@ GameScene::GameScene()
 	isScreenshotPreviewEnabled_(false),
 	flashFrame_(0),
 	lastPhotoScore_(0),
-	photoCount_(0)
+	photoCount_(0),
+	activePlayerCount_(1)
 {
 }
 
@@ -46,16 +51,60 @@ void GameScene::Init()
 	const ColliderBase* stageCollider =
 		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
 
+	// プレイヤー選択情報を取得して GameScene の構成に反映
+	const int selectedPlayerCount = scene.GetPlayerNum();
+	const auto& selectedPlayers = scene.GetSelectedPlayerNums();
+	activePlayerCount_ = selectedPlayerCount;
+
+	// プレイヤー1（常に作成）
 	player_ = new Player();
 	player_->Init();
 	player_->AddHitCollider(stageCollider);
 
-	player2_ = new Player();
-	player2_->Init();
-	player2_->SetInputEnabled(false);
-	player2_->SetPos(PLAYER2_INIT_POS);
-	player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-	player2_->AddHitCollider(stageCollider);
+	// プレイヤー2は選択人数が2人以上の場合のみ作成
+	if (selectedPlayerCount >= 2)
+	{
+		player2_ = new Player();
+		player2_->Init();
+		player2_->SetInputEnabled(true);
+		player2_->SetPos(PLAYER2_INIT_POS);
+		player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
+		player2_->AddHitCollider(stageCollider);
+	}
+	else
+	{
+		player2_ = nullptr;
+	}
+
+	// プレイヤー3は選択人数が3人以上の場合のみ作成
+	if (selectedPlayerCount >= 3)
+	{
+		player3_ = new Player();
+		player3_->Init();
+		player3_->SetInputEnabled(true);
+		player3_->SetPos(PLAYER3_INIT_POS);
+		player3_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
+		player3_->AddHitCollider(stageCollider);
+	}
+	else
+	{
+		player3_ = nullptr;
+	}
+
+	// プレイヤー4は選択人数が4人の場合に作成（今は最大4に対応）
+	if (selectedPlayerCount >= 4)
+	{
+		player4_ = new Player();
+		player4_->Init();
+		player4_->SetInputEnabled(true);
+		player4_->SetPos(PLAYER4_INIT_POS);
+		player4_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
+		player4_->AddHitCollider(stageCollider);
+	}
+	else
+	{
+		player4_ = nullptr;
+	}
 
 	subjectManager_ = new SubjectManager();
 	subjectManager_->Init();
@@ -67,14 +116,46 @@ void GameScene::Init()
 		subjectManager_->CreateRandomSubject(ResourceManager::SRC::SUBJECT);
 	}
 
-	isSplitScreenEnabled_ = scene.IsSplitScreenEnabled();
+	// 分割方法の決定:
+	// 1人 -> 1画面、2人 -> 横分割、3?4人 -> 2x2 分割（3人時は1枠を暗くする）
+	if (selectedPlayerCount <= 1)
+	{
+		isSplitScreenEnabled_ = false;
+	}
+	else if (selectedPlayerCount == 2)
+	{
+		isSplitScreenEnabled_ = true;
+	}
+	else // 3 or 4
+	{
+		isSplitScreenEnabled_ = true;
+	}
 
 	GetDrawScreenSize(&screenWidth_, &screenHeight_);
 
-	if (isSplitScreenEnabled_)
+	// 画面バッファ作成: 1人のときは sceneScreenHandle_ のみ、
+	// 2人のときは左右、それ以外は 4 分割のバッファを用意
+	if (isSplitScreenEnabled_ && selectedPlayerCount == 2)
 	{
 		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
 		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
+		bottomLeftScreenHandle_ = -1;
+		bottomRightScreenHandle_ = -1;
+	}
+	else if (isSplitScreenEnabled_ && selectedPlayerCount >= 3)
+	{
+		// 4分割 (各スクリーンは画面幅/2 x 高さ/2)
+		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // top-left
+		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // top-right
+		bottomLeftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-left
+		bottomRightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-right (unused for 3P)
+	}
+	else
+	{
+		leftScreenHandle_ = -1;
+		rightScreenHandle_ = -1;
+		bottomLeftScreenHandle_ = -1;
+		bottomRightScreenHandle_ = -1;
 	}
 
 	sceneScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
@@ -107,8 +188,22 @@ void GameScene::Update()
 	}
 
 	stage_->Update();
-	player_->Update();
-	player2_->Update();
+	if (player_)
+	{
+		player_->Update();
+	}
+	if (player2_)
+	{
+		player2_->Update();
+	}
+	if (player3_)
+	{
+		player3_->Update();
+	}
+	if (player4_)
+	{
+		player4_->Update();
+	}
 
 	if (subjectManager_ != nullptr)
 	{
@@ -182,7 +277,7 @@ void GameScene::Draw()
 
 void GameScene::Draw3D()
 {
-	// 3D描画が必要な場合はここに追加
+	// 3D描画が必要な場合に処理を追加
 }
 
 void GameScene::Release()
@@ -199,6 +294,20 @@ void GameScene::Release()
 		player2_->Release();
 		delete player2_;
 		player2_ = nullptr;
+	}
+
+	if (player3_)
+	{
+		player3_->Release();
+		delete player3_;
+		player3_ = nullptr;
+	}
+
+	if (player4_)
+	{
+		player4_->Release();
+		delete player4_;
+		player4_ = nullptr;
 	}
 
 	if (subjectManager_)
@@ -225,6 +334,18 @@ void GameScene::Release()
 	{
 		DeleteGraph(rightScreenHandle_);
 		rightScreenHandle_ = -1;
+	}
+
+	if (bottomLeftScreenHandle_ != -1)
+	{
+		DeleteGraph(bottomLeftScreenHandle_);
+		bottomLeftScreenHandle_ = -1;
+	}
+
+	if (bottomRightScreenHandle_ != -1)
+	{
+		DeleteGraph(bottomRightScreenHandle_);
+		bottomRightScreenHandle_ = -1;
 	}
 
 	if (sceneScreenHandle_ != -1)
@@ -276,13 +397,22 @@ void GameScene::DrawView(
 
 	DrawSubjectDistanceGuide(targetPlayer);
 
+	// 他プレイヤーは hidePlayer を指定して隠す
 	if (player_ != hidePlayer)
 	{
 		player_->Draw();
 	}
-	if (player2_ != hidePlayer)
+	if (player2_ != hidePlayer && player2_ != nullptr)
 	{
 		player2_->Draw();
+	}
+	if (player3_ != hidePlayer && player3_ != nullptr)
+	{
+		player3_->Draw();
+	}
+	if (player4_ != hidePlayer && player4_ != nullptr)
+	{
+		player4_->Draw();
 	}
 
 	DrawString(20, 20, playerName, GetColor(255, 255, 255));
@@ -329,7 +459,8 @@ void GameScene::DrawCompositedScene(void)
 		return;
 	}
 
-	if (!isSplitScreenEnabled_)
+	// 1人プレイ（フルスクリーン）
+	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
 	{
 		DrawView(
 			sceneScreenHandle_,
@@ -341,33 +472,121 @@ void GameScene::DrawCompositedScene(void)
 		return;
 	}
 
+	// 2人プレイ：左右分割（既存の挙動を維持）
+	if (activePlayerCount_ == 2)
+	{
+		DrawView(
+			leftScreenHandle_,
+			screenWidth_ / 2,
+			screenHeight_,
+			player_,
+			nullptr,
+			"PLAYER 1");
+
+		DrawView(
+			rightScreenHandle_,
+			screenWidth_ / 2,
+			screenHeight_,
+			player2_,
+			nullptr,
+			"PLAYER 2");
+
+		SetDrawScreen(sceneScreenHandle_);
+		SetDrawArea(0, 0, screenWidth_, screenHeight_);
+		ClearDrawScreen();
+
+		DrawGraph(0, 0, leftScreenHandle_, FALSE);
+		DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
+		DrawBox(
+			screenWidth_ / 2 - 1,
+			0,
+			screenWidth_ / 2 + 1,
+			screenHeight_,
+			GetColor(255, 255, 255),
+			TRUE);
+		return;
+	}
+
+	// 3人以上：2x2分割（3人は一つを暗くする）
+	// 各サブスクリーンは幅/2 x 高さ/2
+	// top-left : player1, top-right : player2, bottom-left : player3, bottom-right : player4 or unused
+
+	// top-left
 	DrawView(
 		leftScreenHandle_,
 		screenWidth_ / 2,
-		screenHeight_,
+		screenHeight_ / 2,
 		player_,
 		nullptr,
 		"PLAYER 1");
 
+	// top-right
 	DrawView(
 		rightScreenHandle_,
 		screenWidth_ / 2,
-		screenHeight_,
-		player2_,
+		screenHeight_ / 2,
+		player2_ ? player2_ : player_,
 		nullptr,
 		"PLAYER 2");
 
+	// bottom-left
+	DrawView(
+		bottomLeftScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_ / 2,
+		player3_ ? player3_ : player_,
+		nullptr,
+		"PLAYER 3");
+
+	// bottom-right: player4 if exists, otherwise draw something (dark)
+	if (player4_)
+	{
+		DrawView(
+			bottomRightScreenHandle_,
+			screenWidth_ / 2,
+			screenHeight_ / 2,
+			player4_,
+			nullptr,
+			"PLAYER 4");
+	}
+	else
+	{
+		// 空き枠を暗くする
+		SetDrawScreen(bottomRightScreenHandle_);
+		SetDrawArea(0, 0, screenWidth_ / 2, screenHeight_ / 2);
+		ClearDrawScreen();
+		// optionally draw a message
+		DrawBox(0, 0, screenWidth_ / 2, screenHeight_ / 2, GetColor(10, 10, 10), TRUE);
+		DrawFormatString(screenWidth_ / 4 - 40, screenHeight_ / 4 - 8, GetColor(180, 180, 180), "NO PLAYER");
+	}
+
+	// 合成
 	SetDrawScreen(sceneScreenHandle_);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 	ClearDrawScreen();
 
+	// top-left
 	DrawGraph(0, 0, leftScreenHandle_, FALSE);
+	// top-right
 	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
+	// bottom-left
+	DrawGraph(0, screenHeight_ / 2, bottomLeftScreenHandle_, FALSE);
+	// bottom-right
+	DrawGraph(screenWidth_ / 2, screenHeight_ / 2, bottomRightScreenHandle_, FALSE);
+
+	// 枠線
 	DrawBox(
 		screenWidth_ / 2 - 1,
 		0,
 		screenWidth_ / 2 + 1,
 		screenHeight_,
+		GetColor(255, 255, 255),
+		TRUE);
+	DrawBox(
+		0,
+		screenHeight_ / 2 - 1,
+		screenWidth_,
+		screenHeight_ / 2 + 1,
 		GetColor(255, 255, 255),
 		TRUE);
 }

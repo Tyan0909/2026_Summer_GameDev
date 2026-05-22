@@ -4,12 +4,25 @@
 #include <vector>
 #include <string>		// std::string
 
+// アイテム種類
+enum class ITEM_TYPE
+{
+	NORMAL_CAMERA,
+	ZOOM_CAMERA,
+	INSURANCE_CAMERA,
+	HELMET,
+	FRAG_GRENADE,
+};
+
+
 // アイテムの情報を管理する構造体
 struct Item
 {
 	std::string name;		// アイテム名
-	int price; 				// アイテム価格
+	int price;				// アイテム価格
 	bool isSelected;		// 選択中か
+
+	ITEM_TYPE type;
 };
 
 class BuySelect : public SceneBase
@@ -18,6 +31,7 @@ public:
 	// 定数
 	static const int MAX_AMOUNT = 10000;	// 最大所持金
 	static const int MIN_AMOUNT = 500;     // 最低保証
+
 
 	BuySelect(void);
 	~BuySelect(void) override;
@@ -34,6 +48,8 @@ private:
 private:
 	// 現在の所持金（= 最低保証 + carryMoney）
 	int currentAmount_ = 0;
+
+	int itemImg_[5];
 
 	// カーソル位置
 	int cursorIdx_ = 0;

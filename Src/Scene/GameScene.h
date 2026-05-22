@@ -22,6 +22,9 @@ public:
 private:
 	static constexpr VECTOR PLAYER2_INIT_POS = { 200.0f, 1000.0f, 0.0f };
 
+	static constexpr VECTOR PLAYER3_INIT_POS = { -200.0f, 1000.0f, 0.0f };
+	static constexpr VECTOR PLAYER4_INIT_POS = { 700.0f, 1000.0f, 0.0f };
+
 	static constexpr VECTOR SUBJECT_AREA_MIN = { -600.0f, 0.0f, -600.0f };
 	static constexpr VECTOR SUBJECT_AREA_MAX = { 600.0f, 0.0f, 600.0f };
 	static constexpr int SUBJECT_COUNT = 6;
@@ -74,9 +77,13 @@ private:
 	Stage* stage_;
 	Player* player_;
 	Player* player2_;
+	Player* player3_;
+	Player* player4_;
 	SubjectManager* subjectManager_;
 	int leftScreenHandle_;
 	int rightScreenHandle_;
+	int bottomLeftScreenHandle_;
+	int bottomRightScreenHandle_;
 	int sceneScreenHandle_;
 	int screenshotScreenHandle_;
 	int screenWidth_;
@@ -88,4 +95,5 @@ private:
 	int flashFrame_;
 	int lastPhotoScore_;
 	int photoCount_;
+	int activePlayerCount_;
 };
