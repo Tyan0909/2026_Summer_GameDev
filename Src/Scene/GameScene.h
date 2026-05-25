@@ -1,6 +1,7 @@
 #pragma once
 #include "SceneBase.h"
 #include "../Object/Actor/Stage/Stage.h"
+#include <vector>
 
 class Stage;
 class Player;
@@ -96,4 +97,7 @@ private:
 	int lastPhotoScore_;
 	int photoCount_;
 	int activePlayerCount_;
+	std::vector<Player*> players_;
+	std::vector<int> lastPhotoScorePerPlayer_;
+	std::vector<int> photoCountPerPlayer_;
 };

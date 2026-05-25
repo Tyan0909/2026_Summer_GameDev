@@ -1,4 +1,7 @@
 #include <DxLib.h>
+#include <vector>
+#include <algorithm> // std::find
+#include <cfloat>    // FLT_MAX
 #include "GameScene.h"
 #include "../Object/Actor/Stage/Stage.h"
 #include "../Object/Actor/Charactor/Player/Player.h"
@@ -106,6 +109,18 @@ void GameScene::Init()
 		player4_ = nullptr;
 	}
 
+	// --- players_ 配列を構築し、プレイヤーごとのスコア配列を初期化 ---
+	players_.clear();
+	if (player_) players_.push_back(player_);
+	if (player2_) players_.push_back(player2_);
+	if (player3_) players_.push_back(player3_);
+	if (player4_) players_.push_back(player4_);
+
+	const size_t pcount = players_.size();
+	lastPhotoScorePerPlayer_.assign(pcount, 0);
+	photoCountPerPlayer_.assign(pcount, 0);
+	// -------------------------------------------------------------
+
 	subjectManager_ = new SubjectManager();
 	subjectManager_->Init();
 	subjectManager_->AddHitCollider(stageCollider);
@@ -117,24 +132,18 @@ void GameScene::Init()
 	}
 
 	// 分割方法の決定:
-	// 1人 -> 1画面、2人 -> 横分割、3?4人 -> 2x2 分割（3人時は1枠を暗くする）
 	if (selectedPlayerCount <= 1)
 	{
 		isSplitScreenEnabled_ = false;
 	}
-	else if (selectedPlayerCount == 2)
-	{
-		isSplitScreenEnabled_ = true;
-	}
-	else // 3 or 4
+	else
 	{
 		isSplitScreenEnabled_ = true;
 	}
 
 	GetDrawScreenSize(&screenWidth_, &screenHeight_);
 
-	// 画面バッファ作成: 1人のときは sceneScreenHandle_ のみ、
-	// 2人のときは左右、それ以外は 4 分割のバッファを用意
+	// 画面バッファ作成
 	if (isSplitScreenEnabled_ && selectedPlayerCount == 2)
 	{
 		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
@@ -148,7 +157,7 @@ void GameScene::Init()
 		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // top-left
 		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // top-right
 		bottomLeftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-left
-		bottomRightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-right (unused for 3P)
+		bottomRightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-right
 	}
 	else
 	{
@@ -187,23 +196,11 @@ void GameScene::Update()
 		flashFrame_--;
 	}
 
-	stage_->Update();
-	if (player_)
-	{
-		player_->Update();
-	}
-	if (player2_)
-	{
-		player2_->Update();
-	}
-	if (player3_)
-	{
-		player3_->Update();
-	}
-	if (player4_)
-	{
-		player4_->Update();
-	}
+	if (stage_) stage_->Update();
+	if (player_) player_->Update();
+	if (player2_) player2_->Update();
+	if (player3_) player3_->Update();
+	if (player4_) player4_->Update();
 
 	if (subjectManager_ != nullptr)
 	{
@@ -221,6 +218,7 @@ void GameScene::Update()
 		return;
 	}
 
+	// ゲームオーバー判定は player_ のみ（仕様に応じて全プレイヤーへ拡張可能）
 	if (player_ != nullptr && player_->IsDead())
 	{
 		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
@@ -385,8 +383,8 @@ void GameScene::DrawView(
 	camera->SetBeforeDraw();
 
 	ApplyStageOpacityForCamera(targetPlayer);
-	stage_->Draw();
-	stage_->SetOpacityRate(1.0f);
+	if (stage_) stage_->Draw();
+	if (stage_) stage_->SetOpacityRate(1.0f);
 
 	DrawGoalMarker();
 
@@ -398,29 +396,15 @@ void GameScene::DrawView(
 	DrawSubjectDistanceGuide(targetPlayer);
 
 	// 他プレイヤーは hidePlayer を指定して隠す
-	if (player_ != hidePlayer)
-	{
-		player_->Draw();
-	}
-	if (player2_ != hidePlayer && player2_ != nullptr)
-	{
-		player2_->Draw();
-	}
-	if (player3_ != hidePlayer && player3_ != nullptr)
-	{
-		player3_->Draw();
-	}
-	if (player4_ != hidePlayer && player4_ != nullptr)
-	{
-		player4_->Draw();
-	}
+	if (player_ != hidePlayer && player_) player_->Draw();
+	if (player2_ != hidePlayer && player2_) player2_->Draw();
+	if (player3_ != hidePlayer && player3_) player3_->Draw();
+	if (player4_ != hidePlayer && player4_) player4_->Draw();
 
 	DrawString(20, 20, playerName, GetColor(255, 255, 255));
 	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
-	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore_);
-	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount_);
 
-	if (targetPlayer == player_)
+	// targetPlayer に対応した HP バーを表示
 	{
 		const int barX = 20;
 		const int barY = 145;
@@ -430,8 +414,8 @@ void GameScene::DrawView(
 		const int frameColor = GetColor(255, 255, 255);
 		const int hpColor = GetColor(80, 220, 80);
 		const int damageColor = GetColor(255, 90, 90);
-		const int fillWidth = static_cast<int>(barWidth * player_->GetHpRate());
-		const int currentColor = player_->CanTakeDamage() ? hpColor : damageColor;
+		const int fillWidth = static_cast<int>(barWidth * targetPlayer->GetHpRate());
+		const int currentColor = targetPlayer->CanTakeDamage() ? hpColor : damageColor;
 
 		DrawString(barX, barY, "HP", GetColor(255, 255, 255));
 		DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, backColor, TRUE);
@@ -447,9 +431,28 @@ void GameScene::DrawView(
 			barY + 22,
 			GetColor(255, 255, 255),
 			"%d / %d",
-			player_->GetHp(),
-			player_->GetHpMax());
+			targetPlayer->GetHp(),
+			targetPlayer->GetHpMax());
 	}
+
+	// プレイヤー固有の LAST PHOTO / PHOTO COUNT 表示
+	int localLast = lastPhotoScore_;
+	int localCount = 0;
+
+	auto it = std::find(players_.begin(), players_.end(), targetPlayer);
+	if (it != players_.end())
+	{
+		const int idx = static_cast<int>(std::distance(players_.begin(), it));
+		localLast = lastPhotoScorePerPlayer_[idx];
+		localCount = photoCountPerPlayer_[idx];
+	}
+	else
+	{
+		localCount = photoCount_;
+	}
+
+	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localLast);
+	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", localCount);
 }
 
 void GameScene::DrawCompositedScene(void)
@@ -472,7 +475,7 @@ void GameScene::DrawCompositedScene(void)
 		return;
 	}
 
-	// 2人プレイ：左右分割（既存の挙動を維持）
+	// 2人プレイ：左右分割
 	if (activePlayerCount_ == 2)
 	{
 		DrawView(
@@ -507,11 +510,7 @@ void GameScene::DrawCompositedScene(void)
 		return;
 	}
 
-	// 3人以上：2x2分割（3人は一つを暗くする）
-	// 各サブスクリーンは幅/2 x 高さ/2
-	// top-left : player1, top-right : player2, bottom-left : player3, bottom-right : player4 or unused
-
-	// top-left
+	// 3人以上：2x2分割（3人は一枠暗くする）
 	DrawView(
 		leftScreenHandle_,
 		screenWidth_ / 2,
@@ -520,7 +519,6 @@ void GameScene::DrawCompositedScene(void)
 		nullptr,
 		"PLAYER 1");
 
-	// top-right
 	DrawView(
 		rightScreenHandle_,
 		screenWidth_ / 2,
@@ -529,7 +527,6 @@ void GameScene::DrawCompositedScene(void)
 		nullptr,
 		"PLAYER 2");
 
-	// bottom-left
 	DrawView(
 		bottomLeftScreenHandle_,
 		screenWidth_ / 2,
@@ -538,7 +535,6 @@ void GameScene::DrawCompositedScene(void)
 		nullptr,
 		"PLAYER 3");
 
-	// bottom-right: player4 if exists, otherwise draw something (dark)
 	if (player4_)
 	{
 		DrawView(
@@ -555,7 +551,6 @@ void GameScene::DrawCompositedScene(void)
 		SetDrawScreen(bottomRightScreenHandle_);
 		SetDrawArea(0, 0, screenWidth_ / 2, screenHeight_ / 2);
 		ClearDrawScreen();
-		// optionally draw a message
 		DrawBox(0, 0, screenWidth_ / 2, screenHeight_ / 2, GetColor(10, 10, 10), TRUE);
 		DrawFormatString(screenWidth_ / 4 - 40, screenHeight_ / 4 - 8, GetColor(180, 180, 180), "NO PLAYER");
 	}
@@ -565,13 +560,9 @@ void GameScene::DrawCompositedScene(void)
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 	ClearDrawScreen();
 
-	// top-left
 	DrawGraph(0, 0, leftScreenHandle_, FALSE);
-	// top-right
 	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
-	// bottom-left
 	DrawGraph(0, screenHeight_ / 2, bottomLeftScreenHandle_, FALSE);
-	// bottom-right
 	DrawGraph(screenWidth_ / 2, screenHeight_ / 2, bottomRightScreenHandle_, FALSE);
 
 	// 枠線
@@ -737,41 +728,49 @@ int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPo
 
 void GameScene::TryTakePhoto(void)
 {
-	if (player_ == nullptr || subjectManager_ == nullptr)
-	{
-		return;
-	}
+	// players_ を使ってプレイヤー毎に撮影スコアを計算・保存する
+	if (players_.empty() || subjectManager_ == nullptr) return;
 
 	const auto& subjects = subjectManager_->GetSubjects();
-	if (subjects.empty())
+	if (subjects.empty()) return;
+
+	int totalAddedScore = 0;
+	int playersCaptured = 0;
+
+	for (size_t i = 0; i < players_.size(); ++i)
 	{
-		return;
-	}
+		Player* p = players_[i];
+		if (p == nullptr) continue;
 
-	photoCount_++;
+		int addScore = 0;
+		const VECTOR shotPos = p->GetCameraWorldPos();
 
-	SceneManager& scene = SceneManager::GetInstance();
-	const VECTOR shotPos = player_->GetCameraWorldPos();
-
-	int addScore = 0;
-
-	for (const auto* subject : subjects)
-	{
-		if (subject == nullptr)
+		for (const auto* subject : subjects)
 		{
-			continue;
+			if (subject == nullptr) continue;
+			if (!IsSubjectInView(p, subject)) continue;
+			addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
 		}
 
-		if (!IsSubjectInView(player_, subject))
-		{
-			continue;
-		}
+		lastPhotoScorePerPlayer_[i] = addScore;
 
-		addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+		if (addScore > 0)
+		{
+			photoCountPerPlayer_[i] += 1;
+			playersCaptured++;
+			totalAddedScore += addScore;
+		}
 	}
 
-	lastPhotoScore_ = addScore;
-	scene.SetCarryMoney(scene.GetCarryMoney() + addScore);
+	// 全体反映（既存の SceneManager には合計を渡す）
+	if (totalAddedScore > 0)
+	{
+		lastPhotoScore_ = totalAddedScore;
+		photoCount_ = 0;
+		for (int v : photoCountPerPlayer_) photoCount_ += v; // 合計
+		SceneManager& scene = SceneManager::GetInstance();
+		scene.SetCarryMoney(scene.GetCarryMoney() + totalAddedScore);
+	}
 }
 
 void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
@@ -916,30 +915,52 @@ void GameScene::ApplyStageOpacityForCamera(const Player* targetPlayer)
 
 void GameScene::UpdateSubjectAttacks(void)
 {
-	if (player_ == nullptr || subjectManager_ == nullptr)
+	if (subjectManager_ == nullptr)
 	{
 		return;
 	}
 
-	const VECTOR playerPos = player_->GetTransform().pos;
 	const auto& subjects = subjectManager_->GetSubjects();
+	if (subjects.empty()) return;
+
+	// 集める
+	std::vector<Player*> players;
+	if (player_) players.push_back(player_);
+	if (player2_) players.push_back(player2_);
+	if (player3_) players.push_back(player3_);
+	if (player4_) players.push_back(player4_);
 
 	for (auto* subject : subjects)
 	{
-		if (subject == nullptr)
+		if (subject == nullptr) continue;
+
+		// 最も近いプレイヤーを見つける
+		Player* nearest = nullptr;
+		float nearestDist = FLT_MAX;
+		for (auto* p : players)
 		{
-			continue;
+			if (p == nullptr) continue;
+			const VECTOR pPos = p->GetTransform().pos;
+			const float d = VSize(VSub(pPos, subject->GetTransform().pos));
+			if (d < nearestDist)
+			{
+				nearestDist = d;
+				nearest = p;
+			}
 		}
 
-		if (subject->CanStartAttack() && subject->IsInAttackRange(playerPos))
+		if (nearest == nullptr) continue;
+
+		const VECTOR nearestPos = nearest->GetTransform().pos;
+
+		if (subject->CanStartAttack() && subject->IsInAttackRange(nearestPos))
 		{
-			subject->StartAttack(playerPos);
+			subject->StartAttack(nearestPos);
 		}
 
-		if (subject->ConsumeAttackHit() &&
-			subject->IsInAttackRange(playerPos))
+		if (subject->ConsumeAttackHit() && subject->IsInAttackRange(nearestPos))
 		{
-			player_->TakeDamage(1);
+			nearest->TakeDamage(1);
 		}
 	}
 }
@@ -966,3 +987,4 @@ void GameScene::DrawGoalMarker(void) const
 	DrawSphere3D(spherePos, GOAL_RADIUS, 16, ringColor, ringColor, FALSE);
 	DrawLine3D(GOAL_POS, poleTop, ringColor);
 }
+
