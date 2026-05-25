@@ -57,6 +57,12 @@ private:
 		const Player* hidePlayer,
 		const char* playerName);
 
+	void DrawDeadView(
+		int screenHandle,
+		int drawWidth,
+		int drawHeight,
+		const char* playerName) const;
+
 	void DrawCompositedScene(void);
 	void CaptureScreenshot(void);
 	void DrawScreenshotThumbnail(void) const;
@@ -68,7 +74,10 @@ private:
 	void ApplyStageOpacityForCamera(const Player* targetPlayer);
 
 	void UpdateSubjectAttacks(void);
+	bool IsPlayerAlive(const Player* targetPlayer) const;
+	bool IsPlayerAtGoal(const Player* targetPlayer) const;
 	bool IsPlayerReachedGoal(void) const;
+	bool IsAllPlayersDead(void) const;
 
 	void TryTakePhoto(void);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;

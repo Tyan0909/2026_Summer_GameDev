@@ -69,6 +69,7 @@ void GameScene::Init()
 	{
 		player2_ = new Player();
 		player2_->Init();
+		player2_->SetInputConfig(Player::PLAYER2_KEYBOARD_INPUT_CONFIG);
 		player2_->SetInputEnabled(true);
 		player2_->SetPos(PLAYER2_INIT_POS);
 		player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
@@ -218,8 +219,7 @@ void GameScene::Update()
 		return;
 	}
 
-	// ゲームオーバー判定は player_ のみ（仕様に応じて全プレイヤーへ拡張可能）
-	if (player_ != nullptr && player_->IsDead())
+	if (IsAllPlayersDead())
 	{
 		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
 		scene.SetPhotoCount(photoCount_);
@@ -372,6 +372,12 @@ void GameScene::DrawView(
 		return;
 	}
 
+	if (!IsPlayerAlive(targetPlayer))
+	{
+		DrawDeadView(screenHandle, drawWidth, drawHeight, playerName);
+		return;
+	}
+
 	auto* camera = SceneManager::GetInstance().GetCamera();
 
 	SetDrawScreen(screenHandle);
@@ -395,7 +401,6 @@ void GameScene::DrawView(
 
 	DrawSubjectDistanceGuide(targetPlayer);
 
-	// 他プレイヤーは hidePlayer を指定して隠す
 	if (player_ != hidePlayer && player_) player_->Draw();
 	if (player2_ != hidePlayer && player2_) player2_->Draw();
 	if (player3_ != hidePlayer && player3_) player3_->Draw();
@@ -404,7 +409,6 @@ void GameScene::DrawView(
 	DrawString(20, 20, playerName, GetColor(255, 255, 255));
 	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
 
-	// targetPlayer に対応した HP バーを表示
 	{
 		const int barX = 20;
 		const int barY = 145;
@@ -435,7 +439,6 @@ void GameScene::DrawView(
 			targetPlayer->GetHpMax());
 	}
 
-	// プレイヤー固有の LAST PHOTO / PHOTO COUNT 表示
 	int localLast = lastPhotoScore_;
 	int localCount = 0;
 
@@ -728,19 +731,17 @@ int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPo
 
 void GameScene::TryTakePhoto(void)
 {
-	// players_ を使ってプレイヤー毎に撮影スコアを計算・保存する
 	if (players_.empty() || subjectManager_ == nullptr) return;
 
 	const auto& subjects = subjectManager_->GetSubjects();
 	if (subjects.empty()) return;
 
 	int totalAddedScore = 0;
-	int playersCaptured = 0;
 
 	for (size_t i = 0; i < players_.size(); ++i)
 	{
 		Player* p = players_[i];
-		if (p == nullptr) continue;
+		if (p == nullptr || !IsPlayerAlive(p)) continue;
 
 		int addScore = 0;
 		const VECTOR shotPos = p->GetCameraWorldPos();
@@ -757,17 +758,19 @@ void GameScene::TryTakePhoto(void)
 		if (addScore > 0)
 		{
 			photoCountPerPlayer_[i] += 1;
-			playersCaptured++;
 			totalAddedScore += addScore;
 		}
 	}
 
-	// 全体反映（既存の SceneManager には合計を渡す）
 	if (totalAddedScore > 0)
 	{
 		lastPhotoScore_ = totalAddedScore;
 		photoCount_ = 0;
-		for (int v : photoCountPerPlayer_) photoCount_ += v; // 合計
+		for (int v : photoCountPerPlayer_)
+		{
+			photoCount_ += v;
+		}
+
 		SceneManager& scene = SceneManager::GetInstance();
 		scene.SetCarryMoney(scene.GetCarryMoney() + totalAddedScore);
 	}
@@ -965,17 +968,62 @@ void GameScene::UpdateSubjectAttacks(void)
 	}
 }
 
-bool GameScene::IsPlayerReachedGoal(void) const
+bool GameScene::IsPlayerAlive(const Player* targetPlayer) const
 {
-	if (player_ == nullptr)
+	return targetPlayer != nullptr && !targetPlayer->IsDead();
+}
+
+bool GameScene::IsPlayerAtGoal(const Player* targetPlayer) const
+{
+	if (targetPlayer == nullptr)
 	{
 		return false;
 	}
 
-	VECTOR diff = VSub(player_->GetTransform().pos, GOAL_POS);
+	VECTOR diff = VSub(targetPlayer->GetTransform().pos, GOAL_POS);
 	diff.y = 0.0f;
 
 	return VSize(diff) <= GOAL_RADIUS;
+}
+
+bool GameScene::IsPlayerReachedGoal(void) const
+{
+	bool hasAlivePlayer = false;
+
+	for (const auto* player : players_)
+	{
+		if (!IsPlayerAlive(player))
+		{
+			continue;
+		}
+
+		hasAlivePlayer = true;
+
+		if (!IsPlayerAtGoal(player))
+		{
+			return false;
+		}
+	}
+
+	return hasAlivePlayer;
+}
+
+bool GameScene::IsAllPlayersDead(void) const
+{
+	if (players_.empty())
+	{
+		return false;
+	}
+
+	for (const auto* player : players_)
+	{
+		if (IsPlayerAlive(player))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void GameScene::DrawGoalMarker(void) const
@@ -986,5 +1034,24 @@ void GameScene::DrawGoalMarker(void) const
 
 	DrawSphere3D(spherePos, GOAL_RADIUS, 16, ringColor, ringColor, FALSE);
 	DrawLine3D(GOAL_POS, poleTop, ringColor);
+}
+
+void GameScene::DrawDeadView(
+	int screenHandle,
+	int drawWidth,
+	int drawHeight,
+	const char* playerName) const
+{
+	SetDrawScreen(screenHandle);
+	SetDrawArea(0, 0, drawWidth, drawHeight);
+	ClearDrawScreen();
+
+	DrawBox(0, 0, drawWidth, drawHeight, GetColor(0, 0, 0), TRUE);
+
+	DrawString(20, 20, playerName, GetColor(255, 255, 255));
+
+	const int deadX = drawWidth / 2 - 50;
+	const int deadY = drawHeight / 2 - 12;
+	DrawString(deadX, deadY, "DEAD", GetColor(255, 60, 60));
 }
 
