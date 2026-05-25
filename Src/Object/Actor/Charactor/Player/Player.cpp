@@ -223,7 +223,27 @@ void Player::UpdateMoveInput(void)
 
 	if (!AsoUtility::EqualsVZero(inputDir))
 	{
-		const float moveSpeed = 1.0f;
+		// 変更点：移動速度をフレーム時間に依存させ、MOVE_SPEED を実際の速度に利用する
+		//         走り/しゃがみで倍率を変えられるようにする
+		float delta = SceneManager::GetInstance().GetDeltaTime();
+		if (delta <= 0.0f) delta = 1.0f / 60.0f; // 保険
+
+		// 基本速度（ヘッダで設定した MOVE_SPEED を使用）
+		float speed = MOVE_SPEED * delta;
+
+		// 走り入力なら速く（任意の倍率）
+		if (IsRunInput())
+		{
+			const float RUN_MULT = 1.5f;
+			speed *= RUN_MULT;
+		}
+
+		// しゃがみ入力なら遅く（任意の倍率）
+		if (IsCrouchInput())
+		{
+			const float CROUCH_MULT = 0.5f;
+			speed *= CROUCH_MULT;
+		}
 
 		VECTOR moveDir = AsoUtility::VNormalize(inputDir);
 		moveDir = VTransform(moveDir, MGetRotY(cameraAngles_.y));
@@ -246,7 +266,7 @@ void Player::UpdateMoveInput(void)
 			transform_.quaRot = Quaternion::Slerp(transform_.quaRot, targetRot, turnT);
 		}
 
-		transform_.pos = VAdd(transform_.pos, VScale(moveDir, moveSpeed));
+		transform_.pos = VAdd(transform_.pos, VScale(moveDir, speed));
 	}
 }
 

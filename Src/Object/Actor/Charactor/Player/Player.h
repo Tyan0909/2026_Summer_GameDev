@@ -16,7 +16,7 @@ public:
 
 	// íËêî
 	static constexpr float GRAVITY = 0.5f;
-	static constexpr float MOVE_SPEED = 150.f;
+	static constexpr float MOVE_SPEED =250.f;
 
 	static constexpr VECTOR COL_LINE_START_LOCAL_POS = { 0.0f, 80.0f, 0.0f };
 	static constexpr VECTOR COL_LINE_END_LOCAL_POS = { 0.0f, -10.0f, 0.0f };
@@ -114,7 +114,7 @@ protected:
 	void InitPost(void) override;
 
 private:
-	static constexpr float GRAVITY_TERMINAL = -20.0f;
+	static constexpr float GRAVITY_TERMINAL = -10.0f;
 	static constexpr float GROUND_CHECK_DISTANCE = 500.0f;
 	static constexpr float GROUND_OFFSET = 1.0f;
 	static constexpr float WALL_CHECK_HEIGHT = 30.0f;
@@ -128,7 +128,7 @@ private:
 
 	static constexpr VECTOR INIT_POS = { 300.0f, 100.0f, 100.0f };
 
-	static constexpr int HP_MAX = 3;
+	static constexpr int HP_MAX = 6;
 	static constexpr int DAMAGE_COOLDOWN_MAX = 60;
 
 	float gravityVelocity_;
