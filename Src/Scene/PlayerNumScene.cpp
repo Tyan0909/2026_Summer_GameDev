@@ -1,65 +1,173 @@
+﻿#define NOMINMAX
 #include <cmath>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <io.h>     // _access
+#include <stdlib.h> // _fullpath
 #include "PlayerNumScene.h"
 #include "../Manager/SceneManager.h"
 #include "../Manager/InputManager.h"
+#include "../Object/Common/AnimationController.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+// 軽量パーティクル構造体（ファイルローカル）
+namespace
+{
+	struct Particle
+	{
+		float x, y;
+		float vx, vy;
+		float life;    // 残り寿命
+		float maxLife; // 最大寿命
+		float size;
+		unsigned int color;
+	};
+	// プレイヤーごとのパーティクルコンテナ（4スロット）
+	std::vector<Particle> g_particles[4];
+
+	// プレイヤー毎のホログラム色（GetColorで取得）
+	unsigned int GetPlayerColor(int idx)
+	{
+		switch (idx)
+		{
+		case 0: return GetColor(220, 80, 80);   // 赤
+		case 1: return GetColor(80, 220, 200);  // 青緑
+		case 2: return GetColor(80, 220, 100);  // 緑
+		case 3: return GetColor(240, 220, 80);  // 黄
+		default: return GetColor(200, 200, 200);
+		}
+	}
+
+	// 全体下げ量（UI全体）
+	constexpr int VERTICAL_OFFSET = 80;
+
+	// 追加: モデルの表示スケール
+	constexpr float MODEL_SCALE = 1.8f;
+}
+
+namespace AnimType
+{
+	constexpr int IDLE = 0;
+}
 
 PlayerNumScene::PlayerNumScene(void)
 {
+	for (int i = 0; i < SELECT_MAX; ++i)
+	{
+		modelId_[i] = -1;
+		animCtrl_[i] = nullptr;
+		playerOffsetX_[i] = 0;
+		playerOffsetY_[i] = 0;
+	}
 }
 
 PlayerNumScene::~PlayerNumScene(void)
 {
 }
 
+void PlayerNumScene::SetPlayerOffset(int idx, int offsetX, int offsetY)
+{
+	if (idx < 0 || idx >= SELECT_MAX) return;
+	playerOffsetX_[idx] = offsetX;
+	playerOffsetY_[idx] = offsetY;
+}
+
+void PlayerNumScene::GetPlayerOffset(int idx, int& outOffsetX, int& outOffsetY) const
+{
+	outOffsetX = outOffsetY = 0;
+	if (idx < 0 || idx >= SELECT_MAX) return;
+	outOffsetX = playerOffsetX_[idx];
+	outOffsetY = playerOffsetY_[idx];
+}
+
 void PlayerNumScene::Init(void)
 {
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
 	selectImg_[0] = LoadGraph("Data/PlayerNum/1P.png");
 	selectImg_[1] = LoadGraph("Data/PlayerNum/2P.png");
 	selectImg_[2] = LoadGraph("Data/PlayerNum/3P.png");
 	selectImg_[3] = LoadGraph("Data/PlayerNum/4P.png");
-	useImg_		= LoadGraph("Data/PlayerNum/select.png");
-	notUseImg_ = LoadGraph("Data/PlayerNum/select2.png");
-	bgImg_ = LoadGraph("Data/PlayerNum/bg.jpg");
+
+	bgImg_ = LoadGraph("Data/PlayerNum/bg.png");
+	if (bgImg_ == -1) bgImg_ = LoadGraph("Data/PlayerNum/bg.jpg");
 
 	decideSE_ = LoadSoundMem("Data/Sound/decide.wav");
 
 	selectNum_ = 0;
-
 	cursor_ = 0;
 
 	for (int i = 0; i < 4; i++)
 	{
 		isUsePlayer_[i] = false;
+		g_particles[i].clear();
+		playerOffsetX_[i] = 0;
+		playerOffsetY_[i] = 0;
 	}
 
-	// �ŏ���1P����ON
 	isUsePlayer_[0] = true;
 
-	/*printfDx("bgImg = %d\n", bgImg_);*/
+	for (int i = 0; i < SELECT_MAX; ++i)
+	{
+		// --- 1. ベースモデルの読み込み ---
+		char relModelPath[256];
+		snprintf(relModelPath, sizeof(relModelPath), "Data/PlayerNum/Player.mv1");
+
+		char fullPath[1024] = { 0 };
+		if (_fullpath(fullPath, relModelPath, sizeof(fullPath)) != NULL && _access(fullPath, 0) == 0)
+		{
+			modelId_[i] = MV1LoadModel(fullPath);
+		}
+		else
+		{
+			modelId_[i] = MV1LoadModel(relModelPath);
+		}
+
+		if (modelId_[i] != -1)
+		{
+			MV1SetScale(modelId_[i], VGet(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE));
+			MV1SetRotationXYZ(modelId_[i], VGet(0.0f, 0.0f, 0.0f));
+
+			// AnimationControllerの初期化
+			animCtrl_[i] = new AnimationController(modelId_[i]);
+
+			// --- 2. アニメーションファイルのパス解決（ベースモデル側とロジックを完全統一） ---
+			char animPath[256];
+			snprintf(animPath, sizeof(animPath), "Data/PlayerNum/Animation/Idle.mv1");
+
+			char fullAnimPath[1024] = { 0 };
+			const char* finalAnimPath = animPath;
+
+			// 絶対パスに変換して存在するか確認
+			if (_fullpath(fullAnimPath, animPath, sizeof(fullAnimPath)) != NULL && _access(fullAnimPath, 0) == 0)
+			{
+				finalAnimPath = fullAnimPath;
+			}
+
+			// コントローラー経由で登録してループ再生を開始
+			animCtrl_[i]->Add(AnimType::IDLE, finalAnimPath, 1.0f);
+			animCtrl_[i]->Play(AnimType::IDLE, true, 0.0f, -1.0f, false, true);
+		}
+	}
 }
 
 void PlayerNumScene::Update(void)
 {
-	// �V�[���J��
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	// Enter�L�[�ŃQ�[���V�[���֑J��
-	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	if (ins.IsTrgDown(KEY_INPUT_SPACE))
 	{
-		// �I�𒆃v���C���[���� SceneManager �ɕۑ�
 		std::vector<int> selected;
 		for (int i = 0; i < SELECT_MAX; ++i)
 		{
-			if (isUsePlayer_[i])
-			{
-				// �v���C���[�ԍ��� 1 �n�܂�œn�� (�K�v�ɉ����ĕύX)
-				selected.push_back(i + 1);
-			}
+			if (isUsePlayer_[i]) selected.push_back(i + 1);
 		}
 
-		// �I��l����ۑ��iselected.size() �� 0 �ɂȂ�\���͒Ⴂ�����S��Ƃ��� 1 ��ۏ؁j
 		int playerCount = static_cast<int>(selected.size());
 		if (playerCount <= 0)
 		{
@@ -72,193 +180,325 @@ void PlayerNumScene::Update(void)
 		scene.SetSelectedPlayerNums(selected);
 
 		PlaySoundMem(decideSE_, DX_PLAYTYPE_BACK);
-
 		scene.ChangeScene(SceneManager::SCENE_ID::EXAMPLE);
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_SPACE))
+	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
-		isUsePlayer_[cursor_] =
-			!isUsePlayer_[cursor_];
+		isUsePlayer_[cursor_] = !isUsePlayer_[cursor_];
 	}
 
-	// ��
 	if (ins.IsTrgDown(KEY_INPUT_LEFT))
 	{
 		cursor_--;
-
-		if (cursor_ < 0)
-		{
-			cursor_ = 3;
-		}
+		if (cursor_ < 0) cursor_ = 3;
 	}
 
-
-	// �E
 	if (ins.IsTrgDown(KEY_INPUT_RIGHT))
 	{
 		cursor_++;
-
-		if (cursor_ > 3)
-		{
-			cursor_ = 0;
-		}
+		if (cursor_ > 3) cursor_ = 0;
 	}
 
-	// �g�p�v���C���[�X�V
-	/*for (int i = 0; i < 4; i++)
-	{
-		isUsePlayer_[i] = false;
-	}*/
+	if (ins.IsTrgDown(KEY_INPUT_W)) playerOffsetY_[cursor_] -= 5;
+	if (ins.IsTrgDown(KEY_INPUT_S)) playerOffsetY_[cursor_] += 5;
+	if (ins.IsTrgDown(KEY_INPUT_A)) playerOffsetX_[cursor_] -= 5;
+	if (ins.IsTrgDown(KEY_INPUT_D)) playerOffsetX_[cursor_] += 5;
 
-	// �I��l���� true
-	/*for (int i = 0; i < selectNum_ + 1; i++)
+	// --- パーティクル更新 / 生成 ---
+	for (int i = 0; i < SELECT_MAX; ++i)
 	{
-		isUsePlayer_[i] = true;
-	}*/
+		const int centerXBase = 250 + i * 250;
+		const float centerX = static_cast<float>(centerXBase + playerOffsetX_[i]);
+		const float baseY = 520.0f + static_cast<float>(playerOffsetY_[i]);
+
+		int spawnCount = (i == cursor_) ? 5 : 1;
+		for (int s = 0; s < spawnCount; ++s)
+		{
+			int r = std::rand() % 100;
+			int threshold = (i == cursor_) ? 70 : 15;
+			if (r < threshold)
+			{
+				Particle p;
+				p.x = centerX + static_cast<float>(std::rand() % 51 - 25);
+				p.y = baseY - static_cast<float>(std::rand() % 15);
+				p.vx = (std::rand() % 101 - 50) * 0.003f;
+				p.vy = -(0.8f + static_cast<float>(std::rand() % 100) * 0.005f);
+				p.maxLife = 35.0f + static_cast<float>(std::rand() % 35);
+				p.life = p.maxLife;
+				p.size = 1.5f + (std::rand() % 6) * 0.4f;
+				p.color = GetPlayerColor(i);
+				g_particles[i].push_back(p);
+			}
+		}
+
+		auto& vec = g_particles[i];
+		for (size_t pi = 0; pi < vec.size();)
+		{
+			Particle& p = vec[pi];
+			float wobble = (std::rand() % 101 - 50) * 0.001f;
+			p.vx += wobble;
+			p.x += p.vx;
+			p.y += p.vy;
+			p.vx *= 0.98f;
+			p.life -= 1.0f;
+			if (p.life <= 0.0f)
+			{
+				vec[pi] = vec.back();
+				vec.pop_back();
+			}
+			else
+			{
+				++pi;
+			}
+		}
+
+		// 🛠️ アニメーションの更新はここ（Update）だけで行うのが原則
+		if (animCtrl_[i])
+		{
+			animCtrl_[i]->Update();
+		}
+	}
 }
 
 void PlayerNumScene::Draw(void)
 {
-	// �w�i
-	DrawGraph(
-		0,
-		0,
-		bgImg_,
-		FALSE
-	);
+	int screenW = 0, screenH = 0;
+	GetDrawScreenSize(&screenW, &screenH);
 
+	// 背景描画
+	if (bgImg_ != -1)
+	{
+		DrawExtendGraph(0, 0, screenW, screenH, bgImg_, FALSE);
+	}
+	else
+	{
+		DrawBox(0, 0, screenW, screenH, GetColor(12, 18, 30), TRUE);
+	}
 
+	// デバッグ表示
+	{
+		char dbgBuf[256];
+		int selCount = 0;
+		for (int i = 0; i < SELECT_MAX; ++i) if (isUsePlayer_[i]) ++selCount;
+		snprintf(dbgBuf, sizeof(dbgBuf), "DEBUG Cursor:%d Selected:%d modelIds: %d,%d,%d,%d", cursor_, selCount,
+			modelId_[0], modelId_[1], modelId_[2], modelId_[3]);
+		DrawFormatString(10, 10, GetColor(255, 240, 120), "%s", dbgBuf);
+	}
 
-	// �v���C���[���I���V�[���̕`��
-	DrawString(100, 100, "�v���C���[���I���V�[��", GetColor(255, 255, 255));
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 70);
+	DrawBox(0, 0, screenW, screenH, GetColor(0, 0, 0), TRUE);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
+	DrawString(100, 70, "PLAYER SELECTION", GetColor(255, 255, 255));
+
+	// 3Dカメラのセットアップと視野角の設定
+	VECTOR camPos = VGet(0.0f, 60.0f, -480.0f);
+	VECTOR camTarget = VGet(0.0f, 40.0f, 0.0f);
+	SetCameraPositionAndTarget_UpVecY(camPos, camTarget);
+	SetupCamera_Perspective(60.0f * static_cast<float>(M_PI) / 180.0f);
+
+	// 3D描画の基本設定
+	SetUseZBuffer3D(TRUE);
+	SetWriteZBuffer3D(TRUE);
 
 	for (int i = 0; i < SELECT_MAX; i++)
 	{
-		float scale = 0.7f;
+		const int centerXBase = 250 + i * 250;
+		const int centerX = centerXBase + playerOffsetX_[i];
+		unsigned int pColor = GetPlayerColor(i);
 
-		float y = 260;
-
-		int playerColor = GetColor(255, 255, 255);
-
-		switch (i)
+		// --- 3Dモデル配置 ---
+		if (modelId_[i] != -1)
 		{
-		case 0:
-			playerColor = GetColor(255, 80, 80);
-			break;
+			float targetScreenX = static_cast<float>(centerX);
+			float targetScreenY = 480.0f + static_cast<float>(playerOffsetY_[i]);
 
-		case 1:
-			playerColor = GetColor(80, 160, 255);
-			break;
+			VECTOR posNear = ConvScreenPosToWorldPos(VGet(targetScreenX, targetScreenY, 0.0f));
+			VECTOR posFar = ConvScreenPosToWorldPos(VGet(targetScreenX, targetScreenY, 1.0f));
 
-		case 2:
-			playerColor = GetColor(80, 255, 120);
-			break;
+			VECTOR dir = VSub(posFar, posNear);
 
-		case 3:
-			playerColor = GetColor(255, 220, 80);
-			break;
+			VECTOR worldPos = VGet(0.0f, 0.0f, 0.0f);
+			if (fabs(dir.z) > 0.0001f)
+			{
+				float t = -posNear.z / dir.z;
+				worldPos.x = posNear.x + t * dir.x;
+				worldPos.y = posNear.y + t * dir.y;
+				worldPos.z = 0.0f;
+			}
+			else
+			{
+				worldPos = VGet(-240.0f + i * 160.0f, -60.0f, 0.0f);
+			}
+
+			// 座標を適用
+			MV1SetPosition(modelId_[i], worldPos);
+
+			// --- サイバーホログラムエフェクト設定 ---
+			float r = static_cast<float>((pColor >> 16) & 0xFF) / 255.0f;
+			float g = static_cast<float>((pColor >> 8) & 0xFF) / 255.0f;
+			float b = static_cast<float>(pColor & 0xFF) / 255.0f;
+
+			float alpha = 0.5f;
+			float pulse = 1.0f;
+
+			if (i == cursor_)
+			{
+				float angle = sinf(static_cast<float>(GetNowCount()) * 0.002f) * 0.15f;
+				MV1SetRotationXYZ(modelId_[i], VGet(0.0f, angle, 0.0f));
+
+				pulse = 1.0f + sinf(static_cast<float>(GetNowCount()) * 0.008f) * 0.15f;
+				alpha = 0.85f + sinf(static_cast<float>(GetNowCount()) * 0.005f) * 0.1f;
+			}
+			else
+			{
+				MV1SetRotationXYZ(modelId_[i], VGet(0.0f, 0.0f, 0.0f));
+
+				if (isUsePlayer_[i])
+				{
+					alpha = 0.6f;
+					pulse = 0.9f;
+				}
+				else
+				{
+					alpha = 0.5f;
+					pulse = 0.7f;
+				}
+			}
+
+			COLOR_F colorScale;
+			colorScale.r = r * pulse;
+			colorScale.g = g * pulse;
+			colorScale.b = b * pulse;
+			colorScale.a = alpha;
+
+			MV1SetDifColorScale(modelId_[i], colorScale);
+			MV1SetOpacityRate(modelId_[i], alpha);
+
+			// 🛠️ 描画直前の余分な Update() は削除しました
+			// 透過重なりを防ぐためにZバッファの挙動を調整
+			SetUseZBuffer3D(TRUE);
+			SetWriteZBuffer3D(FALSE);
+
+			// モデル描画
+			MV1DrawModel(modelId_[i]);
+
+			// 【後始末】次の3D描画のために書き込み設定を戻しておく
+			SetWriteZBuffer3D(TRUE);
 		}
 
-		// �J���[�o�[
-		DrawBox(
-			170 + i * 250,
-			430,
-			330 + i * 250,
-			450,
-			playerColor,
-			TRUE
-		);
+		// --- 2D UI層 ---
+		SetUseZBuffer3D(FALSE);
+		SetWriteZBuffer3D(FALSE);
 
-		// �I�𒆂̉摜�����g��{�_��
+		// サイバーライン
+		DrawBox(centerX - 80, 485, centerX + 80, 489, pColor, FALSE);
+
+		// パネル背景
+		const int panelLeft = centerX - 100;
+		const int panelRight = centerX + 100;
+		const int panelTop = 535;
+		const int panelBottom = 583;
+
 		if (i == cursor_)
 		{
-
-			
-			scale = 1.0f;
-
-			y += std::sin(GetNowCount() * 0.005f) * 10.0f;
-
-
-			int alpha =
-				(int)((std::sin(GetNowCount() * 0.01f)
-					* 0.5f + 0.5f) * 255);
-
-			// �g�͕��ʂɕ`��
-			/*SetDrawBlendMode(DX_BLENDMODE_NOBLEND,0);*/
-
-			// �I�𒆂̘g
-			/*DrawBox(
-				150 + i * 250,
-				230,
-				350 + i * 250,
-				490,
-				GetColor(255, 255, 255),
-				FALSE
-			);*/
-
-			// �摜�����_��
-			SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 190);
+			DrawBox(panelLeft, panelTop, panelRight, panelBottom, GetColor(5, 12, 22), TRUE);
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+			DrawBox(panelLeft, panelTop, panelRight, panelBottom, pColor, FALSE);
 		}
-
-
 		else
 		{
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 110);
+			DrawBox(panelLeft, panelTop, panelRight, panelBottom, GetColor(10, 14, 20), TRUE);
 			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+			if (isUsePlayer_[i])
+			{
+				DrawBox(panelLeft, panelTop, panelRight, panelBottom, GetColor(0, 220, 120), FALSE);
+			}
+			else
+			{
+				DrawBox(panelLeft, panelTop, panelRight, panelBottom, GetColor(55, 65, 75), FALSE);
+			}
 		}
 
-		DrawRotaGraph(
-			250 + i * 250,
-			(int)y,
-			scale,
-			0.0,
-			selectImg_[i],
-			TRUE
-		);
+		// パーティクル
+		for (const auto& p : g_particles[i])
+		{
+			float lifeRatio = p.life / p.maxLife;
+			int alphaP = static_cast<int>(180.0f * lifeRatio);
+			if (alphaP < 8) alphaP = 8;
+			SetDrawBlendMode(DX_BLENDMODE_ADD, alphaP);
+			DrawCircle(static_cast<int>(p.x), static_cast<int>(p.y), static_cast<int>(p.size), p.color, TRUE);
+		}
 		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-		// �摜���� USE / NOT USE1
-		int color =
-			isUsePlayer_[i]
-			? GetColor(0, 255, 0)
-			: GetColor(180, 180, 180);
+		// 文字列
+		const int textX = panelLeft + 16;
+		const int textY = panelTop + 15;
 
-		DrawGraph(
-			170 + i * 250,
-			520,
-			isUsePlayer_[i] ? useImg_ : notUseImg_,
-			TRUE
-		);
-
-		// �J�[�\�����
 		if (i == cursor_)
 		{
-			color = GetColor(255, 255, 255);
+			bool blink = ((GetNowCount() / 250) % 2) == 0;
+			unsigned int arrowColor = blink ? pColor : GetColor(0, 0, 0);
 
-			DrawString(
-				250 + i * 250,
-				(int)y + 220,
-				"��",
-				GetColor(255, 255, 255)
-			);
+			char buf[64];
+			snprintf(buf, sizeof(buf), "P%d SELECTING", i + 1);
+
+			DrawFormatString(textX, textY, arrowColor, ">");
+			DrawFormatString(textX + 16, textY, GetColor(255, 255, 255), "%s", buf);
 		}
+		else if (isUsePlayer_[i])
+		{
+			DrawFormatString(textX, textY, GetColor(0, 255, 150), "[ LOCKED IN ]");
+
+			int frameCol = GetColor(0, 255, 140);
+			DrawBox(panelLeft - 4, panelTop - 4, panelRight + 4, panelBottom + 4, frameCol, FALSE);
+		}
+		else
+		{
+			char buf[64];
+			snprintf(buf, sizeof(buf), "[ P%d READY ]", i + 1);
+			DrawFormatString(textX, textY, GetColor(100, 125, 135), "%s", buf);
+		}
+
+		if (i == cursor_)
+		{
+			bool blink = ((GetNowCount() / 200) % 2) == 0;
+			unsigned int arrowColor = blink ? pColor : GetColor(120, 120, 120);
+			DrawFormatString(centerX - 6, panelBottom + 8, arrowColor, "^");
+		}
+
+		SetUseZBuffer3D(TRUE);
+		SetWriteZBuffer3D(TRUE);
 	}
 
-	
+	SetWriteZBuffer3D(FALSE);
+	SetUseZBuffer3D(FALSE);
 }
 
 void PlayerNumScene::Release(void)
 {
 	for (int i = 0; i < SELECT_MAX; i++)
 	{
-		DeleteGraph(selectImg_[i]);
+		if (selectImg_[i] != -1) DeleteGraph(selectImg_[i]);
+		if (animCtrl_[i])
+		{
+			delete animCtrl_[i];
+			animCtrl_[i] = nullptr;
+		}
+		if (modelId_[i] != -1)
+		{
+			MV1DeleteModel(modelId_[i]);
+			modelId_[i] = -1;
+		}
 	}
-
-	DeleteGraph(useImg_);
-	DeleteGraph(notUseImg_);
-	DeleteGraph(bgImg_);
-
+	if (useImg_ != -1) DeleteGraph(useImg_);
+	if (notUseImg_ != -1) DeleteGraph(notUseImg_);
+	if (bgImg_ != -1) DeleteGraph(bgImg_);
 
 	DeleteSoundMem(decideSE_);
+
+	for (int i = 0; i < 4; ++i) g_particles[i].clear();
 }

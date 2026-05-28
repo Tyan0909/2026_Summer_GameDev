@@ -76,7 +76,8 @@ const Player::INPUT_CONFIG Player::PLAYER2_KEYBOARD_INPUT_CONFIG =
 	KEY_INPUT_NUMPAD4,
 	KEY_INPUT_NUMPAD6,
 	KEY_INPUT_NUMPAD7,
-	KEY_INPUT_RSHIFT,
+	// 変更: 2P も LSHIFT で走るようにする
+	KEY_INPUT_LSHIFT,
 	InputManager::JOYPAD_NO::PAD1,
 	InputManager::JOYPAD_BTN::R_BUMPER,
 	InputManager::JOYPAD_BTN::DOWN
@@ -223,22 +224,21 @@ void Player::UpdateMoveInput(void)
 
 	if (!AsoUtility::EqualsVZero(inputDir))
 	{
-		// 変更点：移動速度をフレーム時間に依存させ、MOVE_SPEED を実際の速度に利用する
-		//         走り/しゃがみで倍率を変えられるようにする
+		// フレーム時間に依存させて MOVE_SPEED を実際の速度に使う
 		float delta = SceneManager::GetInstance().GetDeltaTime();
-		if (delta <= 0.0f) delta = 1.0f / 60.0f; // 保険
+		if (delta <= 0.0f) delta = 1.0f / 60.0f;
 
-		// 基本速度（ヘッダで設定した MOVE_SPEED を使用）
+		// 基本速度
 		float speed = MOVE_SPEED * delta;
 
-		// 走り入力なら速く（任意の倍率）
+		// 走り入力なら倍率を掛ける
 		if (IsRunInput())
 		{
-			const float RUN_MULT = 1.5f;
+			const float RUN_MULT =2.25f;
 			speed *= RUN_MULT;
 		}
 
-		// しゃがみ入力なら遅く（任意の倍率）
+		// しゃがみ入力なら減速
 		if (IsCrouchInput())
 		{
 			const float CROUCH_MULT = 0.5f;
@@ -338,7 +338,8 @@ bool Player::IsRunInput(void) const
 
 	if (IsKeyboardInputEnabled())
 	{
-		isRun = isRun || CheckHitKey(inputConfig_.runKey) || CheckHitKey(KEY_INPUT_RSHIFT);
+		// 入力設定の runKey をチェック + 左右SHIFT の両方を許容する
+		isRun = isRun || CheckHitKey(inputConfig_.runKey) || CheckHitKey(KEY_INPUT_LSHIFT) || CheckHitKey(KEY_INPUT_RSHIFT);
 	}
 
 	if (IsPadInputEnabled())
@@ -678,6 +679,7 @@ void Player::OnEnterRun(void)
 {
 	if (animController_ != nullptr)
 	{
+		// RUN アニメがない場合は WALK を流用（必要なら専用アニメを追加して差し替えてください）
 		animController_->Play((int)ANIM_TYPE::WALK, true);
 	}
 }

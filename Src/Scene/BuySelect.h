@@ -12,6 +12,8 @@ enum class ITEM_TYPE
 	INSURANCE_CAMERA,
 	HELMET,
 	FRAG_GRENADE,
+	SPIKE_TRAP,
+	EXPLOSIVE_TRAP,
 };
 
 
@@ -49,7 +51,15 @@ private:
 	// 現在の所持金（= 最低保証 + carryMoney）
 	int currentAmount_ = 0;
 
-	int itemImg_[5];
+	int itemImg_[7];
+
+	// 背景画像ハンドル（追加）
+	int bgHandle_ = -1;
+
+	// フォントハンドル
+	int fontLarge_ = -1;
+	int fontMid_ = -1;
+	int fontSmall_ = -1;
 
 	// カーソル位置
 	int cursorIdx_ = 0;
