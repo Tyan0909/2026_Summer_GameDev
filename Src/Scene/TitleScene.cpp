@@ -30,7 +30,7 @@ void TitleScene::Init(void)
 	// リソース読み込み
 	logoHandle_ = LoadGraph("data/Image/Title/Title logo.png");
 	pointerHandle_ = LoadGraph("data/Image/Title/pointer.png");
-	shutterSE_ = LoadSoundMem("data/Sound/shutter.wav");
+	shutterSE_ = LoadSoundMem("data/Sound/shutter.mp3");
 	pressHandle_ = LoadGraph("data/Image/Title/press_space.png");
 
 	// 演出初期化
@@ -55,6 +55,8 @@ void TitleScene::Update(void)
 	// Enterキー：分割なし直接開始
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
+		// 確定音（シャッター）を再生してから遷移
+		PlaySoundMem(shutterSE_, DX_PLAYTYPE_BACK);
 		scene.SetSplitScreenEnabled(false);
 		scene.ChangeScene(SceneManager::SCENE_ID::GAME);
 		return;

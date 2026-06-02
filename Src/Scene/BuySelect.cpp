@@ -11,6 +11,11 @@
 #define DX_FONTTYPE_ANTIALIAS 0
 #endif
 
+// ファイルローカルの効果音ハンドル
+static int bs_moveSE = -1;
+static int bs_toggleSE = -1;
+static int bs_confirmSE = -1;
+
 BuySelect::BuySelect(void) {}
 BuySelect::~BuySelect(void) {}
 
@@ -18,6 +23,11 @@ void BuySelect::Init(void)
 {
     // 背景画像を読み込む（ファイルを Data/Image/BuySelect/Background.png に置いてください）
     bgHandle_ = LoadGraph("Data/Image/BuySelect/Background.png");
+
+    // 効果音読み込み
+    bs_moveSE = LoadSoundMem("Data/Sound/move.mp3");
+    bs_toggleSE = LoadSoundMem("Data/Sound/toggle.mp3");
+    bs_confirmSE = LoadSoundMem("Data/Sound/confirm.mp3");
 
     // フォント作成（日本語フォントは環境に依存します。必要ならフォント名を指定）
     fontLarge_ = CreateFontToHandle(NULL, 28, -1, DX_FONTTYPE_ANTIALIAS);
@@ -60,13 +70,22 @@ void BuySelect::Update(void)
 
     // 上下カーソル移動
     if (ins.IsTrgDown(KEY_INPUT_UP))
+    {
         cursorIdx_ = (cursorIdx_ - 1 + (int)items_.size()) % (int)items_.size();
+        if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
+    }
     if (ins.IsTrgDown(KEY_INPUT_DOWN))
+    {
         cursorIdx_ = (cursorIdx_ + 1) % (int)items_.size();
+        if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
+    }
 
     // Zキーで選択トグル
     if (ins.IsTrgDown(KEY_INPUT_Z))
+    {
         ToggleItemSelection(cursorIdx_);
+        if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
+    }
 
     // SPACEキーで購入確定（清算）
     if (ins.IsTrgDown(KEY_INPUT_SPACE))
@@ -80,6 +99,7 @@ void BuySelect::Update(void)
         if (carry < 0) carry = 0;
 
         scene.SetCarryMoney(carry);
+        if (bs_confirmSE != -1) PlaySoundMem(bs_confirmSE, DX_PLAYTYPE_BACK);
         scene.ChangeScene(SceneManager::SCENE_ID::LOADING);
     }
 }
@@ -348,6 +368,11 @@ void BuySelect::Release(void)
     if (fontLarge_ != -1) { DeleteFontToHandle(fontLarge_); fontLarge_ = -1; }
     if (fontMid_ != -1) { DeleteFontToHandle(fontMid_); fontMid_ = -1; }
     if (fontSmall_ != -1) { DeleteFontToHandle(fontSmall_); fontSmall_ = -1; }
+
+    // 効果音解放
+    if (bs_moveSE != -1) { DeleteSoundMem(bs_moveSE); bs_moveSE = -1; }
+    if (bs_toggleSE != -1) { DeleteSoundMem(bs_toggleSE); bs_toggleSE = -1; }
+    if (bs_confirmSE != -1) { DeleteSoundMem(bs_confirmSE); bs_confirmSE = -1; }
 }
 
 int BuySelect::CalculateTotalPrice() const

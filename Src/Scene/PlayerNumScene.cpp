@@ -14,6 +14,10 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// ファイルローカルの効果音ハンドル（ヘッダを触らずに追加）
+static int pn_moveSE = -1;
+static int pn_toggleSE = -1;
+
 // 軽量パーティクル構造体（ファイルローカル）
 namespace
 {
@@ -96,7 +100,11 @@ void PlayerNumScene::Init(void)
 	bgImg_ = LoadGraph("Data/PlayerNum/bg.png");
 	if (bgImg_ == -1) bgImg_ = LoadGraph("Data/PlayerNum/bg.jpg");
 
-	decideSE_ = LoadSoundMem("Data/Sound/decide.wav");
+	// 既存の決定SE（存在する場合）
+	decideSE_ = LoadSoundMem("Data/PlayerNum/Sound/decide.mp3");
+	// 追加効果音
+	pn_moveSE = LoadSoundMem("Data/PlayerNum/Sound/move.mp3");
+	pn_toggleSE = LoadSoundMem("Data/PlayerNum/Sound/toggle.mp3");
 
 	selectNum_ = 0;
 	cursor_ = 0;
@@ -160,12 +168,16 @@ void PlayerNumScene::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
+	// Spaceキーでゲームシーンへ遷移
 	if (ins.IsTrgDown(KEY_INPUT_SPACE))
 	{
 		std::vector<int> selected;
 		for (int i = 0; i < SELECT_MAX; ++i)
 		{
-			if (isUsePlayer_[i]) selected.push_back(i + 1);
+			if (isUsePlayer_[i])
+			{
+				selected.push_back(i + 1);
+			}
 		}
 
 		int playerCount = static_cast<int>(selected.size());
@@ -183,21 +195,28 @@ void PlayerNumScene::Update(void)
 		scene.ChangeScene(SceneManager::SCENE_ID::EXAMPLE);
 	}
 
+	// Enterキーで参加状態をトグル（確定）
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
 		isUsePlayer_[cursor_] = !isUsePlayer_[cursor_];
+		// トグル音
+		if (pn_toggleSE != -1) PlaySoundMem(pn_toggleSE, DX_PLAYTYPE_BACK);
 	}
 
+	// 左右カーソル
 	if (ins.IsTrgDown(KEY_INPUT_LEFT))
 	{
 		cursor_--;
 		if (cursor_ < 0) cursor_ = 3;
+		// 移動音
+		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
 	}
-
 	if (ins.IsTrgDown(KEY_INPUT_RIGHT))
 	{
 		cursor_++;
 		if (cursor_ > 3) cursor_ = 0;
+		// 移動音
+		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
 	}
 
 	if (ins.IsTrgDown(KEY_INPUT_W)) playerOffsetY_[cursor_] -= 5;
@@ -480,6 +499,10 @@ void PlayerNumScene::Draw(void)
 
 void PlayerNumScene::Release(void)
 {
+	// サウンド解放（ファイルローカル）
+	if (pn_moveSE != -1) { DeleteSoundMem(pn_moveSE); pn_moveSE = -1; }
+	if (pn_toggleSE != -1) { DeleteSoundMem(pn_toggleSE); pn_toggleSE = -1; }
+
 	for (int i = 0; i < SELECT_MAX; i++)
 	{
 		if (selectImg_[i] != -1) DeleteGraph(selectImg_[i]);
