@@ -61,6 +61,10 @@ public:
 	bool StartAttack(const VECTOR& targetPos);
 	bool ConsumeAttackHit(void) ;
 
+	// 追加: スタン（フレーム数）を付与
+	void Stun(int frames);
+	bool IsStunned() const { return stunFrames_ > 0; }
+
 protected:
 
 	// リソースロード
@@ -115,6 +119,8 @@ private:
 	int attackFrame_;
 	VECTOR attackTargetPos_;
 	bool isAttackHitPending_;
+
+	int stunFrames_ = 0; // 追加: スタン残りフレーム
 
 	// 重力適用
 	void ApplyGravity(void);

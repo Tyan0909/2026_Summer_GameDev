@@ -64,6 +64,10 @@ public:
 	void SetLastPhotoScore(int score) { lastPhotoScore_ = score; }
 	int GetLastPhotoScore(void) const { return lastPhotoScore_; }
 
+	// 追加: 購入したアイテムの型(ID列)を保存 / 取得
+	void SetPurchasedItemTypes(const std::vector<int>& types) { purchasedItemTypes_ = types; }
+	const std::vector<int>& GetPurchasedItemTypes() const { return purchasedItemTypes_; }
+
 private:
 	static SceneManager* instance_;
 
@@ -97,6 +101,8 @@ private:
 	GAME_RESULT gameResult_ = GAME_RESULT::NONE;
 	int photoCount_ = 0;
 	int lastPhotoScore_ = 0;
+
+	std::vector<int> purchasedItemTypes_; // 追加: BuySelect の購入アイテムを int(ID)で保持
 
 public:
 

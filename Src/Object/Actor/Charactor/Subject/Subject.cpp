@@ -23,7 +23,8 @@ Subject::Subject(void)
 	attackCooldownFrame_(0),
 	attackFrame_(0),
 	attackTargetPos_(VGet(0.0f, 0.0f, 0.0f)),
-	isAttackHitPending_(false)
+	isAttackHitPending_(false),
+	stunFrames_(0)
 {
 	// 初期化はActorBaseのInitで行う
 }
@@ -37,6 +38,15 @@ void Subject::Update(void)
 	if (attackCooldownFrame_ > 0)
 	{
 		attackCooldownFrame_--;
+	}
+
+	// 追加: スタン管理。スタン中は行動しない
+	if (stunFrames_ > 0)
+	{
+		stunFrames_--;
+		// 軽くスケーリングで表現したいならここへ
+		transform_.Update();
+		return;
 	}
 
 	const VECTOR prevPos = transform_.pos;
@@ -407,5 +417,15 @@ void Subject::FaceTarget(const VECTOR& targetPos)
 	}
 
 	transform_.quaRot = Quaternion::LookRotation(AsoUtility::VNormalize(dir));
+}
+
+void Subject::Stun(int frames)
+{
+	if (frames <= 0) return;
+	stunFrames_ = frames;
+	// optionally reset action state
+	actionState_ = ACTION_STATE::MOVE;
+	attackFrame_ = 0;
+	isAttackHitPending_ = false;
 }
 

@@ -2,6 +2,7 @@
 #include "SceneBase.h"
 #include "../Object/Actor/Stage/Stage.h"
 #include <vector>
+#include <map>
 
 class Stage;
 class Player;
@@ -22,7 +23,6 @@ public:
 
 private:
 	static constexpr VECTOR PLAYER2_INIT_POS = { 200.0f, 1000.0f, 0.0f };
-
 	static constexpr VECTOR PLAYER3_INIT_POS = { -200.0f, 1000.0f, 0.0f };
 	static constexpr VECTOR PLAYER4_INIT_POS = { 700.0f, 1000.0f, 0.0f };
 
@@ -84,6 +84,29 @@ private:
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 
+	// Inventory HUD
+	void DrawInventoryHUD(const Player* targetPlayer, int drawWidth, int drawHeight) const;
+	static constexpr int ITEM_ICON_SIZE = 48;
+	static constexpr int ITEM_ICON_SPACING = 8;
+	static constexpr int ITEM_ICON_MARGIN = 16;
+
+	// 追加: トラップ関連
+	enum class TRAP_TYPE { SPIKE = 0, MINE = 1 };
+	struct Trap
+	{
+		TRAP_TYPE type;
+		VECTOR pos;
+		bool triggered = false;
+		int lifeFrames = 0; // 残存フレーム（スパイク持続等）
+		int ownerPlayerIndex = 0; // owner index in players_ (optional)
+	};
+
+	// トラップ設定
+	static constexpr int SPIKE_DURATION_FRAMES = 4 * 60; // 4秒
+	static constexpr float SPIKE_TRIGGER_RADIUS = 40.0f;
+	static constexpr float MINE_TRIGGER_RADIUS = 40.0f;
+	static constexpr float MINE_DAMAGE_RADIUS = 120.0f;
+
 	Stage* stage_;
 	Player* player_;
 	Player* player2_;
@@ -109,4 +132,13 @@ private:
 	std::vector<Player*> players_;
 	std::vector<int> lastPhotoScorePerPlayer_;
 	std::vector<int> photoCountPerPlayer_;
+
+	// 追加
+	std::vector<Trap> traps_;
+
+	// アイコンハンドル（ヘルメット・フラグ・スパイク・地雷）
+	int iconHelmetHandle_ = -1;
+	int iconFragHandle_ = -1;
+	int iconSpikeHandle_ = -1;
+	int iconMineHandle_ = -1;
 };
