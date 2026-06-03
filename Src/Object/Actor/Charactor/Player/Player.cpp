@@ -408,6 +408,8 @@ VECTOR Player::GetCameraWorldPos(void) const
 	return VAdd(transform_.pos, cameraOffset);
 }
 
+// QQQQQQQQQQQQQQQ: カメラの前方向ベクトルを計算する関数を追加してください（カメラの向きから前方向を求める）。
+
 VECTOR Player::GetCameraForward(void) const
 {
 	const float pitch = cameraAngles_.x;
