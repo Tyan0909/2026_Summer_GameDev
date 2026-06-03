@@ -414,6 +414,8 @@ VECTOR Player::GetHeadWorldPos(void) const
 	return VAdd(transform_.pos, COL_CAPSULE_TOP_LOCAL_POS);
 }
 
+//AAAAAA
+
 void Player::ApplyCamera(Camera* camera) const
 {
 	if (camera == nullptr)
