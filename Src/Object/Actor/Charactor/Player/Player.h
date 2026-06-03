@@ -10,6 +10,7 @@
 class ColliderBase;
 class ResourceManager;
 class AnimationController;
+class Camera;
 
 class Player : public ActorBase
 {
@@ -17,7 +18,7 @@ public:
 
 	// íËêîìôÅiä˘ë∂Åj
 	static constexpr float GRAVITY = 0.5f;
-	static constexpr float MOVE_SPEED =250.f;
+	static constexpr float MOVE_SPEED = 250.f;
 
 	static constexpr VECTOR COL_LINE_START_LOCAL_POS = { 0.0f, 80.0f, 0.0f };
 	static constexpr VECTOR COL_LINE_END_LOCAL_POS = { 0.0f, -10.0f, 0.0f };
@@ -97,6 +98,8 @@ public:
 	void SetCameraAngles(const VECTOR& angles);
 	VECTOR GetCameraWorldPos(void) const;
 	VECTOR GetCameraForward(void) const;
+	VECTOR GetHeadWorldPos(void) const;
+	void ApplyCamera(Camera* camera) const;
 
 	void TakeDamage(int damage);
 	bool CanTakeDamage(void) const;

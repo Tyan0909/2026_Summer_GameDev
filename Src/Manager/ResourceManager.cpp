@@ -21,20 +21,26 @@ ResourceManager& ResourceManager::GetInstance(void)
 
 void ResourceManager::Init(void)
 {
+	if (!resourcesMap_.empty())
+	{
+		return;
+	}
+
 	using RES = Resource;
 	using RES_T = RES::TYPE;
 	static std::string PATH_IMG = Application::PATH_IMAGE;
 	static std::string PATH_MDL = Application::PATH_MODEL;
 	static std::string PATH_EFF = Application::PATH_EFFECT;
+	static std::string PATH_SND = Application::PATH_SOUND;
 
 	Resource* res;
 
-	// ステージ(近景フル)
+	// ステージ(近景付き)
 	res = new RES(RES_T::MODEL, PATH_MDL +
 		"Stage/GameObject.mv1");
 	resourcesMap_.emplace(SRC::MAIN_STAGE, res);
 
-	// ステージ(遠景ローポリ)
+	// ステージ(簡易ローポリ)
 	res = new RES(RES_T::MODEL, PATH_MDL +
 		"Stage/GameObject_Low.mv1");
 	resourcesMap_.emplace(SRC::MAIN_STAGE_FAR, res);
@@ -56,18 +62,51 @@ void ResourceManager::Init(void)
 
 	// PRESS SPACE
 	res = new RES(RES_T::IMG, PATH_IMG +
-		"Title/press_space.png.png");
-	resourcesMap_.emplace(SRC::TITLE, res);
+		"Title/press_space.png");
+	resourcesMap_.emplace(SRC::PUSH_SPACE, res);
 
+	// スカイドーム
 	res = new RES(RES_T::MODEL, PATH_MDL +
 		"SkyDome/SkyDome.mv1");
+	resourcesMap_.emplace(SRC::SKY_DOME, res);
+
+	// BGM: タイトル
+	res = new RES(RES_T::SOUND, PATH_SND +
+		"Bgm/title.wav");
+	resourcesMap_.emplace(SRC::BGM_TITLE, res);
+
+	// BGM: ゲーム
+	res = new RES(RES_T::SOUND, PATH_SND +
+		"Bgm/game.wav");
+	resourcesMap_.emplace(SRC::BGM_GAME, res);
+
+	// SE: 決定
+	res = new RES(RES_T::SOUND, PATH_SND +
+		"Se/decide.wav");
+	resourcesMap_.emplace(SRC::SE_DECIDE, res);
+
+	// SE: ヒット
+	res = new RES(RES_T::SOUND, PATH_SND +
+		"Se/hit.wav");
+	resourcesMap_.emplace(SRC::SE_HIT, res);
 }
 
 void ResourceManager::Release(void)
 {
 	for (auto& p : loadedMap_)
 	{
-		p.second.Release();
+		if (!p.second)
+		{
+			continue;
+		}
+
+		auto resPair = resourcesMap_.find(p.first);
+		if (resPair == resourcesMap_.end())
+		{
+			continue;
+		}
+
+		resPair->second->Release();
 	}
 
 	loadedMap_.clear();
@@ -75,14 +114,21 @@ void ResourceManager::Release(void)
 
 void ResourceManager::Destroy(void)
 {
+	if (instance_ == nullptr)
+	{
+		return;
+	}
+
 	Release();
+
 	for (auto& res : resourcesMap_)
 	{
-		res.second->Release();
 		delete res.second;
 	}
 	resourcesMap_.clear();
+
 	delete instance_;
+	instance_ = nullptr;
 }
 
 const Resource& ResourceManager::Load(SRC src)
@@ -98,7 +144,7 @@ const Resource& ResourceManager::Load(SRC src)
 int ResourceManager::LoadModelDuplicate(SRC src)
 {
 	Resource& res = _Load(src);
-	if (res.type_ == Resource::TYPE::NONE)
+	if (res.type_ != Resource::TYPE::MODEL)
 	{
 		return -1;
 	}
@@ -115,20 +161,20 @@ ResourceManager::ResourceManager(void)
 
 Resource& ResourceManager::_Load(SRC src)
 {
-	const auto& lPair = loadedMap_.find(src);
-	if (lPair != loadedMap_.end())
+	const auto lPair = loadedMap_.find(src);
+	if (lPair != loadedMap_.end() && lPair->second)
 	{
 		return *resourcesMap_.find(src)->second;
 	}
 
-	const auto& rPair = resourcesMap_.find(src);
+	const auto rPair = resourcesMap_.find(src);
 	if (rPair == resourcesMap_.end())
 	{
 		return dummy_;
 	}
 
 	rPair->second->Load();
-	loadedMap_.emplace(src, *rPair->second);
+	loadedMap_[src] = true;
 
 	return *rPair->second;
 }

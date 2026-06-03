@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <vector>
+
 class SceneBase;
 class Fader;
 class Camera;
@@ -8,12 +9,10 @@ class Camera;
 class SceneManager
 {
 public:
-	// 背景色
 	static constexpr int BACKGROUND_COLOR_R = 0;
 	static constexpr int BACKGROUND_COLOR_G = 139;
 	static constexpr int BACKGROUND_COLOR_B = 139;
 
-	// シーン管理ID
 	enum class SCENE_ID
 	{
 		NONE,
@@ -33,6 +32,14 @@ public:
 		GAMEOVER,
 	};
 
+	enum class PAUSE_MENU_ITEM
+	{
+		RESUME,
+		TITLE,
+		EXIT,
+		MAX,
+	};
+
 	static void CreateInstance(void);
 	static SceneManager& GetInstance(void);
 
@@ -48,7 +55,6 @@ public:
 	float GetDeltaTime(void) const { return deltaTime_; }
 	Camera* GetCamera(void) const { return camera_; }
 
-	// carryMoney_ は「ゲーム中に撮影で獲得した合計スコア」として扱う
 	void SetCarryMoney(int money) { carryMoney_ = money; }
 	int GetCarryMoney(void) const { return carryMoney_; }
 
@@ -64,9 +70,8 @@ public:
 	void SetLastPhotoScore(int score) { lastPhotoScore_ = score; }
 	int GetLastPhotoScore(void) const { return lastPhotoScore_; }
 
-	// 追加: 購入したアイテムの型(ID列)を保存 / 取得
-	void SetPurchasedItemTypes(const std::vector<int>& types) { purchasedItemTypes_ = types; }
-	const std::vector<int>& GetPurchasedItemTypes() const { return purchasedItemTypes_; }
+	void SetPaused(bool isPaused) { isPaused_ = isPaused; }
+	bool IsPaused(void) const { return isPaused_; }
 
 private:
 	static SceneManager* instance_;
@@ -78,6 +83,7 @@ private:
 	SceneBase* scene_;
 	Camera* camera_;
 	bool isSceneChanging_;
+	bool isPaused_;
 
 	std::chrono::system_clock::time_point preTime_;
 	float deltaTime_;
@@ -89,10 +95,12 @@ private:
 	void ResetDeltaTime(void);
 	void DoChangeScene(SCENE_ID sceneId);
 	void Fade(void);
+	void DrawPauseOverlay(void) const;
+	void ResetPauseMenu(void);
+	void UpdatePauseMenu(void);
+	void ExecutePauseMenu(void);
 
 	int playerNum_ = 0;
-
-	// 「ゲーム中に撮影で獲得した合計スコア」
 	int carryMoney_ = 0;
 
 	std::vector<int> selectedPlayerNums_;
@@ -102,10 +110,9 @@ private:
 	int photoCount_ = 0;
 	int lastPhotoScore_ = 0;
 
-	std::vector<int> purchasedItemTypes_; // 追加: BuySelect の購入アイテムを int(ID)で保持
+	int pauseMenuIndex_ = 0;
 
 public:
-
 	void SetPlayerNum(int num) { playerNum_ = num; }
 	int GetPlayerNum(void) const { return playerNum_; }
 
