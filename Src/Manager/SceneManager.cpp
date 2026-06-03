@@ -312,6 +312,7 @@ void SceneManager::DrawPauseOverlay(void) const
 	int screenHeight = 0;
 	GetDrawScreenSize(&screenWidth, &screenHeight);
 
+
 	const int backColor = GetColor(0, 0, 0);
 	const int frameColor = GetColor(255, 255, 255);
 	const int titleColor = GetColor(255, 255, 0);
