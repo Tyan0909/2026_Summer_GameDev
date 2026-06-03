@@ -48,6 +48,8 @@ public:
 	bool HasScreenshot(void) const;
 	int GetScreenshotHandle(void) const;
 
+	void RequestEnd(void);
+
 private:
 
 	// 静的インスタンス
@@ -69,5 +71,6 @@ private:
 	bool isScreenshotRequested_;
 	bool hasScreenshot_;
 	int screenshotHandle_;
+	bool isEndRequested_;
 
 };
