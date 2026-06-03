@@ -300,7 +300,9 @@ void BuySelect::Draw(void)
             GetGraphSize(imgHandle, &imgW, &imgH);
             if (imgW > 0 && imgH > 0)
             {
-                float scale = std::min(areaW / (float)imgW, areaH / (float)imgH);
+                float scaleX = areaW / static_cast<float>(imgW);
+                float scaleY = areaH / static_cast<float>(imgH);
+                float scale = (scaleX < scaleY) ? scaleX : scaleY;
                 if (scale > 1.0f) scale = 1.0f;
                 int centerY = bgTop + areaH / 2;
                 DrawRotaGraph(centerX, centerY, scale, 0.0, imgHandle, TRUE);
