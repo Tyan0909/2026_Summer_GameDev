@@ -56,71 +56,12 @@ void GameScene::Init()
 
 	// プレイヤー選択情報を取得して GameScene の構成に反映
 	const int selectedPlayerCount = scene.GetPlayerNum();
-	const auto& selectedPlayers = scene.GetSelectedPlayerNums();
 	activePlayerCount_ = selectedPlayerCount;
 
-	// プレイヤー1（常に作成）
-	player_ = new Player();
-	player_->Init();
-	player_->AddHitCollider(stageCollider);
+	SetupPlayers(stageCollider, selectedPlayerCount);
 
-	// プレイヤー2は選択人数が2人以上の場合のみ作成
-	if (selectedPlayerCount >= 2)
-	{
-		player2_ = new Player();
-		player2_->Init();
-		player2_->SetInputConfig(Player::PLAYER2_KEYBOARD_INPUT_CONFIG);
-		player2_->SetInputEnabled(true);
-		player2_->SetPos(PLAYER2_INIT_POS);
-		player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-		player2_->AddHitCollider(stageCollider);
-	}
-	else
-	{
-		player2_ = nullptr;
-	}
-
-	// プレイヤー3は選択人数が3人以上の場合のみ作成
-	if (selectedPlayerCount >= 3)
-	{
-		player3_ = new Player();
-		player3_->Init();
-		player3_->SetInputEnabled(true);
-		player3_->SetPos(PLAYER3_INIT_POS);
-		player3_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-		player3_->AddHitCollider(stageCollider);
-	}
-	else
-	{
-		player3_ = nullptr;
-	}
-
-	// プレイヤー4は選択人数が4人の場合に作成（今は最大4に対応）
-	if (selectedPlayerCount >= 4)
-	{
-		player4_ = new Player();
-		player4_->Init();
-		player4_->SetInputEnabled(true);
-		player4_->SetPos(PLAYER4_INIT_POS);
-		player4_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-		player4_->AddHitCollider(stageCollider);
-	}
-	else
-	{
-		player4_ = nullptr;
-	}
-
-	// --- players_ 配列を構築し、プレイヤーごとのスコア配列を初期化 ---
-	players_.clear();
-	if (player_) players_.push_back(player_);
-	if (player2_) players_.push_back(player2_);
-	if (player3_) players_.push_back(player3_);
-	if (player4_) players_.push_back(player4_);
-
-	const size_t pcount = players_.size();
-	lastPhotoScorePerPlayer_.assign(pcount, 0);
-	photoCountPerPlayer_.assign(pcount, 0);
-	// -------------------------------------------------------------
+	// players_ 配列を構築し、プレイヤーごとのスコア配列を初期化
+	RebuildPlayersArray();
 
 	subjectManager_ = new SubjectManager();
 	subjectManager_->Init();
@@ -132,44 +73,10 @@ void GameScene::Init()
 		subjectManager_->CreateRandomSubject(ResourceManager::SRC::SUBJECT);
 	}
 
-	// 分割方法の決定:
-	if (selectedPlayerCount <= 1)
-	{
-		isSplitScreenEnabled_ = false;
-	}
-	else
-	{
-		isSplitScreenEnabled_ = true;
-	}
+	isSplitScreenEnabled_ = (selectedPlayerCount > 1);
 
 	GetDrawScreenSize(&screenWidth_, &screenHeight_);
-
-	// 画面バッファ作成
-	if (isSplitScreenEnabled_ && selectedPlayerCount == 2)
-	{
-		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
-		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
-		bottomLeftScreenHandle_ = -1;
-		bottomRightScreenHandle_ = -1;
-	}
-	else if (isSplitScreenEnabled_ && selectedPlayerCount >= 3)
-	{
-		// 4分割 (各スクリーンは画面幅/2 x 高さ/2)
-		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // top-left
-		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // top-right
-		bottomLeftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-left
-		bottomRightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE); // bottom-right
-	}
-	else
-	{
-		leftScreenHandle_ = -1;
-		rightScreenHandle_ = -1;
-		bottomLeftScreenHandle_ = -1;
-		bottomRightScreenHandle_ = -1;
-	}
-
-	sceneScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
-	screenshotScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
+	CreateScreenHandles(selectedPlayerCount);
 
 	lastPhotoScore_ = 0;
 	photoCount_ = 0;
@@ -183,7 +90,10 @@ void GameScene::Init()
 	scene.SetLastPhotoScore(0);
 
 	auto* camera = scene.GetCamera();
-	camera->SetAngles(player_->GetCameraAngles());
+	if (player_ != nullptr)
+	{
+		camera->SetAngles(player_->GetCameraAngles());
+	}
 	camera->ChangeMode(Camera::MODE::FREE);
 }
 
@@ -197,11 +107,12 @@ void GameScene::Update()
 		flashFrame_--;
 	}
 
-	if (stage_) stage_->Update();
-	if (player_) player_->Update();
-	if (player2_) player2_->Update();
-	if (player3_) player3_->Update();
-	if (player4_) player4_->Update();
+	if (stage_)
+	{
+		stage_->Update();
+	}
+
+	UpdatePlayers();
 
 	if (subjectManager_ != nullptr)
 	{
@@ -235,10 +146,125 @@ void GameScene::Update()
 		flashFrame_ = FLASH_FRAME_MAX;
 	}
 
+	
 	if (ins.IsTrgDown(KEY_INPUT_F1) && hasScreenshot_)
 	{
 		isScreenshotPreviewEnabled_ = !isScreenshotPreviewEnabled_;
 	}
+	
+}
+
+void GameScene::Release()
+{
+	ReleasePlayers();
+
+	if (subjectManager_)
+	{
+		subjectManager_->Release();
+		delete subjectManager_;
+		subjectManager_ = nullptr;
+	}
+
+	if (stage_)
+	{
+		stage_->Release();
+		delete stage_;
+		stage_ = nullptr;
+	}
+
+	ReleaseScreenHandles();
+}
+
+Player* GameScene::CreatePlayer(
+	const ColliderBase* stageCollider,
+	const VECTOR* initPos,
+	bool usePlayer2InputConfig,
+	bool enableInput)
+{
+	Player* player = new Player();
+	player->Init();
+
+	if (usePlayer2InputConfig)
+	{
+		player->SetInputConfig(Player::PLAYER2_KEYBOARD_INPUT_CONFIG);
+	}
+
+	if (enableInput)
+	{
+		player->SetInputEnabled(true);
+	}
+
+	if (initPos != nullptr)
+	{
+		player->SetPos(*initPos);
+		player->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
+	}
+
+	player->AddHitCollider(stageCollider);
+
+	return player;
+}
+
+void GameScene::RebuildPlayersArray(void)
+{
+	players_.clear();
+
+	if (player_) players_.push_back(player_);
+	if (player2_) players_.push_back(player2_);
+	if (player3_) players_.push_back(player3_);
+	if (player4_) players_.push_back(player4_);
+
+	const size_t pcount = players_.size();
+	lastPhotoScorePerPlayer_.assign(pcount, 0);
+	photoCountPerPlayer_.assign(pcount, 0);
+}
+
+void GameScene::UpdatePlayers(void)
+{
+	for (auto* player : players_)
+	{
+		if (player == nullptr)
+		{
+			continue;
+		}
+
+		player->Update();
+	}
+}
+
+void GameScene::ReleasePlayers(void)
+{
+	for (auto*& player : players_)
+	{
+		if (player == nullptr)
+		{
+			continue;
+		}
+
+		player->Release();
+		delete player;
+		player = nullptr;
+	}
+
+	players_.clear();
+	lastPhotoScorePerPlayer_.clear();
+	photoCountPerPlayer_.clear();
+
+	player_ = nullptr;
+	player2_ = nullptr;
+	player3_ = nullptr;
+	player4_ = nullptr;
+}
+
+void GameScene::DeleteScreenHandle(int& screenHandle)
+{
+	if (screenHandle == -1)
+	{
+		return;
+	}
+
+	DeleteGraph(screenHandle);
+	screenHandle = -1;
 }
 
 void GameScene::Draw()
@@ -278,87 +304,6 @@ void GameScene::Draw3D()
 	// 3D描画が必要な場合に処理を追加
 }
 
-void GameScene::Release()
-{
-	if (player_)
-	{
-		player_->Release();
-		delete player_;
-		player_ = nullptr;
-	}
-
-	if (player2_)
-	{
-		player2_->Release();
-		delete player2_;
-		player2_ = nullptr;
-	}
-
-	if (player3_)
-	{
-		player3_->Release();
-		delete player3_;
-		player3_ = nullptr;
-	}
-
-	if (player4_)
-	{
-		player4_->Release();
-		delete player4_;
-		player4_ = nullptr;
-	}
-
-	if (subjectManager_)
-	{
-		subjectManager_->Release();
-		delete subjectManager_;
-		subjectManager_ = nullptr;
-	}
-
-	if (stage_)
-	{
-		stage_->Release();
-		delete stage_;
-		stage_ = nullptr;
-	}
-
-	if (leftScreenHandle_ != -1)
-	{
-		DeleteGraph(leftScreenHandle_);
-		leftScreenHandle_ = -1;
-	}
-
-	if (rightScreenHandle_ != -1)
-	{
-		DeleteGraph(rightScreenHandle_);
-		rightScreenHandle_ = -1;
-	}
-
-	if (bottomLeftScreenHandle_ != -1)
-	{
-		DeleteGraph(bottomLeftScreenHandle_);
-		bottomLeftScreenHandle_ = -1;
-	}
-
-	if (bottomRightScreenHandle_ != -1)
-	{
-		DeleteGraph(bottomRightScreenHandle_);
-		bottomRightScreenHandle_ = -1;
-	}
-
-	if (sceneScreenHandle_ != -1)
-	{
-		DeleteGraph(sceneScreenHandle_);
-		sceneScreenHandle_ = -1;
-	}
-
-	if (screenshotScreenHandle_ != -1)
-	{
-		DeleteGraph(screenshotScreenHandle_);
-		screenshotScreenHandle_ = -1;
-	}
-}
-
 void GameScene::DrawView(
 	int screenHandle,
 	int drawWidth,
@@ -388,74 +333,8 @@ void GameScene::DrawView(
 	camera->SetAngles(targetPlayer->GetCameraAngles());
 	camera->SetBeforeDraw();
 
-	ApplyStageOpacityForCamera(targetPlayer);
-	if (stage_) stage_->Draw();
-	if (stage_) stage_->SetOpacityRate(1.0f);
-
-	DrawGoalMarker();
-
-	if (subjectManager_ != nullptr)
-	{
-		subjectManager_->Draw();
-	}
-
-	DrawSubjectDistanceGuide(targetPlayer);
-
-	if (player_ != hidePlayer && player_) player_->Draw();
-	if (player2_ != hidePlayer && player2_) player2_->Draw();
-	if (player3_ != hidePlayer && player3_) player3_->Draw();
-	if (player4_ != hidePlayer && player4_) player4_->Draw();
-
-	DrawString(20, 20, playerName, GetColor(255, 255, 255));
-	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
-
-	{
-		const int barX = 20;
-		const int barY = 145;
-		const int barWidth = drawWidth >= 900 ? 240 : 180;
-		const int barHeight = 18;
-		const int backColor = GetColor(40, 40, 40);
-		const int frameColor = GetColor(255, 255, 255);
-		const int hpColor = GetColor(80, 220, 80);
-		const int damageColor = GetColor(255, 90, 90);
-		const int fillWidth = static_cast<int>(barWidth * targetPlayer->GetHpRate());
-		const int currentColor = targetPlayer->CanTakeDamage() ? hpColor : damageColor;
-
-		DrawString(barX, barY, "HP", GetColor(255, 255, 255));
-		DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, backColor, TRUE);
-
-		if (fillWidth > 0)
-		{
-			DrawBox(barX, barY + 22, barX + fillWidth, barY + 22 + barHeight, currentColor, TRUE);
-		}
-
-		DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, frameColor, FALSE);
-		DrawFormatString(
-			barX + barWidth + 12,
-			barY + 22,
-			GetColor(255, 255, 255),
-			"%d / %d",
-			targetPlayer->GetHp(),
-			targetPlayer->GetHpMax());
-	}
-
-	int localLast = lastPhotoScore_;
-	int localCount = 0;
-
-	auto it = std::find(players_.begin(), players_.end(), targetPlayer);
-	if (it != players_.end())
-	{
-		const int idx = static_cast<int>(std::distance(players_.begin(), it));
-		localLast = lastPhotoScorePerPlayer_[idx];
-		localCount = photoCountPerPlayer_[idx];
-	}
-	else
-	{
-		localCount = photoCount_;
-	}
-
-	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localLast);
-	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", localCount);
+	DrawViewWorld(targetPlayer, hidePlayer);
+	DrawViewHud(targetPlayer, playerName, drawWidth);
 }
 
 void GameScene::DrawCompositedScene(void)
@@ -465,124 +344,19 @@ void GameScene::DrawCompositedScene(void)
 		return;
 	}
 
-	// 1人プレイ（フルスクリーン）
 	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
 	{
-		DrawView(
-			sceneScreenHandle_,
-			screenWidth_,
-			screenHeight_,
-			player_,
-			nullptr,
-			"PLAYER 1");
+		DrawSinglePlayerScene();
 		return;
 	}
 
-	// 2人プレイ：左右分割
 	if (activePlayerCount_ == 2)
 	{
-		DrawView(
-			leftScreenHandle_,
-			screenWidth_ / 2,
-			screenHeight_,
-			player_,
-			nullptr,
-			"PLAYER 1");
-
-		DrawView(
-			rightScreenHandle_,
-			screenWidth_ / 2,
-			screenHeight_,
-			player2_,
-			nullptr,
-			"PLAYER 2");
-
-		SetDrawScreen(sceneScreenHandle_);
-		SetDrawArea(0, 0, screenWidth_, screenHeight_);
-		ClearDrawScreen();
-
-		DrawGraph(0, 0, leftScreenHandle_, FALSE);
-		DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
-		DrawBox(
-			screenWidth_ / 2 - 1,
-			0,
-			screenWidth_ / 2 + 1,
-			screenHeight_,
-			GetColor(255, 255, 255),
-			TRUE);
+		DrawTwoPlayerScene();
 		return;
 	}
 
-	// 3人以上：2x2分割（3人は一枠暗くする）
-	DrawView(
-		leftScreenHandle_,
-		screenWidth_ / 2,
-		screenHeight_ / 2,
-		player_,
-		nullptr,
-		"PLAYER 1");
-
-	DrawView(
-		rightScreenHandle_,
-		screenWidth_ / 2,
-		screenHeight_ / 2,
-		player2_ ? player2_ : player_,
-		nullptr,
-		"PLAYER 2");
-
-	DrawView(
-		bottomLeftScreenHandle_,
-		screenWidth_ / 2,
-		screenHeight_ / 2,
-		player3_ ? player3_ : player_,
-		nullptr,
-		"PLAYER 3");
-
-	if (player4_)
-	{
-		DrawView(
-			bottomRightScreenHandle_,
-			screenWidth_ / 2,
-			screenHeight_ / 2,
-			player4_,
-			nullptr,
-			"PLAYER 4");
-	}
-	else
-	{
-		// 空き枠を暗くする
-		SetDrawScreen(bottomRightScreenHandle_);
-		SetDrawArea(0, 0, screenWidth_ / 2, screenHeight_ / 2);
-		ClearDrawScreen();
-		DrawBox(0, 0, screenWidth_ / 2, screenHeight_ / 2, GetColor(10, 10, 10), TRUE);
-		DrawFormatString(screenWidth_ / 4 - 40, screenHeight_ / 4 - 8, GetColor(180, 180, 180), "NO PLAYER");
-	}
-
-	// 合成
-	SetDrawScreen(sceneScreenHandle_);
-	SetDrawArea(0, 0, screenWidth_, screenHeight_);
-	ClearDrawScreen();
-
-	DrawGraph(0, 0, leftScreenHandle_, FALSE);
-	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
-	DrawGraph(0, screenHeight_ / 2, bottomLeftScreenHandle_, FALSE);
-	DrawGraph(screenWidth_ / 2, screenHeight_ / 2, bottomRightScreenHandle_, FALSE);
-
-	// 枠線
-	DrawBox(
-		screenWidth_ / 2 - 1,
-		0,
-		screenWidth_ / 2 + 1,
-		screenHeight_,
-		GetColor(255, 255, 255),
-		TRUE);
-	DrawBox(
-		0,
-		screenHeight_ / 2 - 1,
-		screenWidth_,
-		screenHeight_ / 2 + 1,
-		GetColor(255, 255, 255),
-		TRUE);
+	DrawFourPlayerScene();
 }
 
 void GameScene::CaptureScreenshot(void)
@@ -729,30 +503,64 @@ int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPo
 	return score;
 }
 
-void GameScene::TryTakePhoto(void)
+int GameScene::CalculatePlayerPhotoScore(const Player* targetPlayer) const
 {
-	if (players_.empty() || subjectManager_ == nullptr) return;
+	if (targetPlayer == nullptr || subjectManager_ == nullptr)
+	{
+		return 0;
+	}
 
 	const auto& subjects = subjectManager_->GetSubjects();
-	if (subjects.empty()) return;
+	if (subjects.empty())
+	{
+		return 0;
+	}
+
+	int addScore = 0;
+	const VECTOR shotPos = targetPlayer->GetCameraWorldPos();
+
+	for (const auto* subject : subjects)
+	{
+		if (subject == nullptr)
+		{
+			continue;
+		}
+
+		if (!IsSubjectInView(targetPlayer, subject))
+		{
+			continue;
+		}
+
+		addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+	}
+
+	return addScore;
+}
+
+void GameScene::TryTakePhoto(void)
+{
+	if (players_.empty() || subjectManager_ == nullptr)
+	{
+		return;
+	}
+
+	const auto& subjects = subjectManager_->GetSubjects();
+	if (subjects.empty())
+	{
+		return;
+	}
 
 	int totalAddedScore = 0;
 
 	for (size_t i = 0; i < players_.size(); ++i)
 	{
-		Player* p = players_[i];
-		if (p == nullptr || !IsPlayerAlive(p)) continue;
-
-		int addScore = 0;
-		const VECTOR shotPos = p->GetCameraWorldPos();
-
-		for (const auto* subject : subjects)
+		Player* player = players_[i];
+		if (player == nullptr || !IsPlayerAlive(player))
 		{
-			if (subject == nullptr) continue;
-			if (!IsSubjectInView(p, subject)) continue;
-			addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+			continue;
 		}
 
+		const int addScore = CalculatePlayerPhotoScore(player);
 		lastPhotoScorePerPlayer_[i] = addScore;
 
 		if (addScore > 0)
@@ -762,18 +570,26 @@ void GameScene::TryTakePhoto(void)
 		}
 	}
 
-	if (totalAddedScore > 0)
-	{
-		lastPhotoScore_ = totalAddedScore;
-		photoCount_ = 0;
-		for (int v : photoCountPerPlayer_)
-		{
-			photoCount_ += v;
-		}
+	ApplyPhotoScoreResult(totalAddedScore);
+}
 
-		SceneManager& scene = SceneManager::GetInstance();
-		scene.SetCarryMoney(scene.GetCarryMoney() + totalAddedScore);
+void GameScene::ApplyPhotoScoreResult(int totalAddedScore)
+{
+	if (totalAddedScore <= 0)
+	{
+		return;
 	}
+
+	lastPhotoScore_ = totalAddedScore;
+	photoCount_ = 0;
+
+	for (int count : photoCountPerPlayer_)
+	{
+		photoCount_ += count;
+	}
+
+	SceneManager& scene = SceneManager::GetInstance();
+	scene.SetCarryMoney(scene.GetCarryMoney() + totalAddedScore);
 }
 
 void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
@@ -924,35 +740,41 @@ void GameScene::UpdateSubjectAttacks(void)
 	}
 
 	const auto& subjects = subjectManager_->GetSubjects();
-	if (subjects.empty()) return;
-
-	// 集める
-	std::vector<Player*> players;
-	if (player_) players.push_back(player_);
-	if (player2_) players.push_back(player2_);
-	if (player3_) players.push_back(player3_);
-	if (player4_) players.push_back(player4_);
+	if (subjects.empty() || players_.empty())
+	{
+		return;
+	}
 
 	for (auto* subject : subjects)
 	{
-		if (subject == nullptr) continue;
+		if (subject == nullptr)
+		{
+			continue;
+		}
 
-		// 最も近いプレイヤーを見つける
 		Player* nearest = nullptr;
 		float nearestDist = FLT_MAX;
-		for (auto* p : players)
+
+		for (auto* player : players_)
 		{
-			if (p == nullptr) continue;
-			const VECTOR pPos = p->GetTransform().pos;
-			const float d = VSize(VSub(pPos, subject->GetTransform().pos));
-			if (d < nearestDist)
+			if (player == nullptr)
 			{
-				nearestDist = d;
-				nearest = p;
+				continue;
+			}
+
+			const VECTOR playerPos = player->GetTransform().pos;
+			const float distance = VSize(VSub(playerPos, subject->GetTransform().pos));
+			if (distance < nearestDist)
+			{
+				nearestDist = distance;
+				nearest = player;
 			}
 		}
 
-		if (nearest == nullptr) continue;
+		if (nearest == nullptr)
+		{
+			continue;
+		}
 
 		const VECTOR nearestPos = nearest->GetTransform().pos;
 
@@ -1053,5 +875,362 @@ void GameScene::DrawDeadView(
 	const int deadX = drawWidth / 2 - 50;
 	const int deadY = drawHeight / 2 - 12;
 	DrawString(deadX, deadY, "DEAD", GetColor(255, 60, 60));
+}
+
+const Player* GameScene::GetPlayerByIndex(int index) const
+{
+	if (index < 0 || index >= static_cast<int>(players_.size()))
+	{
+		return nullptr;
+	}
+
+	return players_[index];
+}
+
+void GameScene::DrawPlayers(const Player* hidePlayer)
+{
+	for (auto* player : players_)
+	{
+		if (player == nullptr || player == hidePlayer)
+		{
+			continue;
+		}
+
+		player->Draw();
+	}
+}
+
+void GameScene::SetupPlayers(const ColliderBase* stageCollider, int selectedPlayerCount)
+{
+	ResetPlayerSlots();
+
+	struct PlayerSetup
+	{
+		Player** player;
+		const VECTOR* initPos;
+		bool usePlayer2InputConfig;
+		bool enableInput;
+	};
+
+	player_ = CreatePlayer(stageCollider);
+
+	PlayerSetup setups[] =
+	{
+		{ &player2_, &PLAYER2_INIT_POS, true,  true  },
+		{ &player3_, &PLAYER3_INIT_POS, false, true  },
+		{ &player4_, &PLAYER4_INIT_POS, false, true  },
+	};
+
+	const int optionalPlayerCount = selectedPlayerCount - 1;
+	const int setupCount = static_cast<int>(sizeof(setups) / sizeof(setups[0]));
+
+	for (int i = 0; i < setupCount; i++)
+	{
+		if (i < optionalPlayerCount)
+		{
+			*setups[i].player = CreatePlayer(
+				stageCollider,
+				setups[i].initPos,
+				setups[i].usePlayer2InputConfig,
+				setups[i].enableInput);
+		}
+	}
+}
+
+void GameScene::ResetPlayerSlots(void)
+{
+	player_ = nullptr;
+	player2_ = nullptr;
+	player3_ = nullptr;
+	player4_ = nullptr;
+}
+
+void GameScene::CreateScreenHandles(int selectedPlayerCount)
+{
+	ResetScreenHandles();
+
+	if (isSplitScreenEnabled_ && selectedPlayerCount == 2)
+	{
+		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
+		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_, TRUE);
+	}
+	else if (isSplitScreenEnabled_ && selectedPlayerCount >= 3)
+	{
+		leftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE);
+		rightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE);
+		bottomLeftScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE);
+		bottomRightScreenHandle_ = MakeScreen(screenWidth_ / 2, screenHeight_ / 2, TRUE);
+	}
+
+	sceneScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
+	screenshotScreenHandle_ = MakeScreen(screenWidth_, screenHeight_, TRUE);
+}
+
+void GameScene::ReleaseScreenHandles(void)
+{
+	DeleteScreenHandle(leftScreenHandle_);
+	DeleteScreenHandle(rightScreenHandle_);
+	DeleteScreenHandle(bottomLeftScreenHandle_);
+	DeleteScreenHandle(bottomRightScreenHandle_);
+	DeleteScreenHandle(sceneScreenHandle_);
+	DeleteScreenHandle(screenshotScreenHandle_);
+}
+
+void GameScene::ResetScreenHandles(void)
+{
+	leftScreenHandle_ = -1;
+	rightScreenHandle_ = -1;
+	bottomLeftScreenHandle_ = -1;
+	bottomRightScreenHandle_ = -1;
+	sceneScreenHandle_ = -1;
+	screenshotScreenHandle_ = -1;
+}
+
+void GameScene::DrawSinglePlayerScene(void)
+{
+	static const char* PLAYER_NAMES[] =
+	{
+		"PLAYER 1",
+		"PLAYER 2",
+		"PLAYER 3",
+		"PLAYER 4",
+	};
+
+	DrawView(
+		sceneScreenHandle_,
+		screenWidth_,
+		screenHeight_,
+		GetPlayerByIndex(0),
+		nullptr,
+		PLAYER_NAMES[0]);
+}
+
+void GameScene::DrawTwoPlayerScene(void)
+{
+	static const char* PLAYER_NAMES[] =
+	{
+		"PLAYER 1",
+		"PLAYER 2",
+		"PLAYER 3",
+		"PLAYER 4",
+	};
+
+	DrawView(
+		leftScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_,
+		GetPlayerByIndex(0),
+		nullptr,
+		PLAYER_NAMES[0]);
+
+	DrawView(
+		rightScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_,
+		GetPlayerByIndex(1),
+		nullptr,
+		PLAYER_NAMES[1]);
+
+	ComposeSplitScreens(false);
+}
+
+void GameScene::DrawFourPlayerScene(void)
+{
+	static const char* PLAYER_NAMES[] =
+	{
+		"PLAYER 1",
+		"PLAYER 2",
+		"PLAYER 3",
+		"PLAYER 4",
+	};
+
+	const Player* player1 = GetPlayerByIndex(0);
+	const Player* player2 = GetPlayerByIndex(1);
+	const Player* player3 = GetPlayerByIndex(2);
+	const Player* player4 = GetPlayerByIndex(3);
+
+	DrawView(
+		leftScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_ / 2,
+		player1,
+		nullptr,
+		PLAYER_NAMES[0]);
+
+	DrawView(
+		rightScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_ / 2,
+		player2 ? player2 : player1,
+		nullptr,
+		PLAYER_NAMES[1]);
+
+	DrawView(
+		bottomLeftScreenHandle_,
+		screenWidth_ / 2,
+		screenHeight_ / 2,
+		player3 ? player3 : player1,
+		nullptr,
+		PLAYER_NAMES[2]);
+
+	if (player4 != nullptr)
+	{
+		DrawView(
+			bottomRightScreenHandle_,
+			screenWidth_ / 2,
+			screenHeight_ / 2,
+			player4,
+			nullptr,
+			PLAYER_NAMES[3]);
+	}
+	else
+	{
+		DrawEmptyView(
+			bottomRightScreenHandle_,
+			screenWidth_ / 2,
+			screenHeight_ / 2);
+	}
+
+	ComposeSplitScreens(true);
+}
+
+void GameScene::ComposeSplitScreens(bool isFourWay)
+{
+	SetDrawScreen(sceneScreenHandle_);
+	SetDrawArea(0, 0, screenWidth_, screenHeight_);
+	ClearDrawScreen();
+
+	DrawGraph(0, 0, leftScreenHandle_, FALSE);
+	DrawGraph(screenWidth_ / 2, 0, rightScreenHandle_, FALSE);
+
+	if (isFourWay)
+	{
+		DrawGraph(0, screenHeight_ / 2, bottomLeftScreenHandle_, FALSE);
+		DrawGraph(screenWidth_ / 2, screenHeight_ / 2, bottomRightScreenHandle_, FALSE);
+
+		DrawBox(
+			0,
+			screenHeight_ / 2 - 1,
+			screenWidth_,
+			screenHeight_ / 2 + 1,
+			GetColor(255, 255, 255),
+			TRUE);
+	}
+
+	DrawBox(
+		screenWidth_ / 2 - 1,
+		0,
+		screenWidth_ / 2 + 1,
+		screenHeight_,
+		GetColor(255, 255, 255),
+		TRUE);
+}
+
+void GameScene::DrawEmptyView(int screenHandle, int drawWidth, int drawHeight) const
+{
+	if (screenHandle == -1)
+	{
+		return;
+	}
+
+	SetDrawScreen(screenHandle);
+	SetDrawArea(0, 0, drawWidth, drawHeight);
+	ClearDrawScreen();
+
+	DrawBox(0, 0, drawWidth, drawHeight, GetColor(10, 10, 10), TRUE);
+	DrawFormatString(
+		drawWidth / 2 - 40,
+		drawHeight / 2 - 8,
+		GetColor(180, 180, 180),
+		"NO PLAYER");
+}
+
+void GameScene::DrawViewWorld(const Player* targetPlayer, const Player* hidePlayer)
+{
+
+	ApplyStageOpacityForCamera(targetPlayer);
+	if (stage_) stage_->Draw();
+	if (stage_) stage_->SetOpacityRate(1.0f);
+
+	DrawGoalMarker();
+
+	if (subjectManager_ != nullptr)
+	{
+		subjectManager_->Draw();
+	}
+
+	DrawSubjectDistanceGuide(targetPlayer);
+	DrawPlayers(hidePlayer);
+}
+
+void GameScene::DrawViewHud(const Player* targetPlayer, const char* playerName, int drawWidth) const
+{
+	DrawString(20, 20, playerName, GetColor(255, 255, 255));
+	DrawFormatString(
+		20,
+		50,
+		GetColor(255, 255, 0),
+		"SCORE : %d",
+		SceneManager::GetInstance().GetCarryMoney());
+
+	DrawPlayerPhotoInfo(targetPlayer);
+	DrawPlayerHpBar(targetPlayer, drawWidth);
+}
+
+void GameScene::DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const
+{
+	if (targetPlayer == nullptr)
+	{
+		return;
+	}
+
+	const int barX = 20;
+	const int barY = 145;
+	const int barWidth = drawWidth >= 900 ? 240 : 180;
+	const int barHeight = 18;
+	const int backColor = GetColor(40, 40, 40);
+	const int frameColor = GetColor(255, 255, 255);
+	const int hpColor = GetColor(80, 220, 80);
+	const int damageColor = GetColor(255, 90, 90);
+	const int fillWidth = static_cast<int>(barWidth * targetPlayer->GetHpRate());
+	const int currentColor = targetPlayer->CanTakeDamage() ? hpColor : damageColor;
+
+	DrawString(barX, barY, "HP", GetColor(255, 255, 255));
+	DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, backColor, TRUE);
+
+	if (fillWidth > 0)
+	{
+		DrawBox(barX, barY + 22, barX + fillWidth, barY + 22 + barHeight, currentColor, TRUE);
+	}
+
+	DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, frameColor, FALSE);
+	DrawFormatString(
+		barX + barWidth + 12,
+		barY + 22,
+		GetColor(255, 255, 255),
+		"%d / %d",
+		targetPlayer->GetHp(),
+		targetPlayer->GetHpMax());
+}
+
+void GameScene::DrawPlayerPhotoInfo(const Player* targetPlayer) const
+{
+	int localLast = lastPhotoScore_;
+	int localCount = 0;
+
+	auto it = std::find(players_.begin(), players_.end(), targetPlayer);
+	if (it != players_.end())
+	{
+		const int idx = static_cast<int>(std::distance(players_.begin(), it));
+		localLast = lastPhotoScorePerPlayer_[idx];
+		localCount = photoCountPerPlayer_[idx];
+	}
+	else
+	{
+		localCount = photoCount_;
+	}
+
+	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localLast);
+	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", localCount);
 }
 

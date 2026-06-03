@@ -7,6 +7,7 @@ class Stage;
 class Player;
 class Subject;
 class SubjectManager;
+class ColliderBase;
 
 class GameScene : public SceneBase
 {
@@ -70,6 +71,11 @@ private:
 	void DrawGoalMarker(void) const;
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
+	void DrawViewWorld(const Player* targetPlayer, const Player* hidePlayer);
+	void DrawViewHud(const Player* targetPlayer, const char* playerName, int drawWidth) const;
+	void DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const;
+	void DrawPlayerPhotoInfo(const Player* targetPlayer) const;
+
 	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
 	void ApplyStageOpacityForCamera(const Player* targetPlayer);
 
@@ -83,6 +89,33 @@ private:
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
+	int CalculatePlayerPhotoScore(const Player* targetPlayer) const;
+
+	Player* CreatePlayer(
+		const ColliderBase* stageCollider,
+		const VECTOR* initPos = nullptr,
+		bool usePlayer2InputConfig = false,
+		bool enableInput = false);
+
+	void RebuildPlayersArray(void);
+	void UpdatePlayers(void);
+	void ReleasePlayers(void);
+	void DeleteScreenHandle(int& screenHandle);
+
+	const Player* GetPlayerByIndex(int index) const;
+	void DrawPlayers(const Player* hidePlayer);
+
+	void SetupPlayers(const ColliderBase* stageCollider, int selectedPlayerCount);
+	void ResetPlayerSlots(void);
+	void CreateScreenHandles(int selectedPlayerCount);
+	void ReleaseScreenHandles(void);
+	void ResetScreenHandles(void);
+
+	void DrawSinglePlayerScene(void);
+	void DrawTwoPlayerScene(void);
+	void DrawFourPlayerScene(void);
+	void ComposeSplitScreens(bool isFourWay);
+	void DrawEmptyView(int screenHandle, int drawWidth, int drawHeight) const;
 
 	Stage* stage_;
 	Player* player_;
@@ -109,4 +142,5 @@ private:
 	std::vector<Player*> players_;
 	std::vector<int> lastPhotoScorePerPlayer_;
 	std::vector<int> photoCountPerPlayer_;
+	void ApplyPhotoScoreResult(int totalAddedScore);
 };
