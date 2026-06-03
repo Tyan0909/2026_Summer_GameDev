@@ -2,12 +2,12 @@
 #include "SceneBase.h"
 #include "../Object/Actor/Stage/Stage.h"
 #include <vector>
+#include <map>
 
 class Stage;
 class Player;
 class Subject;
 class SubjectManager;
-class ColliderBase;
 
 class GameScene : public SceneBase
 {
@@ -46,8 +46,8 @@ private:
 	static constexpr float CAMERA_OCCLUDED_OPACITY = 0.25f;
 	static constexpr float CAMERA_OCCLUDE_EPSILON = 1.0f;
 
-	static constexpr int PREVIEW_WIDTH = 640;
-	static constexpr int PREVIEW_HEIGHT = 360;
+	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	static constexpr float GOAL_RADIUS = 80.0f;
 
 	void DrawView(
 		int screenHandle,
@@ -67,10 +67,15 @@ private:
 	void CaptureScreenshot(void);
 	void DrawScreenshotThumbnail(void) const;
 	void DrawFlashEffect(void) const;
+	void DrawGoalMarker(void) const;
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
+
+	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
+	void ApplyStageOpacityForCamera(const Player* targetPlayer);
 
 	void UpdateSubjectAttacks(void);
 	bool IsPlayerAlive(const Player* targetPlayer) const;
+	bool IsPlayerAtGoal(const Player* targetPlayer) const;
 	bool IsPlayerReachedGoal(void) const;
 	bool IsAllPlayersDead(void) const;
 
@@ -78,42 +83,29 @@ private:
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
-	int CalculatePlayerPhotoScore(const Player* targetPlayer) const;
-	void ApplyPhotoScoreResult(int totalAddedScore);
 
-	Player* CreatePlayer(
-		const ColliderBase* stageCollider,
-		const VECTOR* initPos = nullptr,
-		bool usePlayer2InputConfig = false,
-		bool enableInput = false);
+	// Inventory HUD
+	void DrawInventoryHUD(const Player* targetPlayer, int drawWidth, int drawHeight) const;
+	static constexpr int ITEM_ICON_SIZE = 48;
+	static constexpr int ITEM_ICON_SPACING = 8;
+	static constexpr int ITEM_ICON_MARGIN = 16;
 
-	void RebuildPlayersArray(void);
-	void UpdatePlayers(void);
-	void ReleasePlayers(void);
-	void DeleteScreenHandle(int& screenHandle);
+	// 追加: トラップ関連
+	enum class TRAP_TYPE { SPIKE = 0, MINE = 1 };
+	struct Trap
+	{
+		TRAP_TYPE type;
+		VECTOR pos;
+		bool triggered = false;
+		int lifeFrames = 0; // 残存フレーム（スパイク持続等）
+		int ownerPlayerIndex = 0; // owner index in players_ (optional)
+	};
 
-	const Player* GetPlayerByIndex(int index) const;
-	void DrawPlayers(const Player* hidePlayer);
-
-	void SetupPlayers(const ColliderBase* stageCollider, int selectedPlayerCount);
-	void ResetPlayerSlots(void);
-	void CreateScreenHandles(int selectedPlayerCount);
-	void ReleaseScreenHandles(void);
-	void ResetScreenHandles(void);
-
-	void DrawSinglePlayerScene(void);
-	void DrawTwoPlayerScene(void);
-	void DrawFourPlayerScene(void);
-	void ComposeSplitScreens(bool isFourWay);
-	void DrawEmptyView(int screenHandle, int drawWidth, int drawHeight) const;
-
-	void DrawViewWorld(const Player* targetPlayer, const Player* hidePlayer);
-	void DrawViewHud(const Player* targetPlayer, const char* playerName, int drawWidth) const;
-	void DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const;
-	void DrawPlayerPhotoInfo(const Player* targetPlayer) const;
-
-	void DrawScreenshotPreview(void) const;
-	void GetPlayer1ViewArea(int& x, int& y, int& width, int& height) const;
+	// トラップ設定
+	static constexpr int SPIKE_DURATION_FRAMES = 4 * 60; // 4秒
+	static constexpr float SPIKE_TRIGGER_RADIUS = 40.0f;
+	static constexpr float MINE_TRIGGER_RADIUS = 40.0f;
+	static constexpr float MINE_DAMAGE_RADIUS = 120.0f;
 
 	Stage* stage_;
 	Player* player_;
@@ -140,4 +132,13 @@ private:
 	std::vector<Player*> players_;
 	std::vector<int> lastPhotoScorePerPlayer_;
 	std::vector<int> photoCountPerPlayer_;
+
+	// 追加
+	std::vector<Trap> traps_;
+
+	// アイコンハンドル（ヘルメット・フラグ・スパイク・地雷）
+	int iconHelmetHandle_ = -1;
+	int iconFragHandle_ = -1;
+	int iconSpikeHandle_ = -1;
+	int iconMineHandle_ = -1;
 };

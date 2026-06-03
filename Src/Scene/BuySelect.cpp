@@ -300,9 +300,7 @@ void BuySelect::Draw(void)
             GetGraphSize(imgHandle, &imgW, &imgH);
             if (imgW > 0 && imgH > 0)
             {
-                float scaleX = areaW / static_cast<float>(imgW);
-                float scaleY = areaH / static_cast<float>(imgH);
-                float scale = (scaleX < scaleY) ? scaleX : scaleY;
+                float scale = std::min(areaW / (float)imgW, areaH / (float)imgH);
                 if (scale > 1.0f) scale = 1.0f;
                 int centerY = bgTop + areaH / 2;
 

@@ -24,8 +24,8 @@ InputManager& InputManager::GetInstance(void)
 void InputManager::Init(void)
 {
 
-	// ゲームで使用する入力キーを、
-	// 事前にここで登録しておく
+	// ゲームで使用したいキーを、
+	// 事前にここで登録しておいてください
 	InputManager::GetInstance().Add(KEY_INPUT_SPACE);
 	InputManager::GetInstance().Add(KEY_INPUT_N);
 	InputManager::GetInstance().Add(KEY_INPUT_Z);
@@ -61,7 +61,8 @@ void InputManager::Init(void)
 	InputManager::GetInstance().Add(KEY_INPUT_RSHIFT);
 	InputManager::GetInstance().Add(KEY_INPUT_U);
 	InputManager::GetInstance().Add(KEY_INPUT_F1);
-	InputManager::GetInstance().Add(KEY_INPUT_ESCAPE);
+
+
 
 	InputManager::MouseInfo info;
 

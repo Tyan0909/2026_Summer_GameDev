@@ -14,8 +14,7 @@ public:
 		IMG,
 		IMGS,
 		MODEL,
-		EFFEKSEER,
-		SOUND
+		EFFEKSEER
 	};
 
 	// コンストラクタ
@@ -34,7 +33,7 @@ public:
 	// 解放
 	void Release(void);
 
-	// 分割画像ハンドルを別配列にコピー
+	// 複数画像ハンドルを別配列にコピー
 	void CopyHandle(int* imgs) const;
 
 	// リソースタイプ
@@ -43,7 +42,7 @@ public:
 	// リソースの読み込み先
 	std::string path_;
 
-	// 画像・モデル・音声・エフェクトのハンドルID
+	// 画像とモデルのハンドルID
 	int handleId_;
 
 	// IMGS::LoadDivGraph用

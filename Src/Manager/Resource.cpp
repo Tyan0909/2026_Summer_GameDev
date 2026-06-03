@@ -47,7 +47,6 @@ Resource::~Resource(void)
 
 void Resource::Load(void)
 {
-	Release();
 
 	switch (type_)
 	{
@@ -73,83 +72,57 @@ void Resource::Load(void)
 		break;
 
 	case Resource::TYPE::EFFEKSEER:
+
 		handleId_ = LoadEffekseerEffect(path_.c_str());
 		break;
 
-	case Resource::TYPE::SOUND:
-		// âπê∫
-		handleId_ = LoadSoundMem(path_.c_str());
-		break;
-
-	case Resource::TYPE::NONE:
-	default:
-		break;
 	}
+
 }
 
 void Resource::Release(void)
 {
+
 	switch (type_)
 	{
 	case Resource::TYPE::IMG:
-		if (handleId_ != -1)
-		{
-			DeleteGraph(handleId_);
-			handleId_ = -1;
-		}
+		DeleteGraph(handleId_);
 		break;
 
 	case Resource::TYPE::IMGS:
-		if (handleIds_ != nullptr)
+	{
+		int num = numX_ * numY_;
+		for (int i = 0; i < num; i++)
 		{
-			int num = numX_ * numY_;
-			for (int i = 0; i < num; i++)
-			{
-				DeleteGraph(handleIds_[i]);
-			}
-			delete[] handleIds_;
-			handleIds_ = nullptr;
+			DeleteGraph(handleIds_[i]);
 		}
-		break;
+		delete[] handleIds_;
+	}
+	break;
 
 	case Resource::TYPE::MODEL:
-		if (handleId_ != -1)
-		{
-			MV1DeleteModel(handleId_);
-			handleId_ = -1;
-		}
-
-		for (auto id : duplicateModelIds_)
+	{
+		MV1DeleteModel(handleId_);
+		auto ids = duplicateModelIds_;
+		for (auto id : ids)
 		{
 			MV1DeleteModel(id);
 		}
-		duplicateModelIds_.clear();
-		break;
+	}
+	break;
 
 	case Resource::TYPE::EFFEKSEER:
-		if (handleId_ != -1)
-		{
-			DeleteEffekseerEffect(handleId_);
-			handleId_ = -1;
-		}
+
+		DeleteEffekseerEffect(handleId_);
 		break;
 
-	case Resource::TYPE::SOUND:
-		if (handleId_ != -1)
-		{
-			DeleteSoundMem(handleId_);
-			handleId_ = -1;
-		}
-		break;
-
-	case Resource::TYPE::NONE:
-	default:
-		break;
 	}
+
 }
 
 void Resource::CopyHandle(int* imgs) const
 {
+
 	if (handleIds_ == nullptr)
 	{
 		return;
@@ -160,4 +133,5 @@ void Resource::CopyHandle(int* imgs) const
 	{
 		imgs[i] = handleIds_[i];
 	}
+
 }

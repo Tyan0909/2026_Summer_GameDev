@@ -103,59 +103,6 @@ void Stage::SetOpacityRate(float opacityRate)
 	opacityRate_ = opacityRate;
 }
 
-bool Stage::IsAtGoal(const VECTOR& pos) const
-{
-	VECTOR diff = VSub(pos, GOAL_POS);
-	diff.y = 0.0f;
-	return VSize(diff) <= GOAL_RADIUS;
-}
-
-void Stage::DrawGoalMarker(void) const
-{
-	const VECTOR spherePos = VAdd(GOAL_POS, VGet(0.0f, 45.0f, 0.0f));
-	const VECTOR poleTop = VAdd(GOAL_POS, VGet(0.0f, 180.0f, 0.0f));
-	const int ringColor = GetColor(0, 255, 120);
-
-	DrawSphere3D(spherePos, GOAL_RADIUS, 16, ringColor, ringColor, FALSE);
-	DrawLine3D(GOAL_POS, poleTop, ringColor);
-}
-
-bool Stage::HasLineOfSight(const VECTOR& from, const VECTOR& to, float epsilon) const
-{
-	const auto* modelCollider = GetModelCollider();
-	if (modelCollider == nullptr)
-	{
-		return true;
-	}
-
-	auto hit = modelCollider->GetNearestHitPolyLine(from, to, true);
-	if (!hit.HitFlag)
-	{
-		return true;
-	}
-
-	const float hitDistance = VSize(VSub(hit.HitPosition, from));
-	const float targetDistance = VSize(VSub(to, from));
-
-	return hitDistance >= targetDistance - epsilon;
-}
-
-void Stage::UpdateOpacityForSegment(
-	const VECTOR& focusPos,
-	const VECTOR& cameraPos,
-	float occludedOpacity,
-	float epsilon)
-{
-	if (HasLineOfSight(focusPos, cameraPos, epsilon))
-	{
-		SetOpacityRate(1.0f);
-	}
-	else
-	{
-		SetOpacityRate(occludedOpacity);
-	}
-}
-
 void Stage::InitLoad(void)
 {
 	transform_.SetModel(
@@ -237,18 +184,4 @@ void Stage::ApplyFarModelTransform(void)
 	MV1SetScale(farModelId_, transform_.scl);
 	MV1SetRotationXYZ(farModelId_, transform_.rot);
 	MV1SetPosition(farModelId_, transform_.pos);
-}
-
-const ColliderModel* Stage::GetModelCollider(void) const
-{
-	const ColliderBase* stageColliderBase =
-		GetOwnCollider(static_cast<int>(COLLIDER_TYPE::MODEL));
-
-	if (stageColliderBase == nullptr ||
-		stageColliderBase->GetShape() != ColliderBase::SHAPE::MODEL)
-	{
-		return nullptr;
-	}
-
-	return static_cast<const ColliderModel*>(stageColliderBase);
 }

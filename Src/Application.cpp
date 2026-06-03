@@ -2,7 +2,6 @@
 #include "Manager/InputManager.h"
 #include "Manager/SceneManager.h"
 #include "Manager/ResourceManager.h"
-#include "Manager/SoundManager.h"
 #include "Application.h"
 
 Application* Application::instance_ = nullptr;
@@ -11,7 +10,6 @@ const std::string Application::PATH_DATA = "Data/";
 const std::string Application::PATH_IMAGE = "Data/Image/";
 const std::string Application::PATH_MODEL = "Data/Model/";
 const std::string Application::PATH_EFFECT = "Data/Effect/";
-const std::string Application::PATH_SOUND = "Data/Sound/";
 
 void Application::CreateInstance(void)
 {
@@ -29,6 +27,7 @@ Application& Application::GetInstance(void)
 
 void Application::Init(void)
 {
+
 	// アプリケーションの初期設定
 	// ウィンドウタイトル
 	SetWindowText("スクープ最前線");
@@ -49,7 +48,6 @@ void Application::Init(void)
 	screenshotHandle_ = MakeScreen(SCREEN_SIZE_X, SCREEN_SIZE_Y, TRUE);
 	isScreenshotRequested_ = false;
 	hasScreenshot_ = false;
-	isEndRequested_ = false;
 
 	// 乱数のシード値を設定する
 	DATEDATA date;
@@ -58,13 +56,11 @@ void Application::Init(void)
 	GetDateTime(&date);
 
 	// 乱数の初期値を設定する
+	// 設定する数値によって、ランダムの出方が変わる
 	SRand(date.Year + date.Mon + date.Day + date.Hour + date.Min + date.Sec);
 
 	// リソース管理初期化
 	ResourceManager::CreateInstance();
-
-	// サウンド管理初期化
-	SoundManager::CreateInstance();
 
 	// 入力制御初期化
 	SetUseDirectInputFlag(true);
@@ -72,10 +68,12 @@ void Application::Init(void)
 
 	// シーン管理初期化
 	SceneManager::CreateInstance();
+
 }
 
 void Application::Run(void)
 {
+
 	InputManager& inputManager = InputManager::GetInstance();
 	SceneManager& sceneManager = SceneManager::GetInstance();
 
@@ -83,8 +81,9 @@ void Application::Run(void)
 	int prevTime = GetNowCount();
 
 	// ゲームループ
-	while (ProcessMessage() == 0 && !isEndRequested_)
+	while (ProcessMessage() == 0 && CheckHitKey(KEY_INPUT_ESCAPE) == 0)
 	{
+
 		inputManager.Update();
 		sceneManager.Update();
 
@@ -127,7 +126,9 @@ void Application::Run(void)
 
 		// 現在の時間を前フレームの時間として保存
 		prevTime = GetNowCount();
+
 	}
+
 }
 
 void Application::RequestScreenshot(void)
@@ -145,21 +146,14 @@ int Application::GetScreenshotHandle(void) const
 	return screenshotHandle_;
 }
 
-void Application::RequestEnd(void)
-{
-	isEndRequested_ = true;
-}
-
 void Application::Destroy(void)
 {
+
 	// シーン管理解放
 	SceneManager::GetInstance().Destroy();
 
 	// 入力制御解放
 	InputManager::GetInstance().Destroy();
-
-	// サウンド管理破棄
-	SoundManager::GetInstance().Destroy();
 
 	// リソース管理解放
 	ResourceManager::GetInstance().Destroy();
@@ -178,6 +172,7 @@ void Application::Destroy(void)
 
 	// インスタンスのメモリ解放
 	delete instance_;
+
 }
 
 bool Application::IsInitFail(void) const
@@ -197,5 +192,4 @@ Application::Application(void)
 	isScreenshotRequested_ = false;
 	hasScreenshot_ = false;
 	screenshotHandle_ = -1;
-	isEndRequested_ = false;
 }
