@@ -5,6 +5,7 @@
 #include "../../../../Manager/InputManager.h"
 #include "../../ActorBase.h"
 #include "../../../../Object/Collider/ColliderModel.h"
+#include "../../../../Scene/BuySelect.h" // ITEM_TYPE を参照
 
 class ColliderBase;
 class ResourceManager;
@@ -14,7 +15,7 @@ class Player : public ActorBase
 {
 public:
 
-	// 定数
+	// 定数等（既存）
 	static constexpr float GRAVITY = 0.5f;
 	static constexpr float MOVE_SPEED =250.f;
 
@@ -24,8 +25,6 @@ public:
 	static constexpr VECTOR COL_CAPSULE_TOP_LOCAL_POS = { 0.0f, 110.0f, 0.0f };
 	static constexpr VECTOR COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
 	static constexpr float COL_CAPSULE_RADIUS = 20.0f;
-
-	static constexpr VECTOR TPS_CAMERA_LOCAL_POS = { 0.0f, 120.0f, -180.0f };
 
 	enum class COLLIDER_TYPE
 	{
@@ -106,6 +105,24 @@ public:
 	int GetHpMax(void) const;
 	float GetHpRate(void) const;
 
+	// 追加: アイテム付与 / 在庫参照 / 使用
+	void AddItem(int itemType);
+
+	int GetSpikeCount() const;
+	int GetMineCount() const;
+	int GetFragCount() const;
+
+	bool UseSpikeTrap();
+	bool UseExplosiveTrap();
+	bool UseFragGrenade();
+
+	// 追加: 使用アイテム選択（順送り） - 所持しているものだけ巡回する
+	void CycleSelectedUsableItem(int dir); // dir = +1/-1, dir==0 => select first owned
+	ITEM_TYPE GetSelectedUsableItemType() const;
+
+	// 追加: ヘルメット残数取得
+	int GetHelmetUses() const;
+
 protected:
 	void InitLoad(void) override;
 	void InitTransform(void) override;
@@ -127,6 +144,9 @@ private:
 	static constexpr float TURN_SPEED = 10.0f;
 
 	static constexpr VECTOR INIT_POS = { 300.0f, 100.0f, 100.0f };
+
+	// TPS カメラのローカル位置（ヘッダに宣言、実体は cpp に定義）
+	static const VECTOR TPS_CAMERA_LOCAL_POS;
 
 	static constexpr int HP_MAX = 6;
 	static constexpr int DAMAGE_COOLDOWN_MAX = 60;
@@ -169,5 +189,20 @@ private:
 	void OnEnterCrouched(void);
 
 	STATE state_;
+
+	// 追加メンバ: アイテム効果 / 在庫
+	int helmetUsesRemaining_ = 0; // ヘルメット防御回数
+	bool hasInsurance_ = false;
+	bool hasZoomCamera_ = false;
+
+	int spikeTrapCount_ = 0;
+	int explosiveTrapCount_ = 0;
+	int fragGrenadeCount_ = 0;
+
+	std::vector<int> inventory_;
+
+	// 使用アイテム選択用（固定順序）
+	int selectedUsableIndex_ = -1; // 所持品が無ければ -1
+	static const std::vector<ITEM_TYPE> usableOrder_;
 };
 

@@ -24,6 +24,9 @@ public:
 
 	const std::vector<Subject*>& GetSubjects(void) const;
 
+	// ’Ç‰Á: Subject ‚ğíœ‚·‚éiGameScene ‚©‚çŒÄ‚Ôj
+	void RemoveSubject(Subject* subject);
+
 private:
 	static constexpr float SUBJECT_SPAWN_HEIGHT = 1000.0f;
 
