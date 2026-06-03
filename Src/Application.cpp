@@ -2,6 +2,7 @@
 #include "Manager/InputManager.h"
 #include "Manager/SceneManager.h"
 #include "Manager/ResourceManager.h"
+#include "Manager/SoundManager.h"
 #include "Application.h"
 
 Application* Application::instance_ = nullptr;
@@ -10,6 +11,7 @@ const std::string Application::PATH_DATA = "Data/";
 const std::string Application::PATH_IMAGE = "Data/Image/";
 const std::string Application::PATH_MODEL = "Data/Model/";
 const std::string Application::PATH_EFFECT = "Data/Effect/";
+const std::string Application::PATH_SOUND = "Data/Sound/";
 
 void Application::CreateInstance(void)
 {
@@ -27,7 +29,6 @@ Application& Application::GetInstance(void)
 
 void Application::Init(void)
 {
-
 	// アプリケーションの初期設定
 	// ウィンドウタイトル
 	SetWindowText("スクープ最前線");
@@ -62,13 +63,15 @@ void Application::Init(void)
 	// リソース管理初期化
 	ResourceManager::CreateInstance();
 
+	// サウンド管理初期化
+	SoundManager::CreateInstance();
+
 	// 入力制御初期化
 	SetUseDirectInputFlag(true);
 	InputManager::CreateInstance();
 
 	// シーン管理初期化
 	SceneManager::CreateInstance();
-
 }
 
 void Application::Run(void)
@@ -154,6 +157,9 @@ void Application::Destroy(void)
 
 	// 入力制御解放
 	InputManager::GetInstance().Destroy();
+
+	// サウンド管理破棄
+	SoundManager::GetInstance().Destroy();
 
 	// リソース管理解放
 	ResourceManager::GetInstance().Destroy();

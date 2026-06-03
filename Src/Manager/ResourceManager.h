@@ -24,9 +24,14 @@ public:
 		ENEMY_RAT,
 		ENEMY_ROBOT,
 		VIEW_RANGE,
+
+		BGM_TITLE,
+		BGM_GAME,
+		SE_DECIDE,
+		SE_HIT,
 	};
 
-	// 静的にインスタンスを生成する
+	// 静的にインスタンスを生成
 	static void CreateInstance(void);
 
 	// 静的インスタンスの取得
@@ -35,7 +40,7 @@ public:
 	// 初期化
 	void Init(void);
 
-	// 解放(シーン切り替え時に一旦解放)
+	// 解放(シーン切り替え時に一度だけ)
 	void Release(void);
 
 	// リソースの完全破棄
@@ -56,7 +61,7 @@ private:
 	std::map<SRC, Resource*> resourcesMap_;
 
 	// 読み込み済みリソース
-	std::map<SRC, Resource&> loadedMap_;
+	std::map<SRC, bool> loadedMap_;
 
 	Resource dummy_;
 
@@ -64,7 +69,7 @@ private:
 	ResourceManager(const ResourceManager& manager) = default;
 	~ResourceManager(void) = default;
 
-	// 実ロード
+	// 内部ロード
 	Resource& _Load(SRC src);
 
 };
