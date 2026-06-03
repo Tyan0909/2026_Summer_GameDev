@@ -23,7 +23,6 @@ public:
 
 private:
 	static constexpr VECTOR PLAYER2_INIT_POS = { 200.0f, 1000.0f, 0.0f };
-
 	static constexpr VECTOR PLAYER3_INIT_POS = { -200.0f, 1000.0f, 0.0f };
 	static constexpr VECTOR PLAYER4_INIT_POS = { 700.0f, 1000.0f, 0.0f };
 
@@ -47,8 +46,8 @@ private:
 	static constexpr float CAMERA_OCCLUDED_OPACITY = 0.25f;
 	static constexpr float CAMERA_OCCLUDE_EPSILON = 1.0f;
 
-	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
-	static constexpr float GOAL_RADIUS = 80.0f;
+	static constexpr int PREVIEW_WIDTH = 640;
+	static constexpr int PREVIEW_HEIGHT = 360;
 
 	void DrawView(
 		int screenHandle,
@@ -68,20 +67,10 @@ private:
 	void CaptureScreenshot(void);
 	void DrawScreenshotThumbnail(void) const;
 	void DrawFlashEffect(void) const;
-	void DrawGoalMarker(void) const;
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
-
-	void DrawViewWorld(const Player* targetPlayer, const Player* hidePlayer);
-	void DrawViewHud(const Player* targetPlayer, const char* playerName, int drawWidth) const;
-	void DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const;
-	void DrawPlayerPhotoInfo(const Player* targetPlayer) const;
-
-	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
-	void ApplyStageOpacityForCamera(const Player* targetPlayer);
 
 	void UpdateSubjectAttacks(void);
 	bool IsPlayerAlive(const Player* targetPlayer) const;
-	bool IsPlayerAtGoal(const Player* targetPlayer) const;
 	bool IsPlayerReachedGoal(void) const;
 	bool IsAllPlayersDead(void) const;
 
@@ -90,6 +79,7 @@ private:
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 	int CalculatePlayerPhotoScore(const Player* targetPlayer) const;
+	void ApplyPhotoScoreResult(int totalAddedScore);
 
 	Player* CreatePlayer(
 		const ColliderBase* stageCollider,
@@ -117,6 +107,14 @@ private:
 	void ComposeSplitScreens(bool isFourWay);
 	void DrawEmptyView(int screenHandle, int drawWidth, int drawHeight) const;
 
+	void DrawViewWorld(const Player* targetPlayer, const Player* hidePlayer);
+	void DrawViewHud(const Player* targetPlayer, const char* playerName, int drawWidth) const;
+	void DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const;
+	void DrawPlayerPhotoInfo(const Player* targetPlayer) const;
+
+	void DrawScreenshotPreview(void) const;
+	void GetPlayer1ViewArea(int& x, int& y, int& width, int& height) const;
+
 	Stage* stage_;
 	Player* player_;
 	Player* player2_;
@@ -142,5 +140,4 @@ private:
 	std::vector<Player*> players_;
 	std::vector<int> lastPhotoScorePerPlayer_;
 	std::vector<int> photoCountPerPlayer_;
-	void ApplyPhotoScoreResult(int totalAddedScore);
 };

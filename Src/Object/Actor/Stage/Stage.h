@@ -32,6 +32,15 @@ public:
 
 	void SetOpacityRate(float opacityRate);
 
+	bool IsAtGoal(const VECTOR& pos) const;
+	void DrawGoalMarker(void) const;
+	bool HasLineOfSight(const VECTOR& from, const VECTOR& to, float epsilon = 1.0f) const;
+	void UpdateOpacityForSegment(
+		const VECTOR& focusPos,
+		const VECTOR& cameraPos,
+		float occludedOpacity,
+		float epsilon);
+
 protected:
 	// リソースロード
 	void InitLoad(void) override;
@@ -55,8 +64,9 @@ private:
 	static constexpr float FOG_START_DISTANCE = 1200.0f;
 	static constexpr float FOG_END_DISTANCE = 3500.0f;
 
-	// 初期座標
 	static constexpr VECTOR INIT_POS = { 0.0f, 0.0f, 0.0f };
+	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	static constexpr float GOAL_RADIUS = 80.0f;
 
 	// 除外フレーム
 	const std::vector<std::string> EXCLUDE_FRAMES =
@@ -88,4 +98,5 @@ private:
 	float opacityRate_;
 
 	void ApplyFarModelTransform(void);
+	const ColliderModel* GetModelCollider(void) const;
 };

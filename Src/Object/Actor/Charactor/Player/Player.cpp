@@ -76,7 +76,6 @@ const Player::INPUT_CONFIG Player::PLAYER2_KEYBOARD_INPUT_CONFIG =
 	KEY_INPUT_NUMPAD4,
 	KEY_INPUT_NUMPAD6,
 	KEY_INPUT_NUMPAD7,
-	// 変更: 2P も LSHIFT で走るようにする
 	KEY_INPUT_LSHIFT,
 	InputManager::JOYPAD_NO::PAD1,
 	InputManager::JOYPAD_BTN::R_BUMPER,
@@ -234,7 +233,7 @@ void Player::UpdateMoveInput(void)
 		// 走り入力なら倍率を掛ける
 		if (IsRunInput())
 		{
-			const float RUN_MULT =2.25f;
+			const float RUN_MULT = 2.25f;
 			speed *= RUN_MULT;
 		}
 
@@ -410,6 +409,23 @@ VECTOR Player::GetCameraForward(void) const
 	return VScale(forward, 1.0f / length);
 }
 
+VECTOR Player::GetHeadWorldPos(void) const
+{
+	return VAdd(transform_.pos, COL_CAPSULE_TOP_LOCAL_POS);
+}
+
+void Player::ApplyCamera(Camera* camera) const
+{
+	if (camera == nullptr)
+	{
+		return;
+	}
+
+	camera->SetPos(GetCameraWorldPos());
+	camera->SetAngles(GetCameraAngles());
+	camera->SetBeforeDraw();
+}
+
 void Player::SetPos(const VECTOR& pos)
 {
 	transform_.pos = pos;
@@ -439,7 +455,7 @@ void Player::InitLoad(void)
 
 void Player::InitTransform(void)
 {
-	transform_.scl = { 0.5f,0.5f,0.5f };
+	transform_.scl = { 0.5f, 0.5f, 0.5f };
 	transform_.quaRot = Quaternion::Identity();
 	transform_.quaRotLocal = Quaternion::AngleAxis(DX_PI_F, VGet(0.0f, 1.0f, 0.0f));
 	transform_.pos = INIT_POS;
@@ -679,7 +695,6 @@ void Player::OnEnterRun(void)
 {
 	if (animController_ != nullptr)
 	{
-		// RUN アニメがない場合は WALK を流用（必要なら専用アニメを追加して差し替えてください）
 		animController_->Play((int)ANIM_TYPE::WALK, true);
 	}
 }
