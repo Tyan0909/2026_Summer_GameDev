@@ -121,7 +121,7 @@ void Resource::Release(void)
 
 		for (auto id : duplicateModelIds_)
 		{
-			MV1DeleteModel(id);
+			MV1DeleteModel(id - 1);
 		}
 		duplicateModelIds_.clear();
 		break;

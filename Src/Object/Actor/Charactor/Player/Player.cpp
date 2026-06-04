@@ -385,9 +385,9 @@ void Player::SetCameraAngles(const VECTOR& angles)
 
 VECTOR Player::GetCameraWorldPos(void) const
 {
-	VECTOR cameraOffset = TPS_CAMERA_LOCAL_POS;
+	VECTOR cameraOffset = VGet(0.0f, -12.0f, 8.0f);
 	cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles_.y));
-	return VAdd(transform_.pos, cameraOffset);
+	return VAdd(GetHeadWorldPos(), cameraOffset);
 }
 
 VECTOR Player::GetCameraForward(void) const

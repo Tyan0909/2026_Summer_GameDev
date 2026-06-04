@@ -951,12 +951,14 @@ void GameScene::DrawSinglePlayerScene(void)
 		"PLAYER 4",
 	};
 
+	const Player* player1 = GetPlayerByIndex(0);
+
 	DrawView(
 		sceneScreenHandle_,
 		screenWidth_,
 		screenHeight_,
-		GetPlayerByIndex(0),
-		nullptr,
+		player1,
+		player1,
 		PLAYER_NAMES[0]);
 }
 
@@ -970,20 +972,23 @@ void GameScene::DrawTwoPlayerScene(void)
 		"PLAYER 4",
 	};
 
+	const Player* player1 = GetPlayerByIndex(0);
+	const Player* player2 = GetPlayerByIndex(1);
+
 	DrawView(
 		leftScreenHandle_,
 		screenWidth_ / 2,
 		screenHeight_,
-		GetPlayerByIndex(0),
-		nullptr,
+		player1,
+		player1,
 		PLAYER_NAMES[0]);
 
 	DrawView(
 		rightScreenHandle_,
 		screenWidth_ / 2,
 		screenHeight_,
-		GetPlayerByIndex(1),
-		nullptr,
+		player2,
+		player2,
 		PLAYER_NAMES[1]);
 
 	ComposeSplitScreens(false);
@@ -1009,7 +1014,7 @@ void GameScene::DrawFourPlayerScene(void)
 		screenWidth_ / 2,
 		screenHeight_ / 2,
 		player1,
-		nullptr,
+		player1,
 		PLAYER_NAMES[0]);
 
 	DrawView(
@@ -1017,7 +1022,7 @@ void GameScene::DrawFourPlayerScene(void)
 		screenWidth_ / 2,
 		screenHeight_ / 2,
 		player2 ? player2 : player1,
-		nullptr,
+		player2 ? player2 : player1,
 		PLAYER_NAMES[1]);
 
 	DrawView(
@@ -1025,7 +1030,7 @@ void GameScene::DrawFourPlayerScene(void)
 		screenWidth_ / 2,
 		screenHeight_ / 2,
 		player3 ? player3 : player1,
-		nullptr,
+		player3 ? player3 : player1,
 		PLAYER_NAMES[2]);
 
 	if (player4 != nullptr)
@@ -1035,7 +1040,7 @@ void GameScene::DrawFourPlayerScene(void)
 			screenWidth_ / 2,
 			screenHeight_ / 2,
 			player4,
-			nullptr,
+			player4,
 			PLAYER_NAMES[3]);
 	}
 	else
