@@ -5,6 +5,7 @@
 #include "../../../../Manager/InputManager.h"
 #include "../../ActorBase.h"
 #include "../../../../Object/Collider/ColliderModel.h"
+#include "../../../../Scene/BuySelect.h"
 
 class ColliderBase;
 class ResourceManager;
@@ -109,12 +110,31 @@ public:
 	int GetHpMax(void) const;
 	float GetHpRate(void) const;
 
-protected:
-	void InitLoad(void) override;
-	void InitTransform(void) override;
-	void InitCollider(void) override;
-	void InitAnimation(void) override;
-	void InitPost(void) override;
+
+	// 追加: アイテム付与 / 在庫参照 / 使用
+	void AddItem(int itemType);
+
+	int GetSpikeCount() const;
+	int GetMineCount() const;
+	int GetFragCount() const;
+
+	bool UseSpikeTrap();
+	bool UseExplosiveTrap();
+	bool UseFragGrenade();
+
+	// 追加: 使用アイテム選択（順送り） - 所持しているものだけ巡回する
+	void CycleSelectedUsableItem(int dir); // dir = +1/-1, dir==0 => select first owned
+	ITEM_TYPE GetSelectedUsableItemType() const;
+
+	// 追加: ヘルメット残数取得
+	int GetHelmetUses() const;
+
+	protected:
+		void InitLoad(void) override;
+		void InitTransform(void) override;
+		void InitCollider(void) override;
+		void InitAnimation(void) override;
+		void InitPost(void) override;
 
 private:
 	static constexpr float GRAVITY_TERMINAL = -10.0f;
@@ -130,6 +150,7 @@ private:
 	static constexpr float TURN_SPEED = 10.0f;
 
 	static constexpr VECTOR INIT_POS = { 300.0f, 100.0f, 100.0f };
+
 
 	static constexpr int HP_MAX = 6;
 	static constexpr int DAMAGE_COOLDOWN_MAX = 60;
@@ -172,5 +193,20 @@ private:
 	void OnEnterCrouched(void);
 
 	STATE state_;
+
+	// 追加メンバ: アイテム効果 / 在庫
+	int helmetUsesRemaining_ = 0; // ヘルメット防御回数
+	bool hasInsurance_ = false;
+	bool hasZoomCamera_ = false;
+
+	int spikeTrapCount_ = 0;
+	int explosiveTrapCount_ = 0;
+	int fragGrenadeCount_ = 0;
+
+	std::vector<int> inventory_;
+
+	// 使用アイテム選択用（固定順序）
+	int selectedUsableIndex_ = -1; // 所持品が無ければ -1
+	static const std::vector<ITEM_TYPE> usableOrder_;
 };
 

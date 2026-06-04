@@ -41,6 +41,20 @@ void Subject::Update(void)
 
 	const VECTOR prevPos = transform_.pos;
 
+	// 追加: スタン中は移動／攻撃処理を行わず、重力のみ適用してフレームを消費する
+	if (stunFrames_ > 0)
+	{
+		stunFrames_--;
+		// スタン中は状態を MOVE に固定して攻撃をキャンセル済みのはずだが念のため調整
+		actionState_ = ACTION_STATE::MOVE;
+		attackFrame_ = 0;
+		isAttackHitPending_ = false;
+
+		ApplyGravity();
+		transform_.Update();
+		return;
+	}
+
 	if (actionState_ == ACTION_STATE::ATTACK)
 	{
 		UpdateAttack();
@@ -351,6 +365,16 @@ bool Subject::ConsumeAttackHit(void)
 	return true;
 }
 
+void Subject::Stun(int frames)
+{
+	if (frames <= 0) return;
+	stunFrames_ = frames;
+	// optionally reset action state
+	actionState_ = ACTION_STATE::MOVE;
+	attackFrame_ = 0;
+	isAttackHitPending_ = false;
+}
+
 void Subject::UpdateAttack(void)
 {
 	attackFrame_++;
@@ -408,4 +432,3 @@ void Subject::FaceTarget(const VECTOR& targetPos)
 
 	transform_.quaRot = Quaternion::LookRotation(AsoUtility::VNormalize(dir));
 }
-

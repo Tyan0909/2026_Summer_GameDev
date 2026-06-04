@@ -49,6 +49,9 @@ private:
 	static constexpr int PREVIEW_WIDTH = 640;
 	static constexpr int PREVIEW_HEIGHT = 360;
 
+	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	static constexpr float GOAL_RADIUS = 80.0f;
+
 	void DrawView(
 		int screenHandle,
 		int drawWidth,
@@ -69,8 +72,12 @@ private:
 	void DrawFlashEffect(void) const;
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
+	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
+	void ApplyStageOpacityForCamera(const Player* targetPlayer);
+
 	void UpdateSubjectAttacks(void);
 	bool IsPlayerAlive(const Player* targetPlayer) const;
+	bool IsPlayerAtGoal(const Player* targetPlayer) const;
 	bool IsPlayerReachedGoal(void) const;
 	bool IsAllPlayersDead(void) const;
 
@@ -115,6 +122,29 @@ private:
 	void DrawScreenshotPreview(void) const;
 	void GetPlayer1ViewArea(int& x, int& y, int& width, int& height) const;
 
+	// Inventory HUD
+	void DrawInventoryHUD(const Player* targetPlayer, int drawWidth, int drawHeight) const;
+	static constexpr int ITEM_ICON_SIZE = 48;
+	static constexpr int ITEM_ICON_SPACING = 8;
+	static constexpr int ITEM_ICON_MARGIN = 16;
+
+	// 追加: トラップ関連
+	enum class TRAP_TYPE { SPIKE = 0, MINE = 1 };
+	struct Trap
+	{
+		TRAP_TYPE type;
+		VECTOR pos;
+		bool triggered = false;
+		int lifeFrames = 0; // 残存フレーム（スパイク持続等）
+		int ownerPlayerIndex = 0; // owner index in players_ (optional)
+	};
+
+	// トラップ設定
+	static constexpr int SPIKE_DURATION_FRAMES = 4 * 60; // 4秒
+	static constexpr float SPIKE_TRIGGER_RADIUS = 40.0f;
+	static constexpr float MINE_TRIGGER_RADIUS = 40.0f;
+	static constexpr float MINE_DAMAGE_RADIUS = 120.0f;
+
 	Stage* stage_;
 	Player* player_;
 	Player* player2_;
@@ -140,4 +170,13 @@ private:
 	std::vector<Player*> players_;
 	std::vector<int> lastPhotoScorePerPlayer_;
 	std::vector<int> photoCountPerPlayer_;
+
+	// 追加
+	std::vector<Trap> traps_;
+
+	// アイコンハンドル（ヘルメット・フラグ・スパイク・地雷）
+	int iconHelmetHandle_ = -1;
+	int iconFragHandle_ = -1;
+	int iconSpikeHandle_ = -1;
+	int iconMineHandle_ = -1;
 };

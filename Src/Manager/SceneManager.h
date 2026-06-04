@@ -73,6 +73,10 @@ public:
 	void SetPaused(bool isPaused) { isPaused_ = isPaused; }
 	bool IsPaused(void) const { return isPaused_; }
 
+	// ’Ç‰Á: w“ü‚µ‚½ƒAƒCƒeƒ€‚ÌŒ^(ID—ñ)‚ğ•Û‘¶ / æ“¾
+	void SetPurchasedItemTypes(const std::vector<int>& types) { purchasedItemTypes_ = types; }
+	const std::vector<int>& GetPurchasedItemTypes() const { return purchasedItemTypes_; }
+
 private:
 	static SceneManager* instance_;
 
@@ -112,7 +116,10 @@ private:
 
 	int pauseMenuIndex_ = 0;
 
+	std::vector<int> purchasedItemTypes_;
+
 public:
+
 	void SetPlayerNum(int num) { playerNum_ = num; }
 	int GetPlayerNum(void) const { return playerNum_; }
 

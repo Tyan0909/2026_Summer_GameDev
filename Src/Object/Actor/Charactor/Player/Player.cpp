@@ -10,6 +10,13 @@
 #include "../../../../Utility/AsoUtility.h"
 #include "../../../../Application.h"
 
+// 使用アイテム順序の定義（フラグ、スパイク、地雷）
+const std::vector<ITEM_TYPE> Player::usableOrder_ = {
+	ITEM_TYPE::FRAG_GRENADE,
+	ITEM_TYPE::SPIKE_TRAP,
+	ITEM_TYPE::EXPLOSIVE_TRAP
+};
+
 const Player::INPUT_CONFIG Player::KEYBOARD_INPUT_CONFIG =
 {
 	INPUT_DEVICE::KEYBOARD,
@@ -385,9 +392,9 @@ void Player::SetCameraAngles(const VECTOR& angles)
 
 VECTOR Player::GetCameraWorldPos(void) const
 {
-	VECTOR cameraOffset = VGet(0.0f, -12.0f, 8.0f);
+	VECTOR cameraOffset = TPS_CAMERA_LOCAL_POS;
 	cameraOffset = VTransform(cameraOffset, MGetRotY(cameraAngles_.y));
-	return VAdd(GetHeadWorldPos(), cameraOffset);
+	return VAdd(transform_.pos, cameraOffset);
 }
 
 VECTOR Player::GetCameraForward(void) const
@@ -715,41 +722,11 @@ void Player::OnEnterCrouched(void)
 	}
 }
 
-void Player::TakeDamage(int damage)
-{
-	if (damage <= 0)
-	{
-		return;
-	}
-
-	if (!CanTakeDamage())
-	{
-		return;
-	}
-
-	hp_ -= damage;
-	if (hp_ < 0)
-	{
-		hp_ = 0;
-	}
-
-	damageCooldownFrame_ = DAMAGE_COOLDOWN_MAX;
-}
-
 bool Player::CanTakeDamage(void) const
 {
 	return hp_ > 0 && damageCooldownFrame_ <= 0;
 }
 
-bool Player::IsDead(void) const
-{
-	return hp_ <= 0;
-}
-
-int Player::GetHp(void) const
-{
-	return hp_;
-}
 
 int Player::GetHpMax(void) const
 {
@@ -765,4 +742,199 @@ float Player::GetHpRate(void) const
 
 	return static_cast<float>(hp_) / static_cast<float>(HP_MAX);
 }
+
+// 追加実装: アイテム付与
+void Player::AddItem(int itemType)
+{
+	// 重複登録は inventory に保持する（必要ならユニーク化する）
+	inventory_.push_back(itemType);
+
+	switch (static_cast<ITEM_TYPE>(itemType))
+	{
+	case ITEM_TYPE::HELMET:
+		// ヘルメットは購入で合計 3 回分の防御を付与（仕様）
+		helmetUsesRemaining_ = 3;
+		break;
+	case ITEM_TYPE::INSURANCE_CAMERA:
+		hasInsurance_ = true;
+		break;
+	case ITEM_TYPE::ZOOM_CAMERA:
+		hasZoomCamera_ = true;
+		break;
+	case ITEM_TYPE::SPIKE_TRAP:
+		++spikeTrapCount_;
+		break;
+	case ITEM_TYPE::EXPLOSIVE_TRAP:
+		++explosiveTrapCount_;
+		break;
+	case ITEM_TYPE::FRAG_GRENADE:
+		++fragGrenadeCount_;
+		break;
+	default:
+		// 他アイテムは現状 inventory に保持するのみ
+		break;
+	}
+}
+
+// スパイク使用（設置要求）：在庫があればデクリメントして true
+bool Player::UseSpikeTrap()
+{
+	if (spikeTrapCount_ > 0)
+	{
+		--spikeTrapCount_;
+		return true;
+	}
+	return false;
+}
+
+// 地雷使用（設置要求）：在庫があればデクリメントして true
+bool Player::UseExplosiveTrap()
+{
+	if (explosiveTrapCount_ > 0)
+	{
+		--explosiveTrapCount_;
+		return true;
+	}
+	return false;
+}
+
+// フラググレネード使用（消費）
+bool Player::UseFragGrenade()
+{
+	if (fragGrenadeCount_ > 0)
+	{
+		--fragGrenadeCount_;
+		return true;
+	}
+	return false;
+}
+
+int Player::GetSpikeCount() const { return spikeTrapCount_; }
+int Player::GetMineCount() const { return explosiveTrapCount_; }
+int Player::GetFragCount() const { return fragGrenadeCount_; }
+int Player::GetHelmetUses() const { return helmetUsesRemaining_; }
+
+// 選択アイテム操作 ? 所持しているものだけを順送り
+void Player::CycleSelectedUsableItem(int dir)
+{
+	if (usableOrder_.empty())
+	{
+		selectedUsableIndex_ = -1;
+		return;
+	}
+
+	const int len = static_cast<int>(usableOrder_.size());
+
+	auto HasItem = [this](ITEM_TYPE t) -> bool {
+		switch (t)
+		{
+		case ITEM_TYPE::FRAG_GRENADE: return fragGrenadeCount_ > 0;
+		case ITEM_TYPE::SPIKE_TRAP: return spikeTrapCount_ > 0;
+		case ITEM_TYPE::EXPLOSIVE_TRAP: return explosiveTrapCount_ > 0;
+		default: return false;
+		}
+		};
+
+	// dir == 0 : 最初に所持しているアイテムを選ぶ（自動選択用）
+	if (dir == 0)
+	{
+		for (int i = 0; i < len; ++i)
+		{
+			if (HasItem(usableOrder_[i]))
+			{
+				selectedUsableIndex_ = i;
+				return;
+			}
+		}
+		selectedUsableIndex_ = -1;
+		return;
+	}
+
+	// dir != 0 の場合、未選択ならまず「最初に所持しているアイテム」を選ぶ
+	if (selectedUsableIndex_ < 0)
+	{
+		for (int i = 0; i < len; ++i)
+		{
+			if (HasItem(usableOrder_[i]))
+			{
+				selectedUsableIndex_ = i;
+				return;
+			}
+		}
+		// 所持アイテムが無ければ何もしない
+		return;
+	}
+
+	// 通常の巡回処理（現在選択から次を探す）
+	int start = selectedUsableIndex_;
+
+	for (int step = 1; step <= len; ++step)
+	{
+		int idx = (start + dir * step) % len;
+		if (idx < 0) idx += len;
+		if (HasItem(usableOrder_[idx]))
+		{
+			selectedUsableIndex_ = idx;
+			return;
+		}
+	}
+
+	// 見つからなければ未選択へ
+	selectedUsableIndex_ = -1;
+}
+
+// 選択中アイテム取得（未選択なら NORMAL_CAMERA を返す）
+ITEM_TYPE Player::GetSelectedUsableItemType() const
+{
+	if (usableOrder_.empty()) return ITEM_TYPE::NORMAL_CAMERA;
+	if (selectedUsableIndex_ < 0 || selectedUsableIndex_ >= static_cast<int>(usableOrder_.size()))
+	{
+		return ITEM_TYPE::NORMAL_CAMERA;
+	}
+	return usableOrder_[selectedUsableIndex_];
+}
+
+// TakeDamage をヘルメット仕様に合わせて修正（既存メソッドを置換）
+void Player::TakeDamage(int damage)
+{
+	if (damage <= 0)
+	{
+		return;
+	}
+
+	if (!CanTakeDamage())
+	{
+		return;
+	}
+
+	// ヘルメットが残っていれば、その攻撃を無効化してヘルメット残数を減らす
+	if (helmetUsesRemaining_ > 0)
+	{
+		--helmetUsesRemaining_;
+		// ダメージ無効化（被ダメ無効だがクールダウンは設定）
+		damageCooldownFrame_ = DAMAGE_COOLDOWN_MAX;
+		return;
+	}
+
+	// 通常ダメージ処理
+	hp_ -= damage;
+	if (hp_ < 0)
+	{
+		hp_ = 0;
+	}
+
+	damageCooldownFrame_ = DAMAGE_COOLDOWN_MAX;
+}
+
+bool Player::IsDead(void) const
+{
+	return hp_ <= 0;
+}
+
+int Player::GetHp(void) const
+{
+	return hp_;
+}
+
+
 
