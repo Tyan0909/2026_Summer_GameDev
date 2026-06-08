@@ -34,7 +34,7 @@ void BuySelect::Init(void)
     fontMid_ = CreateFontToHandle(NULL, 20, -1, DX_FONTTYPE_ANTIALIAS);
     fontSmall_ = CreateFontToHandle(NULL, 16, -1, DX_FONTTYPE_ANTIALIAS);
 
-    // 既存画像読み込みに罠画像を追加
+    // 既存画像読み込み
     itemImg_[0] = LoadGraph("Data/Image/BuySelect/NormalCamera.png");
     itemImg_[1] = LoadGraph("Data/Image/BuySelect/ZoomCamera.png");
     itemImg_[2] = LoadGraph("Data/Image/BuySelect/InsuranceCamera.png");
@@ -44,13 +44,14 @@ void BuySelect::Init(void)
     itemImg_[6] = LoadGraph("Data/Image/BuySelect/ExplosiveTrap.png");
 
     items_.clear();
-    items_.push_back({ "ノーマルカメラ", 0,false,ITEM_TYPE::NORMAL_CAMERA });
-    items_.push_back({ "ズームカメラ", 800, false,ITEM_TYPE::ZOOM_CAMERA });
-    items_.push_back({ "保険カメラ", 1200, false,ITEM_TYPE::INSURANCE_CAMERA });
-    items_.push_back({ "ヘルメット", 500, false,ITEM_TYPE::HELMET });
-    items_.push_back({ "フラググレネード", 300, false,ITEM_TYPE::FRAG_GRENADE });
-    items_.push_back({ "スパイクトラップ", 200, false, ITEM_TYPE::SPIKE_TRAP });
-    items_.push_back({ "爆発トラップ", 600, false, ITEM_TYPE::EXPLOSIVE_TRAP });
+    // quantity 初期値 0
+    items_.push_back({ "ノーマルカメラ", 0,   0, ITEM_TYPE::NORMAL_CAMERA });
+    items_.push_back({ "ズームカメラ", 800, 0, ITEM_TYPE::ZOOM_CAMERA });
+    items_.push_back({ "保険カメラ", 1200, 0, ITEM_TYPE::INSURANCE_CAMERA });
+    items_.push_back({ "ヘルメット", 500,  0, ITEM_TYPE::HELMET });
+    items_.push_back({ "フラググレネード", 300, 0, ITEM_TYPE::FRAG_GRENADE });
+    items_.push_back({ "スパイクトラップ", 200, 0, ITEM_TYPE::SPIKE_TRAP });
+    items_.push_back({ "爆発トラップ", 500,  0, ITEM_TYPE::EXPLOSIVE_TRAP });
 
     // SceneManager に保存されている「最低保証を除いた持ち越し分」を取得
     int carry = SceneManager::GetInstance().GetCarryMoney();
@@ -80,11 +81,27 @@ void BuySelect::Update(void)
         if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
     }
 
-    // Zキーで選択トグル
+    // Zキーで数量を +1 (購入を増やす)
     if (ins.IsTrgDown(KEY_INPUT_Z))
     {
-        ToggleItemSelection(cursorIdx_);
-        if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
+        // 予算が許す範囲でのみ増やす
+        int total = CalculateTotalPrice();
+        const Item& it = items_[cursorIdx_];
+        if (total + it.price <= currentAmount_)
+        {
+            items_[cursorIdx_].quantity += 1;
+            if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
+        }
+    }
+
+    // Xキーで数量を -1 (購入数を減らす)
+    if (ins.IsTrgDown(KEY_INPUT_X))
+    {
+        if (items_[cursorIdx_].quantity > 0)
+        {
+            items_[cursorIdx_].quantity -= 1;
+            if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
+        }
     }
 
     // SPACEキーで購入確定（清算）
@@ -97,6 +114,17 @@ void BuySelect::Update(void)
 
         int carry = remaining - minAmount_;
         if (carry < 0) carry = 0;
+
+        // 追加: 購入アイテムを SceneManager に渡す（ITEM_TYPE を int にして数量分だけ保存）
+        std::vector<int> purchased;
+        for (const auto& it : items_)
+        {
+            for (int q = 0; q < it.quantity; ++q)
+            {
+                purchased.push_back(static_cast<int>(it.type));
+            }
+        }
+        SceneManager::GetInstance().SetPurchasedItemTypes(purchased);
 
         scene.SetCarryMoney(carry);
         if (bs_confirmSE != -1) PlaySoundMem(bs_confirmSE, DX_PLAYTYPE_BACK);
@@ -136,15 +164,10 @@ void BuySelect::Draw(void)
     const int listTop = 100;
     const int listRight = 560;
     const int listBottom = screenH - 80;
-    // 1. ブレンドモードを「アルファブレンド（半透明）」に設定し、不透明度を「120」にする（0〜255で指定）
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 120);
-    // 2. ウィンドウの背景（座布団）を半透明で描画（暗い水色にするのが近未来風のコツ！）
     DrawBox(listLeft, listTop, listRight, listBottom, GetColor(10, 30, 40), TRUE);
-    // 3. ブレンドモードを「不透明度 255（くっきり）」に戻す
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
-    // 4. 外枠をくっきりとした鮮やかな水色で描画
     DrawBox(listLeft, listTop, listRight, listBottom, GetColor(0, 200, 255), FALSE);
-    // 5. 最後にブレンドモードを通常（NOBLEND）に戻しておく（他への影響を防ぐため）
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     // 左側：アイテムリスト（フォントは中）
@@ -156,7 +179,7 @@ void BuySelect::Draw(void)
 
         // 1. デフォルトの文字色を「やわらかい水色」に
         unsigned int textColor = GetColor(160, 220, 240);
-        if (!items_[i].isSelected && !canBuy)
+        if (items_[i].quantity == 0 && !canBuy)
         {
             textColor = GetColor(60, 90, 100); // 予算不足は「暗い青グレー」でグレーアウト
         }
@@ -166,34 +189,27 @@ void BuySelect::Draw(void)
         int rowY = listTop + 14 + (i * 38);
 
         // 2. 選択中（カート入り）の行ハイライト（半透明のサイバー水色）
-        if (items_[i].isSelected)
+        if (items_[i].quantity > 0)
         {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 40); // 薄く透けさせる（40/255）
             DrawBox(listLeft + 8, rowY - 4, listRight - 8, rowY + 24, GetColor(0, 200, 255), TRUE);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-            // チェックマークも水色（ネオン）に
-            DrawFormatStringToHandle(listRight - 40, rowY, GetColor(0, 255, 200), fontMid_, "✓");
+            // 数量を右寄せで表示
+            char qbuf[16];
+            snprintf(qbuf, sizeof(qbuf), "x%d", items_[i].quantity);
+            DrawFormatStringToHandle(listRight - 56, rowY, GetColor(0, 255, 200), fontMid_, "%s", qbuf);
         }
 
         // 3. カーソル位置（フォーカス）の処理
         if (i == cursorIdx_)
         {
-            // カーソルアイコンは常時表示か、点滅させる（常時表示の方が視認性は良いです）
             const char* cursorMark = blink ? "▶" : " ";
             DrawFormatStringToHandle(rowX - 28, rowY, GetColor(0, 255, 255), fontMid_, "%s", cursorMark);
-
-            // 【重要】文字色は点滅させず、常時「一番明るい発光水色」に固定
-            textColor = GetColor(255, 255, 255); // 白、または GetColor(120, 255, 240)
+            textColor = GetColor(255, 255, 255); // 白
         }
 
         // 4. アイテム名と価格の描画
-        // カートに入っている（isSelected）かつ、カーソルが合っていない時は文字色を少し変えても綺麗です
-        if (items_[i].isSelected && i != cursorIdx_)
-        {
-            textColor = GetColor(0, 255, 200); // カート内アイテム用の緑がかった水色
-        }
-
         DrawFormatStringToHandle(rowX, rowY, textColor, fontMid_, "%s : %d G", items_[i].name.c_str(), items_[i].price);
     }
 
@@ -208,25 +224,19 @@ void BuySelect::Draw(void)
         int remaining = currentAmount_ - total;
         if (remaining < 0) remaining = 0;
 
-        // 1. 背景座布団（アルファ値を100に下げ、完全に暗い青緑に統一）
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
         DrawBox(statusBoxX, statusBoxY, statusBoxX + statusBoxW, statusBoxY + statusBoxH, GetColor(10, 24, 32), TRUE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-        // サイバーネオン水色の定義（使い回せるように変数化しておくと便利です）
         unsigned int neonCyan = GetColor(0, 200, 255);
 
-        // 2. 枠線 + 小装飾（すべて鮮やかな水色に統一）
         DrawBox(statusBoxX, statusBoxY, statusBoxX + statusBoxW, statusBoxY + statusBoxH, neonCyan, FALSE);
-
-        // 上の突起装飾も水色で塗りつぶし
         DrawBox(statusBoxX - 1, statusBoxY - 1, statusBoxX + 14, statusBoxY + 6, neonCyan, TRUE);
         DrawBox(statusBoxX + statusBoxW - 14, statusBoxY - 1, statusBoxX + statusBoxW + 1, statusBoxY + 6, neonCyan, TRUE);
 
-        // 3. テキスト色の調整（黄色やグレーを廃止し、白と水色のグラデーションに）
-        unsigned int goldColor = GetColor(255, 230, 100); // 所持金：2枚目に合わせた少し白みの強いゴールド
-        unsigned int cartColor = GetColor(0, 255, 220);   // カート：発光する明るい水色
-        unsigned int remainColor = GetColor(180, 230, 245); // 残り：視認性の高いやわらかい水色
+        unsigned int goldColor = GetColor(255, 230, 100); // 所持金
+        unsigned int cartColor = GetColor(0, 255, 220);   // カート
+        unsigned int remainColor = GetColor(180, 230, 245); // 残り
 
         if (fontMid_ != -1)
         {
@@ -242,10 +252,10 @@ void BuySelect::Draw(void)
         }
     }
 
-    // 右側プレビュー領域（ステータスボックスの下に配置）
+    // 右側プレビュー領域（status の下） — 描画は変わらず
     {
         const int winLeft = 700;
-        const int winTop = statusBoxY + statusBoxH + 22; // statusBox の下
+        const int winTop = 26 + 120 + 22;
         const int winRight = 1150;
         const int winBottom = winTop + 240;
 
@@ -254,31 +264,23 @@ void BuySelect::Draw(void)
         if (previewIdx > (int)items_.size() - 1) previewIdx = (int)items_.size() - 1;
         const Item& currentItem = items_[previewIdx];
 
-        // 1. 背景座布団（アルファ値を下げて、暗い青緑に変えることで近未来のガラスパネル風に）
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100); // 200から100に下げて透明度アップ
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
         DrawBox(winLeft, winTop, winRight, winBottom, GetColor(10, 24, 32), TRUE);
-
-        // 2. 外枠を鮮やかな水色にする
-        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255); // くっきり表示
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
         DrawBox(winLeft, winTop, winRight, winBottom, GetColor(0, 200, 255), FALSE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-        // 四隅に小さなL字の飾りを付けると、さらに2枚目の見た目に近づきます（お好みで！）
         DrawLine(winLeft, winTop, winLeft + 10, winTop, GetColor(0, 255, 255), 2);
         DrawLine(winLeft, winTop, winLeft, winTop + 10, GetColor(0, 255, 255), 2);
         DrawLine(winRight, winTop, winRight - 10, winTop, GetColor(0, 255, 255), 2);
         DrawLine(winRight, winTop, winRight, winTop + 10, GetColor(0, 255, 255), 2);
 
-        // アイテム名（上：ここもネオン水色、またはカーソルと同じ白に）
-        unsigned int nameColor = GetColor(255, 255, 255); // 白、もしくは GetColor(0, 255, 255)
+        unsigned int nameColor = GetColor(255, 255, 255);
         if (fontMid_ != -1)
             DrawFormatStringToHandle(winLeft + 24, winTop + 12, nameColor, fontMid_, "%s", currentItem.name.c_str());
         else
             DrawFormatString(winLeft + 24, winTop + 12, nameColor, "%s", currentItem.name.c_str());
 
-        // 3. 画像用背景の調整
-        // 2枚目の画像のように、背後のガレージを活かすために「不透明なグレーの箱」は描画せず、
-        // 代わりに「画像を囲む薄い水色のスキャンライン（枠）」を描画すると近未来感が出ます。
         const int areaW = 380;
         const int areaH = 140;
         const int centerX = (winLeft + winRight) / 2;
@@ -287,12 +289,10 @@ void BuySelect::Draw(void)
         const int bgRight = bgLeft + areaW;
         const int bgBottom = bgTop + areaH;
 
-        // グレーのベタ塗りをやめ、薄い水色の枠線にする
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 80);
         DrawBox(bgLeft, bgTop, bgRight, bgBottom, GetColor(0, 180, 255), FALSE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-        // 画像を中央に描画（フィット）
         int imgHandle = itemImg_[(int)currentItem.type];
         if (imgHandle != -1)
         {
@@ -303,14 +303,10 @@ void BuySelect::Draw(void)
                 float scale = std::min(areaW / (float)imgW, areaH / (float)imgH);
                 if (scale > 1.0f) scale = 1.0f;
                 int centerY = bgTop + areaH / 2;
-
-                // アイコン画像自体が背景付き（トランシーバーの画像のような薄茶背景）の場合、
-                // DXLib側で透過処理（TRUE）が有効になっていれば、綺麗に浮かび上がります。
                 DrawRotaGraph(centerX, centerY, scale, 0.0, imgHandle, TRUE);
             }
         }
 
-        // 説明文（画像下：こちらもやわらかい水色・白ベースに）
         const char* desc = "";
         switch (currentItem.type)
         {
@@ -379,24 +375,12 @@ int BuySelect::CalculateTotalPrice() const
 {
     int total = 0;
     for (const auto& item : items_)
-        if (item.isSelected) total += item.price;
+        if (item.quantity > 0) total += item.price * item.quantity;
     return total;
 }
 
 void BuySelect::ToggleItemSelection(int idx)
 {
-    if (idx < 0 || idx >= (int)items_.size()) return;
-
-    if (items_[idx].isSelected)
-    {
-        items_[idx].isSelected = false;
-    }
-    else
-    {
-        // 所持金を超えない範囲でのみ選択可能
-        if (CalculateTotalPrice() + items_[idx].price <= currentAmount_)
-        {
-            items_[idx].isSelected = true;
-        }
-    }
+    // 互換用: Z=増加、X=減少 を使うためここは簡易 no-op
+    (void)idx;
 }

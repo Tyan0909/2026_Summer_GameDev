@@ -135,6 +135,21 @@ const std::vector<Subject*>& SubjectManager::GetSubjects(void) const
 	return subjects_;
 }
 
+void SubjectManager::RemoveSubject(Subject* subject)
+{
+	if (subject == nullptr) return;
+	for (auto it = subjects_.begin(); it != subjects_.end(); ++it)
+	{
+		if (*it == subject)
+		{
+			(*it)->Release();
+			delete* it;
+			subjects_.erase(it);
+			return;
+		}
+	}
+}
+
 float SubjectManager::GetRandomRange(float minValue, float maxValue) const
 {
 	if (maxValue <= minValue)
