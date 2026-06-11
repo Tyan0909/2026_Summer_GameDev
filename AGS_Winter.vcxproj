@@ -134,6 +134,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(DXLIB_DIR);%(AdditionalIncludeDirectories);C:\DxLib</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,8 +143,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ags2026_summer add coll2 - コピー\Src\Object\Actor\Stage\StageManager.cpp" />
+    <ClCompile Include="Src\Manager\EffectManager.cpp" />
+    <ClCompile Include="Src\Manager\SoundManager.cpp" />
+    <ClCompile Include="Src\Manager\SubjectManager.cpp" />
+    <ClCompile Include="Src\Object\Actor\ActorBase.cpp" />
+    <ClCompile Include="Src\Manager\ResourceManager.cpp" />
+    <ClCompile Include="Src\Manager\Resource.cpp" />
+    <ClCompile Include="Src\Object\Actor\Charactor\Subject\Subject.cpp" />
+    <ClCompile Include="Src\Object\Actor\Item\ItemBase.cpp" />
+    <ClCompile Include="Src\Object\Collider\ColliderBase.cpp" />
+    <ClCompile Include="Src\Object\Collider\ColliderCapsule.cpp" />
+    <ClCompile Include="Src\Object\Collider\ColliderLine.cpp" />
+    <ClCompile Include="Src\Object\Collider\ColliderModel.cpp" />
+    <ClCompile Include="Src\Object\Collider\ColliderSphere.cpp" />
+    <ClCompile Include="Src\Object\Actor\Charactor\Player\Player.cpp" />
+    <ClCompile Include="Src\Object\Stage\StageManager.cpp" />
     <ClCompile Include="Src\Scene\BuySelect.cpp" />
     <ClCompile Include="Src\Scene\ExampleScene.cpp" />
+    <ClCompile Include="Src\Scene\LoadingScene.cpp" />
     <ClCompile Include="Src\Scene\Result.cpp" />
     <ClCompile Include="Src\Object\UIInput.cpp" />
     <ClCompile Include="Src\Utility\MatrixUtility.cpp" />
@@ -162,12 +180,28 @@
     <ClCompile Include="Src\main.cpp" />
     <ClCompile Include="Src\Scene\TitleScene.cpp" />
     <ClCompile Include="Src\Common\Vector2.cpp" />
-    <ClCompile Include="Src\Object\Stage\StageManager.cpp" />
-    <ClCompile Include="Src\Object\Stage\Stage.cpp" />
+    <ClCompile Include="Src\Object\Actor\Stage\StageManager.cpp" />
+    <ClCompile Include="Src\Object\Actor\Stage\Stage.cpp" />
+    <ClCompile Include="Src\Object\Common\Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ags2026_summer add coll2 - コピー\Src\Object\Actor\Stage\StageManager.h" />
+    <ClInclude Include="Src\Manager\EffectManager.h" />
+    <ClInclude Include="Src\Manager\SoundManager.h" />
+    <ClInclude Include="Src\Manager\SubjectManager.h" />
+    <ClInclude Include="Src\Object\Actor\ActorBase.h" />
+    <ClInclude Include="Src\Manager\ResourceManager.h" />
+    <ClInclude Include="Src\Manager\Resource.h" />
+    <ClInclude Include="Src\Object\Actor\Item\ItemBase.h" />
+    <ClInclude Include="Src\Object\Collider\ColliderBase.h" />
+    <ClInclude Include="Src\Object\Collider\ColliderCapsule.h" />
+    <ClInclude Include="Src\Object\Collider\ColliderLine.h" />
+    <ClInclude Include="Src\Object\Collider\ColliderModel.h" />
+    <ClInclude Include="Src\Object\Collider\ColliderSphere.h" />
+    <ClInclude Include="Src\Object\Actor\Charactor\Player\Player.h" />
     <ClInclude Include="Src\Scene\BuySelect.h" />
     <ClInclude Include="Src\Scene\ExampleScene.h" />
+    <ClInclude Include="Src\Scene\LoadingScene.h" />
     <ClInclude Include="Src\Scene\Result.h" />
     <ClInclude Include="Src\Object\UIInput.h" />
     <ClInclude Include="Src\Utility\MatrixUtility.h" />
@@ -185,8 +219,10 @@
     <ClInclude Include="Src\Application.h" />
     <ClInclude Include="Src\Scene\TitleScene.h" />
     <ClInclude Include="Src\Common\Vector2.h" />
-    <ClInclude Include="Src\Object\Stage\StageManager.h" />
-    <ClInclude Include="Src\Object\Stage\Stage.h" />
+    <ClInclude Include="Src\Object\Actor\Stage\StageManager.h" />
+    <ClInclude Include="Src\Object\Actor\Stage\Stage.h" />
+    <ClInclude Include="Src\Object\Common\Transform.h" />
+    <ClInclude Include="Src\Object\Actor\Charactor\Subject\Subject.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Data\Image\Background.png" />

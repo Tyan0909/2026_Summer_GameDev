@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <vector>
+
 class SceneBase;
 class Fader;
 class Camera;
@@ -8,12 +9,10 @@ class Camera;
 class SceneManager
 {
 public:
-	// 背景色
-	static constexpr int BACKGROUND_COLOR_R = 0;
-	static constexpr int BACKGROUND_COLOR_G = 139;
-	static constexpr int BACKGROUND_COLOR_B = 139;
+	static constexpr int BACKGROUND_COLOR_R = 20;
+	static constexpr int BACKGROUND_COLOR_G = 30;
+	static constexpr int BACKGROUND_COLOR_B = 70;
 
-	// シーン管理ID
 	enum class SCENE_ID
 	{
 		NONE,
@@ -21,8 +20,24 @@ public:
 		PLAYERNUMBERSELECT,
 		EXAMPLE,
 		BUYSELECT,
+		LOADING,
 		GAME,
 		RESULT,
+	};
+
+	enum class GAME_RESULT
+	{
+		NONE,
+		CLEAR,
+		GAMEOVER,
+	};
+
+	enum class PAUSE_MENU_ITEM
+	{
+		RESUME,
+		TITLE,
+		EXIT,
+		MAX,
 	};
 
 	static void CreateInstance(void);
@@ -40,9 +55,27 @@ public:
 	float GetDeltaTime(void) const { return deltaTime_; }
 	Camera* GetCamera(void) const { return camera_; }
 
-	// carryMoney_ は「最低保証1500を除いた持ち越し可変分」にして統一
 	void SetCarryMoney(int money) { carryMoney_ = money; }
 	int GetCarryMoney(void) const { return carryMoney_; }
+
+	void SetSplitScreenEnabled(bool isEnabled) { isSplitScreenEnabled_ = isEnabled; }
+	bool IsSplitScreenEnabled(void) const { return isSplitScreenEnabled_; }
+
+	void SetGameResult(GAME_RESULT result) { gameResult_ = result; }
+	GAME_RESULT GetGameResult(void) const { return gameResult_; }
+
+	void SetPhotoCount(int count) { photoCount_ = count; }
+	int GetPhotoCount(void) const { return photoCount_; }
+
+	void SetLastPhotoScore(int score) { lastPhotoScore_ = score; }
+	int GetLastPhotoScore(void) const { return lastPhotoScore_; }
+
+	void SetPaused(bool isPaused) { isPaused_ = isPaused; }
+	bool IsPaused(void) const { return isPaused_; }
+
+	// 追加: 購入したアイテムの型(ID列)を保存 / 取得
+	void SetPurchasedItemTypes(const std::vector<int>& types) { purchasedItemTypes_ = types; }
+	const std::vector<int>& GetPurchasedItemTypes() const { return purchasedItemTypes_; }
 
 private:
 	static SceneManager* instance_;
@@ -54,6 +87,7 @@ private:
 	SceneBase* scene_;
 	Camera* camera_;
 	bool isSceneChanging_;
+	bool isPaused_;
 
 	std::chrono::system_clock::time_point preTime_;
 	float deltaTime_;
@@ -65,13 +99,24 @@ private:
 	void ResetDeltaTime(void);
 	void DoChangeScene(SCENE_ID sceneId);
 	void Fade(void);
+	void DrawPauseOverlay(void) const;
+	void ResetPauseMenu(void);
+	void UpdatePauseMenu(void);
+	void ExecutePauseMenu(void);
 
 	int playerNum_ = 0;
-
-	// 「最低保証を除いた持ち越し可変分」
 	int carryMoney_ = 0;
 
 	std::vector<int> selectedPlayerNums_;
+	bool isSplitScreenEnabled_ = true;
+
+	GAME_RESULT gameResult_ = GAME_RESULT::NONE;
+	int photoCount_ = 0;
+	int lastPhotoScore_ = 0;
+
+	int pauseMenuIndex_ = 0;
+
+	std::vector<int> purchasedItemTypes_;
 
 public:
 

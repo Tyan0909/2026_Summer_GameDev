@@ -2,6 +2,8 @@
 #include "SceneBase.h"
 #include <DxLib.h>
 
+class AnimationController;
+
 // プレイヤー人数選択シーン
 class PlayerNumScene : public SceneBase
 {
@@ -19,6 +21,9 @@ public:
 	// 選択中の人数を取得
 	int GetSelectNum(void) const { return selectNum_ + 1; }
 
+	// 各プレイヤーのスクリーンオフセットを設定 / 取得（px）
+	void SetPlayerOffset(int idx, int offsetX, int offsetY);
+	void GetPlayerOffset(int idx, int& outOffsetX, int& outOffsetY) const;
 
 private:
 	// 選択肢
@@ -39,10 +44,29 @@ private:
 	// 背景用画像
 	int bgImg_;
 
-	// 人数選択画像
+	// 人数選択画像（2Dフォールバック）
 	int selectImg_[SELECT_MAX];
 
-	// 人数選択してね画像
+	// 生成した何もないクリーンなガレージ背景画像を読み込みます
 	int selectPromptImg_;
+
+	int useImg_;
+	int notUseImg_;
+	int decideSE_;
+
+	bool isUsePlayer_[4];
+	int cursor_;
+
+	// 3Dモデルハンドル（各スロット）
+	int modelId_[SELECT_MAX];
+
+	int playAnimIndex_[SELECT_MAX];
+
+	// AnimationController ハンドル
+	AnimationController* animCtrl_[SELECT_MAX];
+
+	// 追加：各プレイヤーごとのスクリーンオフセット（px）
+	int playerOffsetX_[SELECT_MAX];
+	int playerOffsetY_[SELECT_MAX];
 };
 

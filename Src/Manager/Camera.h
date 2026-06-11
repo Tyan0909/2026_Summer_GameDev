@@ -7,7 +7,7 @@ class Camera
 public:
 
 	// カメラの初期座標
-	static constexpr VECTOR DEFAULT_POS = { 0.f,745.f,-1570.f };
+	static constexpr VECTOR DEFAULT_POS = {0.0f,0.0f,0.0f};
 
 	// カメラの初期角度
 	static constexpr VECTOR DEFAULT_ANGLES = {
@@ -15,8 +15,8 @@ public:
 	};
 
 	// カメラのクリップ範囲
-	static constexpr float VIEW_NEAR = 1.f;		// ニアクリップ
-	static constexpr float VIEW_FAR = 30000.f;	// ファークリップ
+	static constexpr float VIEW_NEAR = 10.0f;		// ニアクリップ
+	static constexpr float VIEW_FAR = 5000.0f;	// ファークリップ
 
 	// カメラモード
 	enum class MODE
@@ -57,6 +57,8 @@ public:
 
 	// カメラモードの変更
 	void ChangeMode(MODE mode);
+	void SetPos(const VECTOR& pos);
+	void SetAngles(const VECTOR& angles);
 
 	void MoveXYZDirection(void);
 
@@ -72,5 +74,3 @@ private:
 	VECTOR angles_;
 
 };
-
-
