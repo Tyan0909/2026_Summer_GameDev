@@ -143,7 +143,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ags2026_summer add coll2 - コピー\Src\Object\Actor\Stage\StageManager.cpp" />
     <ClCompile Include="Src\Manager\EffectManager.cpp" />
     <ClCompile Include="Src\Manager\SoundManager.cpp" />
     <ClCompile Include="Src\Manager\SubjectManager.cpp" />
@@ -158,7 +157,7 @@
     <ClCompile Include="Src\Object\Collider\ColliderModel.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderSphere.cpp" />
     <ClCompile Include="Src\Object\Actor\Charactor\Player\Player.cpp" />
-    <ClCompile Include="Src\Object\Stage\StageManager.cpp" />
+	<ClCompile Include="Src\Object\Actor\Stage\StageManager.cpp" />
     <ClCompile Include="Src\Scene\BuySelect.cpp" />
     <ClCompile Include="Src\Scene\ExampleScene.cpp" />
     <ClCompile Include="Src\Scene\LoadingScene.cpp" />
@@ -180,12 +179,10 @@
     <ClCompile Include="Src\main.cpp" />
     <ClCompile Include="Src\Scene\TitleScene.cpp" />
     <ClCompile Include="Src\Common\Vector2.cpp" />
-    <ClCompile Include="Src\Object\Actor\Stage\StageManager.cpp" />
     <ClCompile Include="Src\Object\Actor\Stage\Stage.cpp" />
     <ClCompile Include="Src\Object\Common\Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ags2026_summer add coll2 - コピー\Src\Object\Actor\Stage\StageManager.h" />
     <ClInclude Include="Src\Manager\EffectManager.h" />
     <ClInclude Include="Src\Manager\SoundManager.h" />
     <ClInclude Include="Src\Manager\SubjectManager.h" />
@@ -219,8 +216,7 @@
     <ClInclude Include="Src\Application.h" />
     <ClInclude Include="Src\Scene\TitleScene.h" />
     <ClInclude Include="Src\Common\Vector2.h" />
-    <ClInclude Include="Src\Object\Actor\Stage\StageManager.h" />
-    <ClInclude Include="Src\Object\Actor\Stage\Stage.h" />
+	<ClInclude Include="Src\Object\Actor\Stage\StageManager.h" />
     <ClInclude Include="Src\Object\Common\Transform.h" />
     <ClInclude Include="Src\Object\Actor\Charactor\Subject\Subject.h" />
   </ItemGroup>
