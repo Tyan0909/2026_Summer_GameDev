@@ -15,6 +15,7 @@
 #include "../Manager/SubjectManager.h"
 #include "../Utility/AsoUtility.h"
 #include"../Manager/EffectManager.h"
+#include <EffekseerForDXLib.h>
 
 // ファイルローカル: 設置効果音ハンドル
 static int gs_placeSE = -1;
@@ -72,8 +73,8 @@ void GameScene::Init()
 	stage_ = new Stage();
 	stage_->Init();
 
-	effectManager_ =
-		std::make_unique<EffectManager>();
+	effectManager_ =std::make_unique<EffectManager>();
+	effectManager_->Init();
 
 	const ColliderBase* stageCollider =
 		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
@@ -369,12 +370,6 @@ void GameScene::Update()
 				placeForward.z /= len;
 			}
 
-			printfDx(
-				"Camera Forward %.2f %.2f %.2f\n",
-				placeForward.x,
-				placeForward.y,
-				placeForward.z);
-
 			VECTOR placePos =
 				VAdd(
 					ppos,
@@ -597,6 +592,9 @@ void GameScene::Update()
 							effectManager_->AddExplosion(
 								effectPos);
 
+							effectManager_->PlayExplosion(
+								effectPos);
+
 							trap.triggered = true;
 							trap.lifeFrames = 30; // 爆発エフェクトを少し残す
 
@@ -717,6 +715,12 @@ void GameScene::Draw()
 {
 	DrawCompositedScene();
 
+	DrawFormatString(
+		0,
+		0,
+		GetColor(255, 255, 255),
+		"GAME DRAW");
+
 	if (isScreenshotRequested_)
 	{
 		CaptureScreenshot();
@@ -742,7 +746,7 @@ void GameScene::Draw()
 		}
 	}
 
-
+	
 
 	DrawFlashEffect();
 }
@@ -814,6 +818,9 @@ void GameScene::ExplodeGrenade(const VECTOR& pos)
 	effectManager_->AddExplosion(
 		effectPos);
 
+	effectManager_->PlayExplosion(
+		pos);
+
 	const float radius = 200.0f;
 
 	for (auto* s : subjectManager_->GetSubjects())
@@ -874,12 +881,8 @@ void GameScene::Release()
 {
 	ReleasePlayers();
 
-	if (player_) { player_->Release(); delete player_; player_ = nullptr; }
-	if (player2_) { player2_->Release(); delete player2_; player2_ = nullptr; }
-	if (player3_) { player3_->Release(); delete player3_; player3_ = nullptr; }
-	if (player4_) { player4_->Release(); delete player4_; player4_ = nullptr; }
 
-	if (subjectManager_) { subjectManager_->Release(); delete subjectManager_; subjectManager_ = nullptr; }
+	
 	if (stage_) { stage_->Release(); delete stage_; stage_ = nullptr; }
 
 	if (leftScreenHandle_ != -1) { DeleteGraph(leftScreenHandle_); leftScreenHandle_ = -1; }
@@ -1026,13 +1029,27 @@ void GameScene::DrawView(
 	//----------------------------------------------------
 	targetPlayer->ApplyCamera(SceneManager::GetInstance().GetCamera());
 
+	VECTOR eye = GetCameraPosition();
+	VECTOR target = GetCameraTarget();
+
+	DrawLine3D(
+		eye,
+		target,
+		GetColor(255, 0, 0));
+
 	//----------------------------------------------------
 	// ワールド描画
 	// ・ステージ
 	// ・サブジェクト
 	// ・プレイヤー
 	//----------------------------------------------------
+
+	VECTOR camPos = GetCameraPosition();
+
+
 	DrawViewWorld(targetPlayer, hidePlayer);
+
+	
 
 	//----------------------------------------------------
 	// HUD描画
@@ -1056,6 +1073,8 @@ void GameScene::DrawView(
 
 			continue;
 		}
+
+		effectManager_->Draw();
 
 		// ===== SPIKE描画 =====
 
@@ -1195,16 +1214,19 @@ void GameScene::DrawCompositedScene(void)
 	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
 	{
 		DrawSinglePlayerScene();
+		effectManager_->Draw();
 		return;
 	}
 
 	if (activePlayerCount_ == 2)
 	{
 		DrawTwoPlayerScene();
+		effectManager_->Draw();
 		return;
 	}
 
 	DrawFourPlayerScene();
+	effectManager_->Draw();
 }
 
 void GameScene::CaptureScreenshot(void)

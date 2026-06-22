@@ -117,6 +117,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(DXLIB_DIR);%(AdditionalIncludeDirectories);C:\DxLib</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,7 +136,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(DXLIB_DIR);%(AdditionalIncludeDirectories);C:\DxLib</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -157,7 +160,7 @@
     <ClCompile Include="Src\Object\Collider\ColliderModel.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderSphere.cpp" />
     <ClCompile Include="Src\Object\Actor\Charactor\Player\Player.cpp" />
-	<ClCompile Include="Src\Object\Actor\Stage\StageManager.cpp" />
+    <ClCompile Include="Src\Object\Actor\Stage\StageManager.cpp" />
     <ClCompile Include="Src\Scene\BuySelect.cpp" />
     <ClCompile Include="Src\Scene\ExampleScene.cpp" />
     <ClCompile Include="Src\Scene\LoadingScene.cpp" />
@@ -216,7 +219,7 @@
     <ClInclude Include="Src\Application.h" />
     <ClInclude Include="Src\Scene\TitleScene.h" />
     <ClInclude Include="Src\Common\Vector2.h" />
-	<ClInclude Include="Src\Object\Actor\Stage\StageManager.h" />
+    <ClInclude Include="Src\Object\Actor\Stage\StageManager.h" />
     <ClInclude Include="Src\Object\Common\Transform.h" />
     <ClInclude Include="Src\Object\Actor\Charactor\Subject\Subject.h" />
   </ItemGroup>

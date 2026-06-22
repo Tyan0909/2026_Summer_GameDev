@@ -3,6 +3,7 @@
 #include "Manager/SceneManager.h"
 #include "Manager/ResourceManager.h"
 #include "Manager/SoundManager.h"
+#include <EffekseerForDXLib.h>
 #include "Application.h"
 
 Application* Application::instance_ = nullptr;
@@ -41,6 +42,13 @@ void Application::Init(void)
 	SetUseDirect3DVersion(DX_DIRECT3D_11);
 	isInitFail_ = false;
 	if (DxLib_Init() == -1)
+	{
+		isInitFail_ = true;
+		return;
+	}
+
+	// Effekseer初期化
+	if (Effekseer_Init(8000) == -1)
 	{
 		isInitFail_ = true;
 		return;
@@ -170,6 +178,8 @@ void Application::Destroy(void)
 		screenshotHandle_ = -1;
 	}
 
+	Effkseer_End();
+
 	// DxLib終了
 	if (DxLib_End() == -1)
 	{
@@ -178,6 +188,7 @@ void Application::Destroy(void)
 
 	// インスタンスのメモリ解放
 	delete instance_;
+	instance_ = nullptr;
 }
 
 bool Application::IsInitFail(void) const

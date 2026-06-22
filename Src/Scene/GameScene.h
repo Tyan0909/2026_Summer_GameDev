@@ -32,7 +32,7 @@ private:
 	// 撮影対象の出現範囲
 	static constexpr VECTOR SUBJECT_AREA_MIN = { -600.0f, 0.0f, -100.0f };
 	static constexpr VECTOR SUBJECT_AREA_MAX = { 1000.0f, 0.0f, 1000.0f };
-	static constexpr int SUBJECT_COUNT = 32;
+	static constexpr int SUBJECT_COUNT = 12;
 	// 撮影スコア関連
 	static constexpr int PHOTO_SCORE_MAX = 1000;
 	static constexpr int PHOTO_SCORE_MIN = 100;
