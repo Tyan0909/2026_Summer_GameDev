@@ -9,6 +9,17 @@ class ColliderBase;
 class SubjectManager
 {
 public:
+
+
+	enum class SUBJECT_TYPE
+	{
+		SUBJECT_A,
+		SUBJECT_B,
+		/*SUBJECT_C,
+		SUBJECT_D,*/
+		MAX,
+	};
+
 	SubjectManager(void);
 	~SubjectManager(void);
 
@@ -17,8 +28,8 @@ public:
 	void Draw(void);
 	void Release(void);
 
-	Subject* CreateSubject(ResourceManager::SRC modelSrc, const VECTOR& pos);
-	Subject* CreateRandomSubject(ResourceManager::SRC modelSrc);
+	Subject* CreateSubject(SUBJECT_TYPE type, const VECTOR& pos);
+	Subject* CreateRandomSubject();
 	void AddHitCollider(const ColliderBase* hitCollider);
 	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
 

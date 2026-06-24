@@ -184,6 +184,8 @@
     <ClCompile Include="Src\Common\Vector2.cpp" />
     <ClCompile Include="Src\Object\Actor\Stage\Stage.cpp" />
     <ClCompile Include="Src\Object\Common\Transform.cpp" />
+    <ClCompile Include="Src\Object\Actor\Charactor\Subject\SubjectA.cpp" />
+    <ClCompile Include="Src\Object\Actor\Charactor\Subject\SubjectB.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Manager\EffectManager.h" />
@@ -193,6 +195,7 @@
     <ClInclude Include="Src\Manager\ResourceManager.h" />
     <ClInclude Include="Src\Manager\Resource.h" />
     <ClInclude Include="Src\Object\Actor\Item\ItemBase.h" />
+    <ClInclude Include="Src\Object\Actor\Stage\Stage.h" />
     <ClInclude Include="Src\Object\Collider\ColliderBase.h" />
     <ClInclude Include="Src\Object\Collider\ColliderCapsule.h" />
     <ClInclude Include="Src\Object\Collider\ColliderLine.h" />
@@ -222,6 +225,8 @@
     <ClInclude Include="Src\Object\Actor\Stage\StageManager.h" />
     <ClInclude Include="Src\Object\Common\Transform.h" />
     <ClInclude Include="Src\Object\Actor\Charactor\Subject\Subject.h" />
+    <ClInclude Include="Src\Object\Actor\Charactor\Subject\SubjectA.h" />
+    <ClInclude Include="Src\Object\Actor\Charactor\Subject\SubjectB.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Data\Image\Background.png" />

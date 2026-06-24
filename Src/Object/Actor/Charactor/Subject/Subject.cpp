@@ -13,7 +13,6 @@ Subject::Subject(void)
 	ActorBase(),
 	gravityVelocity_(0.0f),
 	isInoputEnabled_(true),
-	modelSrc_(ResourceManager::SRC::SUBJECT),
 	knockBackVelocity_(VGet(0, 0, 0)),
 	moveAreaMin_(VGet(-500.0f, 0.0f, -500.0f)),
 	moveAreaMax_(VGet(500.0f, 0.0f, 500.0f)),
@@ -83,7 +82,7 @@ void Subject::Update(void)
 		return;
 	}
 
-	UpdateRandomMove();
+	UpdateMove();
 	ClampToMoveArea();
 	ResolveWallCollision(prevPos);
 	ApplyGravity();
@@ -101,10 +100,6 @@ void Subject::SetInputEnabled(bool isEnabled)
 	isInoputEnabled_ = isEnabled;
 }
 
-void Subject::SetModelSrc(ResourceManager::SRC modelSrc)
-{
-	modelSrc_ = modelSrc;
-}
 
 void Subject::SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos)
 {
@@ -152,7 +147,7 @@ void Subject::StartDying()
 void Subject::InitLoad(void)
 {
 	transform_.SetModel(
-		resMng_.LoadModelDuplicate(modelSrc_));
+		resMng_.LoadModelDuplicate(GetModelType()));
 
 	// 描画されているかチェック
 	if (transform_.modelId == -1)
@@ -193,9 +188,10 @@ void Subject::InitAnimation(void)
 void Subject::InitPost(void)
 {
 	// サブジェクトの初期座標を設定
-	transform_.pos = INIT_POS;
+	transform_.pos = GetInitPos();
 	PickRandomMoveDirection();
 }
+
 
 void Subject::ApplyGravity(void)
 {
@@ -304,7 +300,7 @@ bool Subject::CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& h
 	return false;
 }
 
-void Subject::UpdateRandomMove(void)
+void Subject::UpdateMove(void)
 {
 
 	if (VSize(knockBackVelocity_) > 0.1f)
@@ -324,6 +320,12 @@ void Subject::UpdateRandomMove(void)
 
 	transform_.pos = VAdd(transform_.pos, VScale(moveDir_, MOVE_SPEED));
 	moveDirChangeFrame_--;
+}
+
+ResourceManager::SRC Subject::GetModelType() const
+{
+	// デフォルトではSUBJECTを返すが、派生クラスでオーバーライドして異なるモデルタイプを返すことができる
+	return ResourceManager::SRC::SUBJECT;
 }
 
 void Subject::PickRandomMoveDirection(void)
@@ -350,6 +352,9 @@ void Subject::FaceMoveDirection(void)
 
 void Subject::ClampToMoveArea(void)
 {
+
+	//printfDx("Clamp Before : %f\n", transform_.pos.x);
+
 	bool isOut = false;
 
 	if (transform_.pos.x < moveAreaMin_.x)
@@ -391,6 +396,8 @@ void Subject::ClampToMoveArea(void)
 			GetRand(RANDOM_DIR_CHANGE_MAX - RANDOM_DIR_CHANGE_MIN);
 		FaceMoveDirection();
 	}
+
+	//printfDx("Clamp After : %f\n", transform_.pos.x);
 }
 
 bool Subject::IsInAttackRange(const VECTOR& targetPos) const

@@ -1,6 +1,9 @@
 #include "SubjectManager.h"
 #include "../Object/Actor/Charactor/Subject/Subject.h"
+#include "../Object/Actor/Charactor/Subject/SubjectA.h"
+#include "../Object/Actor/Charactor/Subject/SubjectB.h"
 #include "../Object/Collider/ColliderBase.h"
+#include "../Utility/AsoUtility.h"
 
 SubjectManager::SubjectManager(void)
 	:
@@ -78,15 +81,31 @@ void SubjectManager::Release(void)
 	hitColliders_.clear();
 }
 
-Subject* SubjectManager::CreateSubject(ResourceManager::SRC modelSrc, const VECTOR& pos)
+Subject* SubjectManager::CreateSubject(SUBJECT_TYPE type, const VECTOR& pos)
 {
-	Subject* subject = new Subject();
-	subject->SetModelSrc(modelSrc);
-	subject->SetMoveArea(moveAreaMin_, moveAreaMax_);
+	Subject* subject = nullptr;
+
+	switch (type)
+	{
+	case SubjectManager::SUBJECT_TYPE::SUBJECT_A:
+		subject = new SubjectA();
+		break;
+	case SubjectManager::SUBJECT_TYPE::SUBJECT_B:
+		subject = new SubjectB();
+		break;
+	/*case SubjectManager::SUBJECT_TYPE::SUBJECT_C:*/
+	/*	break;*/
+	/*case SubjectManager::SUBJECT_TYPE::SUBJECT_D:*/
+		/*break;*/
+	default:
+		return nullptr;
+		break;
+	}
+
 	subject->Init();
 	subject->SetPos(pos);
 
-	for (const auto* hitCollider : hitColliders_)
+	for (const auto* hitCollider : hitColliders_ )
 	{
 		subject->AddHitCollider(hitCollider);
 	}
@@ -95,15 +114,30 @@ Subject* SubjectManager::CreateSubject(ResourceManager::SRC modelSrc, const VECT
 	return subject;
 }
 
-Subject* SubjectManager::CreateRandomSubject(ResourceManager::SRC modelSrc)
+
+Subject* SubjectManager::CreateRandomSubject()
 {
-	// moveAreaMin_ と moveAreaMax_ の範囲内でランダムな座標を生成
+	// 確率変動は50%で、SUBJECT_AとSUBJECT_Bのいずれかを生成する
 	const VECTOR pos = VGet(
 		GetRandomRange(moveAreaMin_.x, moveAreaMax_.x),
 		SUBJECT_SPAWN_HEIGHT,
 		GetRandomRange(moveAreaMin_.z, moveAreaMax_.z));
 
-	return CreateSubject(modelSrc, pos);
+	SUBJECT_TYPE type =
+		static_cast<SUBJECT_TYPE>(
+			GetRand(static_cast<int>(SUBJECT_TYPE::MAX) - 1));
+
+	if (type == SUBJECT_TYPE::SUBJECT_A)
+	{
+		printfDx("SubjectA生成\n");
+	}
+	else if (type == SUBJECT_TYPE::SUBJECT_B)
+	{
+		printfDx("SubjectB生成\n");
+	}
+
+
+	return CreateSubject(type, pos);
 }
 
 void SubjectManager::AddHitCollider(const ColliderBase* hitCollider)

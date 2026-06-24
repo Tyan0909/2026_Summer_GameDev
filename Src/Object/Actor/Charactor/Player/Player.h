@@ -93,6 +93,7 @@ public:
 	void Update(void) override;
 
 	void SetPos(const VECTOR& pos);
+	const VECTOR& GetPos() const;
 	void SetInputEnabled(bool isEnabled);
 	void SetInputConfig(const INPUT_CONFIG& config);
 

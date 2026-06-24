@@ -439,12 +439,15 @@ void Player::ApplyCamera(Camera* camera) const
 	camera->SetBeforeDraw();
 }
 
+const VECTOR& Player::GetPos() const
+{
+	return transform_.pos;
+}
+
 void Player::SetPos(const VECTOR& pos)
 {
 	transform_.pos = pos;
-	transform_.Update();
 }
-
 void Player::SetInputEnabled(bool isEnabled)
 {
 	isInputEnabled_ = isEnabled;

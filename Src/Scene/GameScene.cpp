@@ -233,7 +233,7 @@ void GameScene::Init()
 
 	for (int i = 0; i < SUBJECT_COUNT; i++)
 	{
-		subjectManager_->CreateRandomSubject(ResourceManager::SRC::SUBJECT);
+		subjectManager_->CreateRandomSubject();
 	}
 
 	// •ªŠ„•û–@‚ÌŒˆ’è:

@@ -53,7 +53,6 @@ public:
 	void Update(void) override;
 	void SetPos(const VECTOR& pos);
 	void SetInputEnabled(bool isEnabled);
-	void SetModelSrc(ResourceManager::SRC modelSrc);
 	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
 	void Draw(void) override;
 
@@ -78,6 +77,8 @@ public:
 
 protected:
 
+	
+
 	// リソースロード
 	void InitLoad(void) override;
 
@@ -91,7 +92,19 @@ protected:
 	void InitAnimation(void) override;
 
 	// 初期化後の個別処理
-	void InitPost(void) override;
+	virtual void InitPost(void) override;
+
+	// 初期座標
+	virtual VECTOR GetInitPos(void) {return INIT_POS;};
+
+	// 個別の移動処理
+	virtual void UpdateMove(void);
+
+	// 個別のモデル描画処理
+	virtual ResourceManager::SRC GetModelType() const;
+
+	const VECTOR GetPos(void) const { return transform_.pos; }
+	
 
 private:
 
@@ -117,7 +130,6 @@ private:
 	// 重力速度
 	float gravityVelocity_;
 	bool isInoputEnabled_;
-	ResourceManager::SRC modelSrc_;
 
 	// 移動範囲
 	VECTOR moveAreaMin_;
@@ -153,11 +165,13 @@ private:
 	void ResolveWallCollision(const VECTOR& prevPos);
 	bool CheckWallSegment(const VECTOR& start, const VECTOR& end, VECTOR& hitPos) const;
 
-	void UpdateRandomMove(void);
+	/*void UpdateRandomMove(void);*/
 	void UpdateAttack(void);
 	void PickRandomMoveDirection(void);
 	void FaceMoveDirection(void);
 	void FaceTarget(const VECTOR& targetPos);
 	void ClampToMoveArea(void);
+
+
 };
 
