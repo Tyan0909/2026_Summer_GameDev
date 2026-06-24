@@ -168,8 +168,25 @@ void PlayerNumScene::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	// Spaceキーでゲームシーンへ遷移
-	if (ins.IsTrgDown(KEY_INPUT_SPACE))
+	const auto padNo = InputManager::JOYPAD_NO::PAD1;
+
+	const bool isStart =
+		ins.IsTrgDown(KEY_INPUT_SPACE) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::LEFT);
+
+	const bool isToggle =
+		ins.IsTrgDown(KEY_INPUT_RETURN) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::RIGHT);
+
+	const bool isLeft =
+		ins.IsTrgDown(KEY_INPUT_LEFT) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_LEFT);
+
+	const bool isRight =
+		ins.IsTrgDown(KEY_INPUT_RIGHT) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_RIGHT);
+
+	if (isStart)
 	{
 		std::vector<int> selected;
 		for (int i = 0; i < SELECT_MAX; ++i)
@@ -195,36 +212,63 @@ void PlayerNumScene::Update(void)
 		scene.ChangeScene(SceneManager::SCENE_ID::EXAMPLE);
 	}
 
-	// Enterキーで参加状態をトグル（確定）
-	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	if (isToggle)
 	{
 		isUsePlayer_[cursor_] = !isUsePlayer_[cursor_];
-		// トグル音
-		if (pn_toggleSE != -1) PlaySoundMem(pn_toggleSE, DX_PLAYTYPE_BACK);
+		if (pn_toggleSE != -1)
+		{
+			PlaySoundMem(pn_toggleSE, DX_PLAYTYPE_BACK);
+		}
 	}
 
-	// 左右カーソル
-	if (ins.IsTrgDown(KEY_INPUT_LEFT))
+	if (isLeft)
 	{
 		cursor_--;
-		if (cursor_ < 0) cursor_ = 3;
-		// 移動音
-		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
+		if (cursor_ < 0)
+		{
+			cursor_ = 3;
+		}
+
+		if (pn_moveSE != -1)
+		{
+			PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
+		}
 	}
-	if (ins.IsTrgDown(KEY_INPUT_RIGHT))
+
+	if (isRight)
 	{
 		cursor_++;
-		if (cursor_ > 3) cursor_ = 0;
-		// 移動音
-		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
+		if (cursor_ > 3)
+		{
+			cursor_ = 0;
+		}
+
+		if (pn_moveSE != -1)
+		{
+			PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
+		}
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_W)) playerOffsetY_[cursor_] -= 5;
-	if (ins.IsTrgDown(KEY_INPUT_S)) playerOffsetY_[cursor_] += 5;
-	if (ins.IsTrgDown(KEY_INPUT_A)) playerOffsetX_[cursor_] -= 5;
-	if (ins.IsTrgDown(KEY_INPUT_D)) playerOffsetX_[cursor_] += 5;
+	if (ins.IsTrgDown(KEY_INPUT_W))
+	{
+		playerOffsetY_[cursor_] -= 5;
+	}
 
-	// --- パーティクル更新 / 生成 ---
+	if (ins.IsTrgDown(KEY_INPUT_S))
+	{
+		playerOffsetY_[cursor_] += 5;
+	}
+
+	if (ins.IsTrgDown(KEY_INPUT_A))
+	{
+		playerOffsetX_[cursor_] -= 5;
+	}
+
+	if (ins.IsTrgDown(KEY_INPUT_D))
+	{
+		playerOffsetX_[cursor_] += 5;
+	}
+
 	for (int i = 0; i < SELECT_MAX; ++i)
 	{
 		const int centerXBase = 250 + i * 250;
@@ -272,7 +316,6 @@ void PlayerNumScene::Update(void)
 			}
 		}
 
-		// 🛠️ アニメーションの更新はここ（Update）だけで行うのが原則
 		if (animCtrl_[i])
 		{
 			animCtrl_[i]->Update();
@@ -492,6 +535,24 @@ void PlayerNumScene::Draw(void)
 		SetUseZBuffer3D(TRUE);
 		SetWriteZBuffer3D(TRUE);
 	}
+
+	DrawFormatString(
+		40,
+		640,
+		GetColor(255, 255, 255),
+		"RB : 人数選択");
+
+	DrawFormatString(
+		40,
+		670,
+		GetColor(255, 255, 255),
+		"Bボタン         : 人数追加");
+
+	DrawFormatString(
+		40,
+		700,
+		GetColor(255, 255, 255),
+		"Xボタン         : 決定");
 
 	SetWriteZBuffer3D(FALSE);
 	SetUseZBuffer3D(FALSE);

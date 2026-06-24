@@ -95,17 +95,58 @@ void TitleScene::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	// Enterでゲーム開始
-	if (ins.IsTrgDown(KEY_INPUT_RETURN))
-	{
-		PlaySoundMem(shutterSE_, DX_PLAYTYPE_BACK);
-		scene.SetSplitScreenEnabled(false);
-		scene.ChangeScene(SceneManager::SCENE_ID::GAME);
-		return;
-	}
+	const auto padNo = InputManager::JOYPAD_NO::PAD1;
 
-	// Spaceでプレイ人数選択（カメラ演出付き）
-	if (ins.IsTrgDown(KEY_INPUT_SPACE))
+	const bool isAnyKey =
+		ins.IsTrgDown(KEY_INPUT_SPACE) ||
+		ins.IsTrgDown(KEY_INPUT_RETURN) ||
+		ins.IsTrgDown(KEY_INPUT_Z) ||
+		ins.IsTrgDown(KEY_INPUT_X) ||
+		ins.IsTrgDown(KEY_INPUT_C) ||
+		ins.IsTrgDown(KEY_INPUT_UP) ||
+		ins.IsTrgDown(KEY_INPUT_DOWN) ||
+		ins.IsTrgDown(KEY_INPUT_LEFT) ||
+		ins.IsTrgDown(KEY_INPUT_RIGHT) ||
+		ins.IsTrgDown(KEY_INPUT_W) ||
+		ins.IsTrgDown(KEY_INPUT_A) ||
+		ins.IsTrgDown(KEY_INPUT_S) ||
+		ins.IsTrgDown(KEY_INPUT_D) ||
+		ins.IsTrgDown(KEY_INPUT_Q) ||
+		ins.IsTrgDown(KEY_INPUT_E) ||
+		ins.IsTrgDown(KEY_INPUT_F) ||
+		ins.IsTrgDown(KEY_INPUT_H) ||
+		ins.IsTrgDown(KEY_INPUT_J) ||
+		ins.IsTrgDown(KEY_INPUT_K) ||
+		ins.IsTrgDown(KEY_INPUT_L) ||
+		ins.IsTrgDown(KEY_INPUT_I) ||
+		ins.IsTrgDown(KEY_INPUT_U) ||
+		ins.IsTrgDown(KEY_INPUT_N) ||
+		ins.IsTrgDown(KEY_INPUT_M) ||
+		ins.IsTrgDown(KEY_INPUT_B) ||
+		ins.IsTrgDown(KEY_INPUT_1) ||
+		ins.IsTrgDown(KEY_INPUT_0) ||
+		ins.IsTrgDown(KEY_INPUT_NUMPAD8) ||
+		ins.IsTrgDown(KEY_INPUT_NUMPAD5) ||
+		ins.IsTrgDown(KEY_INPUT_NUMPAD4) ||
+		ins.IsTrgDown(KEY_INPUT_NUMPAD6) ||
+		ins.IsTrgDown(KEY_INPUT_NUMPAD7) ||
+		ins.IsTrgDown(KEY_INPUT_RSHIFT) ||
+		ins.IsTrgDown(KEY_INPUT_F1);
+
+	const bool isAnyPadButton =
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::TOP) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::LEFT) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::RIGHT) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::DOWN) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::L_TRIGGER) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::R_TRIGGER) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::R_BUMPER) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_UP) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_DOWN) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_LEFT) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_RIGHT);
+
+	if (!isShutter_ && (isAnyKey || isAnyPadButton))
 	{
 		scene.SetSplitScreenEnabled(true);
 
@@ -116,7 +157,6 @@ void TitleScene::Update(void)
 		PlaySoundMem(shutterSE_, DX_PLAYTYPE_BACK);
 	}
 
-	// シャッター演出
 	if (isShutter_)
 	{
 		shutterScale_ -= 0.08f;
@@ -130,14 +170,12 @@ void TitleScene::Update(void)
 		}
 	}
 
-	// フラッシュの減衰
 	if (flashAlpha_ > 0)
 	{
 		flashAlpha_ -= 20;
 		if (flashAlpha_ < 0) flashAlpha_ = 0;
 	}
 
-	// ロゴのアルファ点滅（不安定化）
 	if (GetRand(100) < 6)
 	{
 		logoAlpha_ = 30 + GetRand(80);
@@ -148,41 +186,32 @@ void TitleScene::Update(void)
 		if (logoAlpha_ > 255) logoAlpha_ = 255;
 	}
 
-	// ポインタ追従
 	pointerPos_.x += (targetPos_.x - pointerPos_.x) * 0.1f;
 	pointerPos_.y += (targetPos_.y - pointerPos_.y) * 0.1f;
 
-	// ポインタアニメ
 	pointerAnim_ += 0.5f;
 
-	// デバッググリッド更新
 	debugGrid_->Update();
 
-	// ささやき生成タイマー（感覚を早める）
 	whisperTimer_++;
 	if (whisperTimer_ > nextWhisperDelay_)
 	{
 		whisperTimer_ = 0;
-		// 次回も比較的早めに発生するよう短いレンジにする
-		nextWhisperDelay_ = GetRand(300) + 120; // 120～419フレーム
+		nextWhisperDelay_ = GetRand(300) + 120;
 
-		// ささやき再生
 		if (whisperSE_ != -1)
 		{
 			PlaySoundMem(whisperSE_, DX_PLAYTYPE_BACK);
 		}
-		// 赤テキストトリガー（短時間）
+
 		forceRedText_ = true;
 
-		// グリッチをトリガー（強いノイズ帯を数フレーム走らせる）
 		isGlitching_ = true;
-		glitchDuration_ = GetRand(30) + 30; // 30～59フレーム
+		glitchDuration_ = GetRand(30) + 30;
 		glitchTimer_ = glitchDuration_;
-		// 少しスキャンラインを強めに
 		scanlineAlpha_ = 120.0f;
 	}
 
-	// forceRedText_ を短時間だけ維持
 	if (forceRedText_)
 	{
 		static int redDuration = 60;
@@ -194,7 +223,6 @@ void TitleScene::Update(void)
 		}
 	}
 
-	// 血しぶき関連（削除） -- 代わりに古い薄い血エフェクトを軽く残す
 	if (GetRand(1000) < 8)
 	{
 		bloodAlpha_ = 30 + GetRand(140);
@@ -205,30 +233,25 @@ void TitleScene::Update(void)
 		if (bloodAlpha_ < 0) bloodAlpha_ = 0;
 	}
 
-	// ノイズのオフセット / 時間を動かす（シェーダー風アニメーション用）
 	noiseTime_ += 1.0f;
 	noiseOffsetX_ += noiseSpeedX_ + (GetRand(100) / 100.0f) * 0.6f;
 	noiseOffsetY_ += noiseSpeedY_ + (GetRand(100) / 100.0f) * 0.3f;
 	if (noiseOffsetX_ > 640.0f) noiseOffsetX_ -= 640.0f;
 	if (noiseOffsetY_ > 360.0f) noiseOffsetY_ -= 360.0f;
 
-	// ノイズ強さをぽつぽつ変える
 	noiseAlpha_ = 20 + (int)((std::sin(noiseTime_ * 0.08f) * 0.5f + 0.5f) * 60);
 
-	// グリッチのタイマー処理（終われば通常へ）
 	if (isGlitching_)
 	{
 		glitchTimer_--;
 		if (glitchTimer_ <= 0)
 		{
 			isGlitching_ = false;
-			// ゆっくりスキャンライン戻す
 			scanlineAlpha_ = 40.0f;
 		}
 	}
 	else
 	{
-		// スキャンラインをゆらぎで少し変化させる
 		scanlineAlpha_ += (std::sin(noiseTime_ * 0.02f) * 0.5f + 0.5f) * 1.2f - 0.6f;
 		if (scanlineAlpha_ < 8.0f) scanlineAlpha_ = 8.0f;
 		if (scanlineAlpha_ > 140.0f) scanlineAlpha_ = 140.0f;

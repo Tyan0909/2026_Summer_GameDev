@@ -215,7 +215,11 @@ VECTOR Player::GetMoveInputVector(void) const
 	{
 		InputManager& input = InputManager::GetInstance();
 		const auto padState = input.GetJPadInputState(inputConfig_.padNo);
-		const VECTOR padDir = input.GetDirXZAKey(padState.AKeyLX, padState.AKeyLY);
+
+		// 左スティックで移動
+		const VECTOR padDir = input.GetDirXZAKey(
+			padState.AKeyLX,
+			padState.AKeyLY);
 
 		inputDir.x += padDir.x * MOVE_SPEED;
 		inputDir.z += padDir.z * MOVE_SPEED;
@@ -308,18 +312,20 @@ void Player::UpdateCameraInput(void)
 		InputManager& input = InputManager::GetInstance();
 		const auto padState = input.GetJPadInputState(inputConfig_.padNo);
 
-		const float rx =
+		// 右スティックでカメラ
+		const float lx =
 			static_cast<float>(padState.AKeyRX) / InputManager::AKEY_VAL_MAX;
-		const float ry =
+		const float ly =
 			static_cast<float>(padState.AKeyRY) / InputManager::AKEY_VAL_MAX;
 
-		if (fabsf(rx) >= InputManager::THRESHOLD)
+		if (fabsf(lx) >= InputManager::THRESHOLD)
 		{
-			cameraAngles_.y += rx * CAMERA_ROT_SPEED * 2.0f;
+			cameraAngles_.y += lx * CAMERA_ROT_SPEED * 2.0f;
 		}
-		if (fabsf(ry) >= InputManager::THRESHOLD)
+
+		if (fabsf(ly) >= InputManager::THRESHOLD)
 		{
-			cameraAngles_.x += ry * CAMERA_ROT_SPEED * 2.0f;
+			cameraAngles_.x += ly * CAMERA_ROT_SPEED * 2.0f;
 		}
 	}
 

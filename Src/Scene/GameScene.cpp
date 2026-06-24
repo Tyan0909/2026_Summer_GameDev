@@ -92,6 +92,8 @@ void GameScene::Init()
 	// プレイヤー1（常に作成）
 	player_ = new Player();
 	player_->Init();
+	player_->SetInputConfig(Player::KEYBOARD_AND_PAD1_INPUT_CONFIG);
+	player_->SetInputEnabled(true);
 	player_->AddHitCollider(stageCollider);
 
 	// プレイヤー2は選択人数が2人以上の場合のみ作成
@@ -310,6 +312,22 @@ void GameScene::Update()
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
+	const auto padNo = InputManager::JOYPAD_NO::PAD1;
+
+	const bool isCycleItem =
+		ins.IsTrgDown(KEY_INPUT_TAB);
+
+	const bool isUseItem =
+		ins.IsTrgDown(KEY_INPUT_E) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::R_TRIGGER);
+
+	const bool isTakePhoto =
+		ins.IsTrgDown(KEY_INPUT_RETURN) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::L_TRIGGER);
+
+	const bool isTogglePreview =
+		ins.IsTrgDown(KEY_INPUT_F1);
+
 	if (flashFrame_ > 0)
 	{
 		flashFrame_--;
@@ -317,44 +335,32 @@ void GameScene::Update()
 
 	if (stage_) stage_->Update();
 
-	// プレイヤーの更新は UpdatePlayers() に集約（重複更新を防止）
 	UpdatePlayers();
 
-	// サブジェクトは1回だけ更新
 	if (subjectManager_ != nullptr)
 	{
 		subjectManager_->Update();
 	}
 
-	// 選択アイテム切替 (Tab)
-	if (ins.IsTrgDown(KEY_INPUT_TAB) && player_ != nullptr)
+	if (isCycleItem && player_ != nullptr)
 	{
 		player_->CycleSelectedUsableItem(1);
 	}
 
-	// 追加: トラップ等使用（Eキー）: 選択中アイテムを使う
-	if (ins.IsTrgDown(KEY_INPUT_E) && player_ != nullptr)
+	if (isUseItem && player_ != nullptr)
 	{
-		// 選択未設定なら所持アイテムから自動選択
 		ITEM_TYPE currentSel = player_->GetSelectedUsableItemType();
 		if (currentSel == ITEM_TYPE::NORMAL_CAMERA)
 		{
-			player_->CycleSelectedUsableItem(0); // 所持があれば最初のものを選ぶ
+			player_->CycleSelectedUsableItem(0);
 		}
 
 		const ITEM_TYPE sel = player_->GetSelectedUsableItemType();
 
-		if (sel == ITEM_TYPE::NORMAL_CAMERA)
-		{
-			// 所持している使用可能アイテムが無ければ何もしない
-		}
-		else
+		if (sel != ITEM_TYPE::NORMAL_CAMERA)
 		{
 			const VECTOR ppos = player_->GetTransform().pos;
 
-			// ==========================
-			// 設置物用の前方向
-			// ==========================
 			VECTOR placeForward =
 				player_->GetCameraForward();
 
@@ -428,12 +434,10 @@ void GameScene::Update()
 					t.triggered = false;
 					t.lifeFrames = 0;
 
-
 					t.modelId =
 						ResourceManager::GetInstance().
 						LoadModelDuplicate(
 							ResourceManager::SRC::MINE_MODEL);
-
 
 					MV1SetPosition(
 						t.modelId,
@@ -464,7 +468,6 @@ void GameScene::Update()
 				{
 					Grenade g;
 
-					// 手榴弾は上下方向も使う
 					VECTOR forward =
 						player_->GetCameraForward();
 
@@ -506,18 +509,6 @@ void GameScene::Update()
 		}
 	}
 
-
-	//----------------------------------------------------
-	// トラップ更新
-	//
-	// SPIKE
-	//  ・接触したSubjectをスタン
-	//
-	// MINE
-	//  ・接触したSubjectを爆破
-	//  ・周囲プレイヤーへダメージ
-	//----------------------------------------------------
-	// トラップ効果の判定（subjects_ を参照）
 	if (!traps_.empty() && subjectManager_ != nullptr)
 	{
 		auto& subjects = const_cast<std::vector<Subject*>&>(subjectManager_->GetSubjects());
@@ -535,7 +526,6 @@ void GameScene::Update()
 						diff.y = 0.0f;
 						if (VSize(diff) <= SPIKE_TRIGGER_RADIUS)
 						{
-							// スタン（4秒)
 							s->Stun(SPIKE_DURATION_FRAMES);
 							trap.triggered = true;
 							trap.lifeFrames = SPIKE_DURATION_FRAMES;
@@ -548,7 +538,7 @@ void GameScene::Update()
 					trap.lifeFrames--;
 				}
 			}
-			else // MINE
+			else
 			{
 				if (!trap.triggered)
 				{
@@ -560,7 +550,6 @@ void GameScene::Update()
 						diff.y = 0.0f;
 						if (VSize(diff) <= MINE_TRIGGER_RADIUS)
 						{
-							// 爆発開始
 							if (!s->IsDying())
 							{
 								VECTOR dir =
@@ -571,7 +560,7 @@ void GameScene::Update()
 
 								s->StartDying();
 							}
-							// 周囲プレイヤーへのダメージ判定
+
 							for (auto* pl : players_)
 							{
 								if (pl == nullptr) continue;
@@ -596,9 +585,8 @@ void GameScene::Update()
 								effectPos);
 
 							trap.triggered = true;
-							trap.lifeFrames = 30; // 爆発エフェクトを少し残す
+							trap.lifeFrames = 30;
 
-							// 爆発音を再生
 							if (gs_explodeSE != -1)
 							{
 								PlaySoundMem(gs_explodeSE, DX_PLAYTYPE_BACK);
@@ -615,7 +603,6 @@ void GameScene::Update()
 			}
 		}
 
-		// 期限切れのトラップを消す
 		traps_.erase(
 			std::remove_if(traps_.begin(), traps_.end(), [](const Trap& t) { return t.triggered && t.lifeFrames <= 0; }),
 			traps_.end());
@@ -625,22 +612,17 @@ void GameScene::Update()
 	for (auto it = grenades_.begin();
 		it != grenades_.end();)
 	{
-	
-
 		Grenade& g = *it;
 
 		if (!g.exploded)
 		{
 			g.velocity.y -= 0.4f;
-
 			g.pos = VAdd(g.pos, g.velocity);
 
 			if (g.pos.y <= 0.0f)
 			{
 				g.pos.y = 0.0f;
-
 				ExplodeGrenade(g.pos);
-
 				g.exploded = true;
 				g.lifeFrame = 0;
 			}
@@ -660,9 +642,7 @@ void GameScene::Update()
 	}
 
 	effectManager_->Update();
-	
 
-	// Subject は既に1回更新済み。攻撃判定はその後で行う
 	UpdateSubjectAttacks();
 
 	if (IsPlayerReachedGoal())
@@ -683,22 +663,14 @@ void GameScene::Update()
 		return;
 	}
 
-	//----------------------------------------------------
-	// 撮影処理
-	//
-	// Enterキーで写真撮影
-	// ・スコア計算
-	// ・スクリーンショット保存
-	// ・フラッシュ演出開始
-	//----------------------------------------------------
-	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	if (isTakePhoto)
 	{
 		TryTakePhoto();
 		isScreenshotRequested_ = true;
 		flashFrame_ = FLASH_FRAME_MAX;
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_F1) && hasScreenshot_)
+	if (isTogglePreview && hasScreenshot_)
 	{
 		isScreenshotPreviewEnabled_ = !isScreenshotPreviewEnabled_;
 	}
@@ -745,6 +717,24 @@ void GameScene::Draw()
 			DrawString(20, 140, "F1 : OPEN SCREENSHOT", GetColor(255, 255, 255));
 		}
 	}
+
+	int x = 300;
+	int y = 40;
+	int color = GetColor(255, 255, 255);
+
+	DrawString(x, y, "【操作方法】", color);
+
+	y += 40;
+	DrawString(x, y, "移動　　　　：左スティック", color);
+
+	y += 30;
+	DrawString(x, y, "カメラ操作　：右スティック", color);
+
+	y += 40;
+	DrawString(x, y, "LT　　　　　：写真撮影", color);
+
+	y += 30;
+	DrawString(x, y, "RT　　　　　：アイテム投下", color);
 
 	
 

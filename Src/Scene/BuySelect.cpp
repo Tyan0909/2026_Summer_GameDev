@@ -15,6 +15,7 @@
 static int bs_moveSE = -1;
 static int bs_toggleSE = -1;
 static int bs_confirmSE = -1;
+static bool bs_leftStickYHold = false;
 
 BuySelect::BuySelect(void) {}
 BuySelect::~BuySelect(void) {}
@@ -69,22 +70,70 @@ void BuySelect::Update(void)
 
     if (items_.empty()) return;
 
-    // 上下カーソル移動
-    if (ins.IsTrgDown(KEY_INPUT_UP))
+    const auto padNo = InputManager::JOYPAD_NO::PAD1;
+    const auto padState = ins.GetJPadInputState(padNo);
+    const int stickThreshold = static_cast<int>(InputManager::AKEY_VAL_MAX * InputManager::THRESHOLD);
+
+    bool isStickUp = false;
+    bool isStickDown = false;
+
+    if (!bs_leftStickYHold)
+    {
+        if (padState.AKeyLY <= -stickThreshold)
+        {
+            isStickUp = true;
+            bs_leftStickYHold = true;
+        }
+        else if (padState.AKeyLY >= stickThreshold)
+        {
+            isStickDown = true;
+            bs_leftStickYHold = true;
+        }
+    }
+    else
+    {
+        if (padState.AKeyLY > -stickThreshold && padState.AKeyLY < stickThreshold)
+        {
+            bs_leftStickYHold = false;
+        }
+    }
+
+    const bool isUp =
+        ins.IsTrgDown(KEY_INPUT_UP) ||
+        ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_UP) ||
+        isStickUp;
+
+    const bool isDown =
+        ins.IsTrgDown(KEY_INPUT_DOWN) ||
+        ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_DOWN) ||
+        isStickDown;
+
+    const bool isBuy =
+        ins.IsTrgDown(KEY_INPUT_Z) ||
+        ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::RIGHT);
+
+    const bool isRemove =
+        ins.IsTrgDown(KEY_INPUT_X) ||
+        ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::DOWN);
+
+    const bool isChangeScene =
+        ins.IsTrgDown(KEY_INPUT_SPACE) ||
+        ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::LEFT);
+
+    if (isUp)
     {
         cursorIdx_ = (cursorIdx_ - 1 + (int)items_.size()) % (int)items_.size();
         if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
     }
-    if (ins.IsTrgDown(KEY_INPUT_DOWN))
+
+    if (isDown)
     {
         cursorIdx_ = (cursorIdx_ + 1) % (int)items_.size();
         if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
     }
 
-    // Zキーで数量を +1 (購入を増やす)
-    if (ins.IsTrgDown(KEY_INPUT_Z))
+    if (isBuy)
     {
-        // 予算が許す範囲でのみ増やす
         int total = CalculateTotalPrice();
         const Item& it = items_[cursorIdx_];
         if (total + it.price <= currentAmount_)
@@ -94,8 +143,7 @@ void BuySelect::Update(void)
         }
     }
 
-    // Xキーで数量を -1 (購入数を減らす)
-    if (ins.IsTrgDown(KEY_INPUT_X))
+    if (isRemove)
     {
         if (items_[cursorIdx_].quantity > 0)
         {
@@ -104,18 +152,15 @@ void BuySelect::Update(void)
         }
     }
 
-    // SPACEキーで購入確定（清算）
-    if (ins.IsTrgDown(KEY_INPUT_SPACE))
+    if (isChangeScene)
     {
         int total = CalculateTotalPrice();
 
-        // 購入後の所持金（最低保証を含む）
         int remaining = currentAmount_ - total;
 
         int carry = remaining - minAmount_;
         if (carry < 0) carry = 0;
 
-        // 追加: 購入アイテムを SceneManager に渡す（ITEM_TYPE を int にして数量分だけ保存）
         std::vector<int> purchased;
         for (const auto& it : items_)
         {
@@ -124,6 +169,7 @@ void BuySelect::Update(void)
                 purchased.push_back(static_cast<int>(it.type));
             }
         }
+
         SceneManager::GetInstance().SetPurchasedItemTypes(purchased);
 
         scene.SetCarryMoney(carry);
@@ -211,6 +257,19 @@ void BuySelect::Draw(void)
 
         // 4. アイテム名と価格の描画
         DrawFormatStringToHandle(rowX, rowY, textColor, fontMid_, "%s : %d G", items_[i].name.c_str(), items_[i].price);
+
+        // 操作ガイド
+        if (i == cursorIdx_)
+        {
+            DrawFormatStringToHandle(rowX, rowY + 20, GetColor(180, 255, 255), fontSmall_, "B:購入  A:削除 X:画面遷移");
+		}
+
+        // 移動方法
+        if (i == cursorIdx_)
+        {
+            DrawFormatStringToHandle(rowX + 200, rowY + 20, GetColor(180, 255, 255), fontSmall_, "左↑↓:選択");
+		}
+
     }
 
     // 経済情報（右上のステータスボックス、フォントは中）

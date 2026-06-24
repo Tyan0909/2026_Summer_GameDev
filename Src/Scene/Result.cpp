@@ -13,7 +13,13 @@ void Result::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	if (ins.IsTrgDown(KEY_INPUT_SPACE))
+	const auto padNo = InputManager::JOYPAD_NO::PAD1;
+
+	// Xボタン
+	if (
+		ins.IsTrgDown(KEY_INPUT_SPACE) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::LEFT)
+		)
 	{
 		scene.SetCarryMoney(0);
 		scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
@@ -23,7 +29,11 @@ void Result::Update(void)
 		return;
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	// Aボタン
+	if (
+		ins.IsTrgDown(KEY_INPUT_RETURN) ||
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::DOWN)
+		)
 	{
 		if (scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR)
 		{
@@ -57,16 +67,14 @@ void Result::Draw(void)
 
 	if (isClear)
 	{
-		DrawFormatString(200, 270, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount);
-		DrawFormatString(200, 310, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore);
-		DrawString(200, 370, "ENTER : BUY SELECT", GetColor(255, 255, 255));
+		DrawString(200, 370, "A BUTTON : BUY SELECT", GetColor(255, 255, 255));
 	}
 	else
 	{
-		DrawString(200, 300, "ENTER : TITLE", GetColor(255, 255, 255));
+		DrawString(200, 300, "A BUTTON : TITLE", GetColor(255, 255, 255));
 	}
 
-	DrawString(200, 420, "SPACE : TITLE", GetColor(255, 255, 255));
+	DrawString(200, 420, "X BUTTON : TITLE", GetColor(255, 255, 255));
 }
 
 void Result::Release(void) {}
