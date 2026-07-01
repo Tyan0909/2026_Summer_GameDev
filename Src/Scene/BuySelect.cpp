@@ -21,7 +21,8 @@ BuySelect::~BuySelect(void) {}
 
 void BuySelect::Init(void)
 {
-    // 背景画像を読み込む（ファイルを Data/Image/BuySelect/Background.png に置いてください）
+
+    // 背景画像を読み込む
     bgHandle_ = LoadGraph("Data/Image/BuySelect/Background.png");
 
     // 効果音読み込み
@@ -43,41 +44,88 @@ void BuySelect::Init(void)
     itemImg_[5] = LoadGraph("Data/Image/BuySelect/SpikeTrap.png");
     itemImg_[6] = LoadGraph("Data/Image/BuySelect/ExplosiveTrap.png");
 
-    items_.clear();
-    // quantity 初期値 0
-    items_.push_back({ "ノーマルカメラ", 0,   0, ITEM_TYPE::NORMAL_CAMERA });
-    items_.push_back({ "ズームカメラ", 800, 0, ITEM_TYPE::ZOOM_CAMERA });
-    items_.push_back({ "保険カメラ", 1200, 0, ITEM_TYPE::INSURANCE_CAMERA });
-    items_.push_back({ "ヘルメット", 500,  0, ITEM_TYPE::HELMET });
-    items_.push_back({ "フラググレネード", 300, 0, ITEM_TYPE::FRAG_GRENADE });
-    items_.push_back({ "スパイクトラップ", 200, 0, ITEM_TYPE::SPIKE_TRAP });
-    items_.push_back({ "爆発トラップ", 500,  0, ITEM_TYPE::EXPLOSIVE_TRAP });
+    playerItems_.clear();
 
-    // SceneManager に保存されている「最低保証を除いた持ち越し分」を取得
-    int carry = SceneManager::GetInstance().GetCarryMoney();
+    int playerNum =
+        SceneManager::GetInstance().GetPlayerNum();
 
-    // 所持金 = 最低保証 + carry
-    currentAmount_ = minAmount_ + carry;
+    purchasedItemsPerPlayer_.clear();
+    purchasedItemsPerPlayer_.resize(playerNum);
+
+    playerItems_.resize(playerNum);
+
+	// 各プレイヤーの購入リストを初期化
+    for (int i = 0; i < playerNum; i++)
+    {
+        playerItems_[i] =
+        {
+            { "ノーマルカメラ", 0,    0, ITEM_TYPE::NORMAL_CAMERA },
+            { "ズームカメラ", 800,  0, ITEM_TYPE::ZOOM_CAMERA },
+            { "保険カメラ", 1200, 0, ITEM_TYPE::INSURANCE_CAMERA },
+            { "ヘルメット", 500,  0, ITEM_TYPE::HELMET },
+            { "フラググレネード", 300, 0, ITEM_TYPE::FRAG_GRENADE },
+            { "スパイクトラップ", 200, 0, ITEM_TYPE::SPIKE_TRAP },
+            { "爆発トラップ", 500,  0, ITEM_TYPE::EXPLOSIVE_TRAP }
+        };
+    }
+
+
+    const auto& money =
+        SceneManager::GetInstance().GetPlayerMoney();
+
+    playerMoney_.assign(playerNum, 2000);
+
+    for (int i = 0; i < std::min(playerNum, (int)money.size()); i++)
+    {
+        playerMoney_[i] = money[i];
+    }
 
     cursorIdx_ = 0;
+    isTurnChange_ = true;
+    turnChangeFrame_ = 0;
+    currentPlayer_ = 0;
 }
 
 void BuySelect::Update(void)
 {
+
+    if (isTurnChange_)
+    {
+        turnChangeFrame_++;
+
+        // SPACEまたは2秒経過で開始
+        if (InputManager::GetInstance().IsTrgDown(KEY_INPUT_SPACE) ||
+            turnChangeFrame_ >= TURN_CHANGE_TIME)
+        {
+            printfDx("Start Player %d\n", currentPlayer_ + 1);
+            isTurnChange_ = false;
+        }
+
+        return;
+    }
+
+    if (currentPlayer_ >= playerItems_.size())
+    {
+        return;
+    }
+
     InputManager& ins = InputManager::GetInstance();
     SceneManager& scene = SceneManager::GetInstance();
 
-    if (items_.empty()) return;
+    auto& items =
+        playerItems_[currentPlayer_];
+
+    if (items.empty()) return;
 
     // 上下カーソル移動
     if (ins.IsTrgDown(KEY_INPUT_UP))
     {
-        cursorIdx_ = (cursorIdx_ - 1 + (int)items_.size()) % (int)items_.size();
+        cursorIdx_ = (cursorIdx_ - 1 + (int)items.size()) % (int)items.size();
         if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
     }
     if (ins.IsTrgDown(KEY_INPUT_DOWN))
     {
-        cursorIdx_ = (cursorIdx_ + 1) % (int)items_.size();
+        cursorIdx_ =(cursorIdx_ + 1) %(int)items.size();
         if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
     }
 
@@ -86,10 +134,10 @@ void BuySelect::Update(void)
     {
         // 予算が許す範囲でのみ増やす
         int total = CalculateTotalPrice();
-        const Item& it = items_[cursorIdx_];
-        if (total + it.price <= currentAmount_)
+        const Item& it = items[cursorIdx_];
+        if (total + it.price <=playerMoney_[currentPlayer_])
         {
-            items_[cursorIdx_].quantity += 1;
+            items[cursorIdx_].quantity += 1;
             if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
         }
     }
@@ -97,9 +145,9 @@ void BuySelect::Update(void)
     // Xキーで数量を -1 (購入数を減らす)
     if (ins.IsTrgDown(KEY_INPUT_X))
     {
-        if (items_[cursorIdx_].quantity > 0)
+        if (items[cursorIdx_].quantity > 0)
         {
-            items_[cursorIdx_].quantity -= 1;
+            items[cursorIdx_].quantity -= 1;
             if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
         }
     }
@@ -107,36 +155,168 @@ void BuySelect::Update(void)
     // SPACEキーで購入確定（清算）
     if (ins.IsTrgDown(KEY_INPUT_SPACE))
     {
-        int total = CalculateTotalPrice();
-
-        // 購入後の所持金（最低保証を含む）
-        int remaining = currentAmount_ - total;
-
-        int carry = remaining - minAmount_;
-        if (carry < 0) carry = 0;
-
-        // 追加: 購入アイテムを SceneManager に渡す（ITEM_TYPE を int にして数量分だけ保存）
+ 
+		// 現在のプレイヤーの購入リストを保存
         std::vector<int> purchased;
-        for (const auto& it : items_)
+
+        for (const auto& it : items)
         {
-            for (int q = 0; q < it.quantity; ++q)
+            for (int q = 0; q < it.quantity; q++)
             {
-                purchased.push_back(static_cast<int>(it.type));
+                purchased.push_back(
+                    static_cast<int>(it.type));
             }
         }
-        SceneManager::GetInstance().SetPurchasedItemTypes(purchased);
 
-        scene.SetCarryMoney(carry);
-        if (bs_confirmSE != -1) PlaySoundMem(bs_confirmSE, DX_PLAYTYPE_BACK);
-        scene.ChangeScene(SceneManager::SCENE_ID::LOADING);
+        purchasedItemsPerPlayer_[currentPlayer_] = purchased;
+
+        int grandTotal = CalculateTotalPrice();
+
+        playerMoney_[currentPlayer_] -= grandTotal;
+
+        if (playerMoney_[currentPlayer_] < minAmount_)
+        {
+            playerMoney_[currentPlayer_] = minAmount_;
+        }
+
+        previousPlayer_ = currentPlayer_;
+        currentPlayer_++;
+
+
+        if (currentPlayer_ <
+            SceneManager::GetInstance().GetPlayerNum())
+        {
+            cursorIdx_ = 0;
+
+            // 全数量リセット
+            for (auto& item : playerItems_[currentPlayer_])
+            {
+                item.quantity = 0;
+            }
+
+            isTurnChange_ = true;
+            turnChangeFrame_ = 0;
+
+            if (bs_confirmSE != -1)
+            {
+                PlaySoundMem(
+                    bs_confirmSE,
+                    DX_PLAYTYPE_BACK);
+            }
+
+            return;
+        }
+        
+        // 全員終了
+        SceneManager::GetInstance()
+            .SetPurchasedItemsPerPlayer(
+                purchasedItemsPerPlayer_);
+
+        SceneManager::GetInstance()
+            .SetPlayerMoney(
+                playerMoney_);
+
+        if (bs_confirmSE != -1)
+        {
+            PlaySoundMem(
+                bs_confirmSE,
+                DX_PLAYTYPE_BACK);
+        }
+
+        scene.ChangeScene(
+            SceneManager::SCENE_ID::LOADING);
     }
 }
 
 void BuySelect::Draw(void)
 {
+
     // 画面サイズ取得（配置位置計算で使用）
     int screenW = 0, screenH = 0;
     GetDrawScreenSize(&screenW, &screenH);
+
+    if (isTurnChange_)
+    {
+        // 背景はそのまま表示
+        if (bgHandle_ != -1)
+        {
+            DrawExtendGraph(0, 0, screenW, screenH, bgHandle_, FALSE);
+        }
+
+        // 中央に半透明ウィンドウ
+        const int boxW = 700;
+        const int boxH = 260;
+
+        const int left = screenW / 2 - boxW / 2;
+        const int right = screenW / 2 + boxW / 2;
+        const int top = screenH / 2 - boxH / 2;
+        const int bottom = screenH / 2 + boxH / 2;
+
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 170);
+        DrawBox(left, top, right, bottom, GetColor(0, 0, 0), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+        // 枠
+        DrawBox(left, top, right, bottom, GetColor(0, 255, 255), FALSE);
+
+        // 四隅を光らせる
+        DrawLine(left, top, left + 20, top, GetColor(0, 255, 255), 3);
+        DrawLine(left, top, left, top + 20, GetColor(0, 255, 255), 3);
+
+        DrawLine(right, top, right - 20, top, GetColor(0, 255, 255), 3);
+        DrawLine(right, top, right, top + 20, GetColor(0, 255, 255), 3);
+
+        DrawLine(left, bottom, left + 20, bottom, GetColor(0, 255, 255), 3);
+        DrawLine(left, bottom, left, bottom - 20, GetColor(0, 255, 255), 3);
+
+        DrawLine(right, bottom, right - 20, bottom, GetColor(0, 255, 255), 3);
+        DrawLine(right, bottom, right, bottom - 20, GetColor(0, 255, 255), 3);
+
+        unsigned int playerColor[] =
+        {
+            GetColor(255,80,80),
+            GetColor(80,160,255),
+            GetColor(80,255,80),
+            GetColor(255,220,80)
+        };
+
+        DrawFormatStringToHandle(
+            screenW / 2 - 180,
+            screenH / 2 - 80,
+            GetColor(255, 255, 255),
+            fontLarge_,
+            "PLAYER % d 購入完了！",
+            previousPlayer_ + 1);
+
+        bool blink = ((GetNowCount() / 300) % 2) == 0;
+
+        if (blink)
+        {
+            DrawFormatStringToHandle(
+                screenW / 2 - 170,
+                top + 105,
+                playerColor[currentPlayer_],
+                fontLarge_,
+                "PLAYER %d の番です",
+                currentPlayer_ + 1);
+        }
+
+        DrawFormatStringToHandle(
+            screenW / 2 - 120,
+            screenH / 2 + 70,
+            GetColor(180, 255, 255),
+            fontMid_,
+            "SPACEで開始");
+
+        return;
+    }
+
+    if (currentPlayer_ >= playerItems_.size())
+    {
+        return;
+    }
+
+    
 
     // 背景描画（伸縮して画面全体に描画）
     if (bgHandle_ != -1)
@@ -159,6 +339,22 @@ void BuySelect::Draw(void)
         DrawString(100, 50, "アイテム選択・購入", GetColor(255, 255, 255));
     }
 
+    unsigned int playerColor[] =
+    {
+        GetColor(255, 80, 80),   // Player1 赤
+        GetColor(80, 160, 255),  // Player2 青
+        GetColor(80, 255, 80),   // Player3 緑
+        GetColor(255, 220, 80)   // Player4 黄
+    };
+
+    DrawFormatStringToHandle(
+        screenW / 2 - 180,
+        75,
+        playerColor[currentPlayer_],
+        fontLarge_,
+        "PLAYER %d の購入ターン",
+        currentPlayer_ + 1);
+
     // 左側パネルの背景（半透明座布団）
     const int listLeft = 160;
     const int listTop = 100;
@@ -173,15 +369,21 @@ void BuySelect::Draw(void)
     // 左側：アイテムリスト（フォントは中）
     int total = CalculateTotalPrice(); // ループの外に出して計算を1回に（最適化）
 
-    for (int i = 0; i < (int)items_.size(); ++i)
-    {
-        bool canBuy = total + items_[i].price <= currentAmount_;
+    const auto& items =
+        playerItems_[currentPlayer_];
 
-        // 1. デフォルトの文字色を「やわらかい水色」に
+    for (int i = 0; i < (int)items.size(); ++i)
+    {
+		// 予算内で購入可能かどうかを判定
+        bool canBuy =
+            total + items[i].price <=
+            playerMoney_[currentPlayer_];
+
+        // 1. デフォルトの文字色を水色
         unsigned int textColor = GetColor(160, 220, 240);
-        if (items_[i].quantity == 0 && !canBuy)
+        if (items[i].quantity == 0 && !canBuy)
         {
-            textColor = GetColor(60, 90, 100); // 予算不足は「暗い青グレー」でグレーアウト
+            textColor = GetColor(60, 90, 100); // 予算不足は暗い青グレー
         }
 
         bool blink = ((GetNowCount() / 300) % 2) == 0;
@@ -189,7 +391,7 @@ void BuySelect::Draw(void)
         int rowY = listTop + 14 + (i * 38);
 
         // 2. 選択中（カート入り）の行ハイライト（半透明のサイバー水色）
-        if (items_[i].quantity > 0)
+        if (items[i].quantity > 0)
         {
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, 40); // 薄く透けさせる（40/255）
             DrawBox(listLeft + 8, rowY - 4, listRight - 8, rowY + 24, GetColor(0, 200, 255), TRUE);
@@ -197,20 +399,39 @@ void BuySelect::Draw(void)
 
             // 数量を右寄せで表示
             char qbuf[16];
-            snprintf(qbuf, sizeof(qbuf), "x%d", items_[i].quantity);
+            snprintf(qbuf, sizeof(qbuf), "x%d", items[i].quantity);
             DrawFormatStringToHandle(listRight - 56, rowY, GetColor(0, 255, 200), fontMid_, "%s", qbuf);
         }
 
-        // 3. カーソル位置（フォーカス）の処理
         if (i == cursorIdx_)
         {
-            const char* cursorMark = blink ? "▶" : " ";
-            DrawFormatStringToHandle(rowX - 28, rowY, GetColor(0, 255, 255), fontMid_, "%s", cursorMark);
-            textColor = GetColor(255, 255, 255); // 白
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 70);
+
+            DrawBox(
+                listLeft + 8,
+                rowY - 2,
+                listRight - 8,
+                rowY + 24,
+                GetColor(0, 255, 255),
+                TRUE);
+
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+            if (blink)
+            {
+                DrawTriangle(
+                    rowX - 8, rowY + 10,   // 右（先端）
+                    rowX - 22, rowY + 2,    // 左上
+                    rowX - 22, rowY + 18,   // 左下
+                    GetColor(0, 255, 255),
+                    TRUE);
+            }
+
+            textColor = GetColor(255, 255, 255);
         }
 
         // 4. アイテム名と価格の描画
-        DrawFormatStringToHandle(rowX, rowY, textColor, fontMid_, "%s : %d G", items_[i].name.c_str(), items_[i].price);
+        DrawFormatStringToHandle(rowX, rowY, textColor, fontMid_, "%s : %d G", items[i].name.c_str(), items[i].price);
     }
 
     // 経済情報（右上のステータスボックス、フォントは中）
@@ -221,7 +442,7 @@ void BuySelect::Draw(void)
 
     {
         int total = CalculateTotalPrice();
-        int remaining = currentAmount_ - total;
+        int remaining =playerMoney_[currentPlayer_] - total;
         if (remaining < 0) remaining = 0;
 
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
@@ -240,13 +461,13 @@ void BuySelect::Draw(void)
 
         if (fontMid_ != -1)
         {
-            DrawFormatStringToHandle(statusBoxX + 14, statusBoxY + 12, goldColor, fontMid_, "所持金: %d G", currentAmount_);
+            DrawFormatStringToHandle(statusBoxX + 14, statusBoxY + 12, goldColor, fontMid_, "所持金: %d G",playerMoney_[currentPlayer_]);
             DrawFormatStringToHandle(statusBoxX + 14, statusBoxY + 40, cartColor, fontMid_, "カート合計: %d G", total);
             DrawFormatStringToHandle(statusBoxX + 14, statusBoxY + 68, remainColor, fontMid_, "購入後の残り: %d G", remaining);
         }
         else
         {
-            DrawFormatString(statusBoxX + 12, statusBoxY + 8, goldColor, "所持金: %d G", currentAmount_);
+            DrawFormatString(statusBoxX + 12, statusBoxY + 8, goldColor, "所持金: %d G", playerMoney_[currentPlayer_]);
             DrawFormatString(statusBoxX + 12, statusBoxY + 38, cartColor, "カート合計: %d G", total);
             DrawFormatString(statusBoxX + 12, statusBoxY + 62, remainColor, "購入後の残り: %d G", remaining);
         }
@@ -260,9 +481,11 @@ void BuySelect::Draw(void)
         const int winBottom = winTop + 240;
 
         int previewIdx = cursorIdx_;
-        if (previewIdx < 0) previewIdx = 0;
-        if (previewIdx > (int)items_.size() - 1) previewIdx = (int)items_.size() - 1;
-        const Item& currentItem = items_[previewIdx];
+        if (previewIdx >= (int)items.size())
+        {
+            previewIdx = (int)items.size() - 1;
+        }
+        const Item& currentItem = items[previewIdx];
 
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
         DrawBox(winLeft, winTop, winRight, winBottom, GetColor(10, 24, 32), TRUE);
@@ -346,7 +569,10 @@ void BuySelect::Draw(void)
 
 void BuySelect::Release(void)
 {
-    items_.clear();
+    playerItems_.clear();
+    purchasedItemsPerPlayer_.clear();
+    playerMoney_.clear();
+
     // 背景・画像解放
     if (bgHandle_ != -1)
     {
@@ -374,8 +600,15 @@ void BuySelect::Release(void)
 int BuySelect::CalculateTotalPrice() const
 {
     int total = 0;
-    for (const auto& item : items_)
-        if (item.quantity > 0) total += item.price * item.quantity;
+
+    const auto& items =
+        playerItems_[currentPlayer_];
+
+    for (const auto& item : items)
+    {
+        total += item.price * item.quantity;
+    }
+
     return total;
 }
 

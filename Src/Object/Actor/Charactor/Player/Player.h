@@ -129,6 +129,11 @@ public:
 	// ’Ç‰Á: ƒwƒ‹ƒƒbƒgc”æ“¾
 	int GetHelmetUses() const;
 
+
+	void AddScore(int score);
+	int GetScore() const;
+	void SetScore(int score);
+
 	protected:
 		void InitLoad(void) override;
 		void InitTransform(void) override;
@@ -161,6 +166,7 @@ private:
 
 	int hp_;
 	int damageCooldownFrame_;
+	int score_;
 
 	AnimationController* animController_;
 	INPUT_CONFIG inputConfig_;

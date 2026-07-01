@@ -117,6 +117,8 @@ void Player::Init(void)
 		animController_ = new AnimationController(transform_.modelId);
 	}
 
+	score_ = 0;
+
 	InitTransform();
 	InitCollider();
 	InitAnimation();
@@ -813,6 +815,21 @@ int Player::GetSpikeCount() const { return spikeTrapCount_; }
 int Player::GetMineCount() const { return explosiveTrapCount_; }
 int Player::GetFragCount() const { return fragGrenadeCount_; }
 int Player::GetHelmetUses() const { return helmetUsesRemaining_; }
+
+void Player::AddScore(int score)
+{
+	score_ += score;
+}
+
+int Player::GetScore() const
+{
+	return score_;
+}
+
+void Player::SetScore(int score)
+{
+	score_ = score;
+}
 
 // 選択アイテム操作 ? 所持しているものだけを順送り
 void Player::CycleSelectedUsableItem(int dir)

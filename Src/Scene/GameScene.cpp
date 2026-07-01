@@ -158,23 +158,28 @@ void GameScene::Init()
 		if (pl) pl->CycleSelectedUsableItem(0); // dir==0 -> 最初の所持アイテムを選択
 	}
 
-	// 追加: BuySelect で購入したアイテムをプレイヤーに配布
+	// BuySelectで購入したアイテムを各プレイヤーへ配布
 	{
-		const auto& purchased = SceneManager::GetInstance().GetPurchasedItemTypes();
-		if (!purchased.empty() && !players_.empty())
+		const auto& purchased =
+			SceneManager::GetInstance().GetPurchasedItemsPerPlayer();
+
+		for (size_t p = 0; p < players_.size() && p < purchased.size(); ++p)
 		{
-			for (size_t i = 0; i < purchased.size(); ++i)
+			Player* player = players_[p];
+
+			if (player == nullptr)
 			{
-				int itemId = purchased[i];
-				Player* target = players_[i % players_.size()];
-				if (target)
-				{
-					target->AddItem(itemId);
-				}
+				continue;
 			}
-			// 二重配布を防ぐためクリア
-			SceneManager::GetInstance().SetPurchasedItemTypes(std::vector<int>{});
+
+			for (int itemId : purchased[p])
+			{
+				player->AddItem(itemId);
+			}
 		}
+
+		// 二重配布防止
+		SceneManager::GetInstance().SetPurchasedItemsPerPlayer({});
 	}
 
 	// 追加: トラップ配列初期化
@@ -665,17 +670,34 @@ void GameScene::Update()
 	// Subject は既に1回更新済み。攻撃判定はその後で行う
 	UpdateSubjectAttacks();
 
+
+
 	if (IsPlayerReachedGoal())
 	{
 		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.SetPhotoCount(photoCount_);
 		scene.SetLastPhotoScore(lastPhotoScore_);
+
+		std::vector<int> scores;
+		for (auto* player : players_)
+		{
+			if (player)
+			{
+				scores.push_back(player->GetScore());
+			}
+		}
+
+		scene.SetPlayerScore(scores);
+
+		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
-		return;
 	}
 
 	if (IsAllPlayersDead())
 	{
+		std::vector<int> scores(players_.size(), 0);
+		scene.SetPlayerScore(scores);
+
 		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
 		scene.SetPhotoCount(photoCount_);
 		scene.SetLastPhotoScore(lastPhotoScore_);
@@ -1161,7 +1183,12 @@ void GameScene::DrawView(
 
 	// HUD
 	DrawString(20, 20, playerName, GetColor(255, 255, 255));
-	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
+	DrawFormatString(
+		20,
+		50,
+		GetColor(255, 255, 0),
+		"SCORE : %d",
+		targetPlayer->GetScore());
 
 	{
 		const int barX = 20; const int barY = 145;
@@ -1491,6 +1518,10 @@ void GameScene::TryTakePhoto(void)
 		}
 
 		const int addScore = CalculatePlayerPhotoScore(player);
+
+		// 各プレイヤーのスコアを保存
+		player->AddScore(addScore);
+
 		lastPhotoScorePerPlayer_[i] = addScore;
 
 		if (addScore > 0)
@@ -1519,7 +1550,6 @@ void GameScene::ApplyPhotoScoreResult(int totalAddedScore)
 	}
 
 	SceneManager& scene = SceneManager::GetInstance();
-	scene.SetCarryMoney(scene.GetCarryMoney() + totalAddedScore);
 }
 
 void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const

@@ -5,6 +5,7 @@
 #include "../ActorBase.h"
 #include "../../../Object/Collider/ColliderModel.h"
 
+
 class Stage : public ActorBase
 {
 public:

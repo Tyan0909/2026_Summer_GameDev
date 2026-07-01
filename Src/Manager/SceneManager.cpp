@@ -153,6 +153,16 @@ void SceneManager::ChangeScene(SCENE_ID nextId)
 	isSceneChanging_ = true;
 }
 
+void SceneManager::SetPurchasedItemTypes(const std::vector<int>& items)
+{
+	purchasedItemTypes_ = items;
+}
+
+const std::vector<int>&SceneManager::GetPurchasedItemTypes() const
+{
+	return purchasedItemTypes_;
+}
+
 SceneManager::SceneManager(void)
 {
 	sceneId_ = SCENE_ID::NONE;

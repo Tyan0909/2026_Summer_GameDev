@@ -27,6 +27,18 @@ void Result::Update(void)
 	{
 		if (scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR)
 		{
+			auto playerMoney = scene.GetPlayerMoney();
+			auto playerScore = scene.GetPlayerScore();
+
+			int playerNum = scene.GetPlayerNum();
+
+			for (int i = 0; i < playerNum; i++)
+			{
+				playerMoney[i] += playerScore[i];
+			}
+
+			scene.SetPlayerMoney(playerMoney);
+
 			scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
 		}
 		else
