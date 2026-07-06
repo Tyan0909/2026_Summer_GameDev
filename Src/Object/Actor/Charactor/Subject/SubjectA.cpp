@@ -32,10 +32,21 @@ ResourceManager::SRC SubjectA::GetModelType() const
 
 void SubjectA::UpdateMove(void)
 {
-    //printfDx("before = %f\n", transform_.pos.x);
+	//printfDx("before = %f\n", transform_.pos.x);
+	 //printfDx("after = %f\n", transform_.pos.x);
 
 	Subject::UpdateMove();
 
-    //printfDx("after = %f\n", transform_.pos.x);
+	// 個別処理
+
+	// Aの追従処理を追加
+
+	// プレイヤーの位置を取得
+
+
+
+
+
+
 
 }
