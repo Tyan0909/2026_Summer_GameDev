@@ -75,6 +75,10 @@ public:
 
 	void StartDying();
 
+	void SetPlayerPos(const std::vector<VECTOR>& positions);
+
+	const std::vector<VECTOR>& GetPlayerPos() const { return playerPos_; }
+
 protected:
 
 	
@@ -104,6 +108,15 @@ protected:
 	virtual ResourceManager::SRC GetModelType() const;
 
 	const VECTOR GetPos(void) const { return transform_.pos; }
+
+	void FaceMoveDirection(void);
+
+	// 移動範囲
+	VECTOR moveAreaMin_;
+	VECTOR moveAreaMax_;
+	VECTOR moveDir_;
+	int moveDirChangeFrame_;
+
 	
 
 private:
@@ -131,11 +144,7 @@ private:
 	float gravityVelocity_;
 	bool isInoputEnabled_;
 
-	// 移動範囲
-	VECTOR moveAreaMin_;
-	VECTOR moveAreaMax_;
-	VECTOR moveDir_;
-	int moveDirChangeFrame_;
+	
 
 	// 基本スケール
 	VECTOR baseScale_;
@@ -168,9 +177,11 @@ private:
 	/*void UpdateRandomMove(void);*/
 	void UpdateAttack(void);
 	void PickRandomMoveDirection(void);
-	void FaceMoveDirection(void);
+	
 	void FaceTarget(const VECTOR& targetPos);
 	void ClampToMoveArea(void);
+
+	std::vector<VECTOR> playerPos_;
 
 
 };

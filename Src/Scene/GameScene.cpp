@@ -1614,12 +1614,24 @@ void GameScene::UpdateSubjectAttacks(void)
 		return;
 	}
 
+	// 追加: 現在の全プレイヤー座標を収集して Subject に渡す
+	std::vector<VECTOR> playerPositions;
+	playerPositions.reserve(players_.size());
+	for (auto* player : players_)
+	{
+		if (player == nullptr) continue;
+		playerPositions.push_back(player->GetTransform().pos);
+	}
+
 	for (auto* subject : subjects)
 	{
 		if (subject == nullptr)
 		{
 			continue;
 		}
+
+		// 追加: 各 Subject にプレイヤー座標を渡す
+		subject->SetPlayerPos(playerPositions);
 
 		Player* nearest = nullptr;
 		float nearestDist = FLT_MAX;
@@ -2181,5 +2193,3 @@ void GameScene::GetPlayer1ViewArea(int& x, int& y, int& width, int& height) cons
 	width = screenWidth_ / 2;
 	height = screenHeight_ / 2;
 }
-
-

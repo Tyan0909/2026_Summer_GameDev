@@ -328,6 +328,11 @@ ResourceManager::SRC Subject::GetModelType() const
 	return ResourceManager::SRC::SUBJECT;
 }
 
+void Subject::SetPlayerPos(const std::vector<VECTOR>& positions)
+{
+	playerPos_ = positions;
+}
+
 void Subject::PickRandomMoveDirection(void)
 {
 	const float angle = static_cast<float>(GetRand(359)) * DX_PI_F / 180.0f;
