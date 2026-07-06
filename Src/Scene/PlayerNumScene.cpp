@@ -249,26 +249,6 @@ void PlayerNumScene::Update(void)
 		}
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_W))
-	{
-		playerOffsetY_[cursor_] -= 5;
-	}
-
-	if (ins.IsTrgDown(KEY_INPUT_S))
-	{
-		playerOffsetY_[cursor_] += 5;
-	}
-
-	if (ins.IsTrgDown(KEY_INPUT_A))
-	{
-		playerOffsetX_[cursor_] -= 5;
-	}
-
-	if (ins.IsTrgDown(KEY_INPUT_D))
-	{
-		playerOffsetX_[cursor_] += 5;
-	}
-
 	for (int i = 0; i < SELECT_MAX; ++i)
 	{
 		const int centerXBase = 250 + i * 250;
