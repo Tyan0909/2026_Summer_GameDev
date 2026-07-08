@@ -7,8 +7,10 @@
 
 SubjectManager::SubjectManager(void)
 	:
-	moveAreaMin_(VGet(-500.0f, 0.0f, -500.0f)),
-	moveAreaMax_(VGet(500.0f, 0.0f, 500.0f))
+	moveAreaMin_(VGet(-3600.0f, 0.0f, -790.0f)),
+	moveAreaMax_(VGet(11100.0f, 0.0f, 11900.0f)),
+	spawnAreaMax_(VGet(11100.0f, 0.0f, 11900.0f)),
+	spawnAreaMin_(VGet(-3600.0f, 0.0f, -790.0f))
 {
 }
 
@@ -109,7 +111,7 @@ Subject* SubjectManager::CreateSubject(SUBJECT_TYPE type, const VECTOR& pos)
 	{
 		subject->AddHitCollider(hitCollider);
 	}
-
+	subject->SetMoveArea(moveAreaMin_, moveAreaMax_);
 	subjects_.emplace_back(subject);
 	return subject;
 }
@@ -119,9 +121,9 @@ Subject* SubjectManager::CreateRandomSubject()
 {
 	// ämó¶ïœìÆÇÕ50%Ç≈ÅASUBJECT_AÇ∆SUBJECT_BÇÃÇ¢Ç∏ÇÍÇ©Çê∂ê¨Ç∑ÇÈ
 	const VECTOR pos = VGet(
-		GetRandomRange(moveAreaMin_.x, moveAreaMax_.x),
+		GetRandomRange(spawnAreaMin_.x, spawnAreaMax_.x),
 		SUBJECT_SPAWN_HEIGHT,
-		GetRandomRange(moveAreaMin_.z, moveAreaMax_.z));
+		GetRandomRange(spawnAreaMin_.z, spawnAreaMax_.z));
 
 	SUBJECT_TYPE type =
 		static_cast<SUBJECT_TYPE>(
@@ -138,6 +140,12 @@ Subject* SubjectManager::CreateRandomSubject()
 
 
 	return CreateSubject(type, pos);
+}
+
+void SubjectManager::SetSpawnArea(const VECTOR& minPos, const VECTOR& maxPos)
+{
+	spawnAreaMin_ = minPos;
+	spawnAreaMax_ = maxPos;
 }
 
 void SubjectManager::AddHitCollider(const ColliderBase* hitCollider)

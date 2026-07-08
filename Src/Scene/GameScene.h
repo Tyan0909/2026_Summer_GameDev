@@ -30,15 +30,15 @@ private:
 	static constexpr VECTOR PLAYER3_INIT_POS = { -200.0f, 1000.0f, 0.0f };
 	static constexpr VECTOR PLAYER4_INIT_POS = { 700.0f, 1000.0f, 0.0f };
 	// 撮影対象の出現範囲
-	static constexpr VECTOR SUBJECT_AREA_MIN = { -600.0f, 0.0f, -100.0f };
-	static constexpr VECTOR SUBJECT_AREA_MAX = { 1000.0f, 0.0f, 1000.0f };
-	static constexpr int SUBJECT_COUNT = 12;
+	static constexpr VECTOR SUBJECT_AREA_MIN = { -3600.0f, 0.0f, -790.0f };
+	static constexpr VECTOR SUBJECT_AREA_MAX = { 11100.0f, 0.0f, 11900.0f };
+	static constexpr int SUBJECT_COUNT = 50;
 	// 撮影スコア関連
 	static constexpr int PHOTO_SCORE_MAX = 1000;
-	static constexpr int PHOTO_SCORE_MIN = 100;
-	static constexpr float PHOTO_SCORE_NEAR_DISTANCE = 100.0f;
-	static constexpr float PHOTO_SCORE_FAR_DISTANCE = 1200.0f;
-	static constexpr float PHOTO_SCORE_VIEW_DOT_MIN = 0.7f;
+	static constexpr int PHOTO_SCORE_MIN = 0;
+	static constexpr float PHOTO_SCORE_NEAR_DISTANCE = 100.0f;        // 近距離最大スコア閾値（変更なし）
+	static constexpr float PHOTO_SCORE_FAR_DISTANCE = 750.0f;        // 遠距離での最小スコア判定距
+	static constexpr float PHOTO_SCORE_VIEW_DOT_MIN = 0.70f;         // 視野角判定を厳しく（dot閾値を大きく）
 	// フラッシュエフェクト関連
 	static constexpr int FLASH_FRAME_MAX = 12;
 	static constexpr int THUMBNAIL_WIDTH = 320;
@@ -53,8 +53,20 @@ private:
 	static constexpr int PREVIEW_WIDTH = 640;
 	static constexpr int PREVIEW_HEIGHT = 360;
 
-	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	/*static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	static constexpr float GOAL_RADIUS = 80.0f;*/
+
+	static constexpr VECTOR GOAL_CANDIDATES[5] =
+	{
+		{ 2280.0f, 0.0f, 1300.0f },
+		{ 1520.0f, 0.0f, 520.0f },
+		{ 4020.0f, 0.0f, 620.0f },
+		{ 2020.0f, 0.0f, 1120.0f },
+		{ 1520.0f, 0.0f, 1320.0f }
+	};
+
 	static constexpr float GOAL_RADIUS = 80.0f;
+	static constexpr int GOAL_CANDIDATE_COUNT = 5;
 
 	void DrawView(
 		int screenHandle,
@@ -165,6 +177,8 @@ private:
 		int lifeFrame = 0;
 	};
 
+
+
 	Stage* stage_;
 	Player* player_;
 	Player* player2_;
@@ -205,4 +219,7 @@ private:
 
 	// 追加: ワールド全体をどれくらい暗くするか（0.0 = 無効, 1.0 = 真っ黒）
 	float worldDarkness_;
+
+	// ゴール
+	VECTOR goalPos_;
 };

@@ -30,6 +30,7 @@ public:
 
 	Subject* CreateSubject(SUBJECT_TYPE type, const VECTOR& pos);
 	Subject* CreateRandomSubject();
+	void SetSpawnArea(const VECTOR& minPos, const VECTOR& maxPos);
 	void AddHitCollider(const ColliderBase* hitCollider);
 	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
 
@@ -45,6 +46,9 @@ private:
 	std::vector<const ColliderBase*> hitColliders_;
 	VECTOR moveAreaMin_;
 	VECTOR moveAreaMax_;
+
+	VECTOR spawnAreaMin_;
+	VECTOR spawnAreaMax_;
 
 	float GetRandomRange(float minValue, float maxValue) const;
 };

@@ -11,6 +11,9 @@ public:
 	// 定数
 	const static float GRAVITY;
 
+	static constexpr VECTOR DEFAULT_GOAL_POS = { 520.0f, 0.0f, 520.0f };
+	static constexpr float GOAL_RADIUS = 80.0f;
+
 	// 衝突判定用
 	enum class COLLIDER_TYPE
 	{
@@ -41,6 +44,8 @@ public:
 		float occludedOpacity,
 		float epsilon);
 
+	void SetGoalPos(const VECTOR& pos);
+
 protected:
 	// リソースロード
 	void InitLoad(void) override;
@@ -66,7 +71,7 @@ private:
 
 	static constexpr VECTOR INIT_POS = { 0.0f, 0.0f, 0.0f };
 	static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
-	static constexpr float GOAL_RADIUS = 80.0f;
+	//static constexpr float GOAL_RADIUS = 80.0f;
 
 	// 除外フレーム
 	const std::vector<std::string> EXCLUDE_FRAMES =
@@ -99,4 +104,7 @@ private:
 
 	void ApplyFarModelTransform(void);
 	const ColliderModel* GetModelCollider(void) const;
+
+	
+	VECTOR goalPos_;
 };

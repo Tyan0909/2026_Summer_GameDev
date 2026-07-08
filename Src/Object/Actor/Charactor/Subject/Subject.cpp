@@ -23,7 +23,8 @@ Subject::Subject(void)
 	attackCooldownFrame_(0),
 	attackFrame_(0),
 	attackTargetPos_(VGet(0.0f, 0.0f, 0.0f)),
-	isAttackHitPending_(false)
+	isAttackHitPending_(false),
+	playerDetectRange_(DETECTION_RANGE)
 {
 	// ‰Šú‰»‚ÍActorBase‚ÌInit‚Ås‚¤
 }
@@ -331,6 +332,12 @@ ResourceManager::SRC Subject::GetModelType() const
 void Subject::SetPlayerPos(const std::vector<VECTOR>& positions)
 {
 	playerPos_ = positions;
+}
+
+void Subject::SetPlayerDetectRange(float range)
+{
+	if (range < 0.0f) return;
+	playerDetectRange_ = range;
 }
 
 void Subject::PickRandomMoveDirection(void)

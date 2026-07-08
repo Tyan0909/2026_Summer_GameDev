@@ -27,6 +27,9 @@ public:
 		COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
 	static constexpr float COL_CAPSULE_RADIUS = 20.0f;
 
+	//　プレイヤー検知範囲
+	static constexpr float DETECTION_RANGE = 1000.0f;
+
 	// 衝突判定種別
 	enum class COLLIDER_TYPE
 	{
@@ -77,6 +80,9 @@ public:
 
 	void SetPlayerPos(const std::vector<VECTOR>& positions);
 
+	// プレイヤーの検知範囲を設定
+	void SetPlayerDetectRange(float range);
+
 	const std::vector<VECTOR>& GetPlayerPos() const { return playerPos_; }
 
 protected:
@@ -116,6 +122,9 @@ protected:
 	VECTOR moveAreaMax_;
 	VECTOR moveDir_;
 	int moveDirChangeFrame_;
+
+	// プレイヤー検知半径
+	float playerDetectRange_;
 
 	
 

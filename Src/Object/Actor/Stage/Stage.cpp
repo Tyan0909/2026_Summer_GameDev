@@ -108,19 +108,19 @@ void Stage::SetOpacityRate(float opacityRate)
 
 bool Stage::IsAtGoal(const VECTOR& pos) const
 {
-	VECTOR diff = VSub(pos, GOAL_POS);
+	VECTOR diff = VSub(pos, goalPos_);
 	diff.y = 0.0f;
 	return VSize(diff) <= GOAL_RADIUS;
 }
 
 void Stage::DrawGoalMarker(void) const
 {
-	const VECTOR spherePos = VAdd(GOAL_POS, VGet(0.0f, 45.0f, 0.0f));
-	const VECTOR poleTop = VAdd(GOAL_POS, VGet(0.0f, 180.0f, 0.0f));
+	const VECTOR spherePos = VAdd(goalPos_, VGet(0.0f, 45.0f, 0.0f));
+	const VECTOR poleTop = VAdd(goalPos_, VGet(0.0f, 180.0f, 0.0f));
 	const int ringColor = GetColor(0, 255, 120);
 
 	DrawSphere3D(spherePos, GOAL_RADIUS, 16, ringColor, ringColor, FALSE);
-	DrawLine3D(GOAL_POS, poleTop, ringColor);
+	DrawLine3D(goalPos_, poleTop, ringColor);
 }
 
 bool Stage::HasLineOfSight(const VECTOR& from, const VECTOR& to, float epsilon) const
@@ -203,6 +203,8 @@ void Stage::InitTransform(void)
 	transform_.Update();
 
 	ApplyFarModelTransform();
+
+	SetGoalPos(GOAL_POS);
 }
 
 void Stage::InitCollider(void)
@@ -257,4 +259,9 @@ const ColliderModel* Stage::GetModelCollider(void) const
 	}
 
 	return static_cast<const ColliderModel*>(stageColliderBase);
+}
+
+void Stage::SetGoalPos(const VECTOR& pos)
+{
+	goalPos_ = pos;
 }

@@ -166,7 +166,7 @@ void TitleScene::Update(void)
 		{
 			shutterScale_ = 0.0f;
 			isShutter_ = false;
-			scene.ChangeScene(SceneManager::SCENE_ID::PLAYERNUMBERSELECT);
+			scene.ChangeScene(SceneManager::SCENE_ID::GAME);
 		}
 	}
 

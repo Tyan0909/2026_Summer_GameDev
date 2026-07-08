@@ -73,6 +73,16 @@ void GameScene::Init()
 	stage_ = new Stage();
 	stage_->Init();
 
+	// ランダムにゴール位置を選択
+	{
+		const int idx = GetRand(GOAL_CANDIDATE_COUNT - 1);
+		goalPos_= GOAL_CANDIDATES[idx];
+		if (stage_ != nullptr)
+		{
+			stage_->SetGoalPos(goalPos_);
+		}
+	}
+
 	effectManager_ =std::make_unique<EffectManager>();
 	effectManager_->Init();
 
@@ -1472,15 +1482,51 @@ void GameScene::TryTakePhoto(void)
 
 	int totalAddedScore = 0;
 
+	// 被写体ごとにスタンさせるためのフラグ配列
+	std::vector<bool> subjectCounted(subjects.size(), false);
+
+	// 撮影者ごとのスコア集計（CalculatePlayerPhotoScore を inline に展開して
+	// 同時にどの Subject が撮られたかを記録）
 	for (size_t i = 0; i < players_.size(); ++i)
 	{
 		Player* player = players_[i];
 		if (player == nullptr || !IsPlayerAlive(player))
 		{
+			lastPhotoScorePerPlayer_[i] = 0;
 			continue;
 		}
 
-		const int addScore = CalculatePlayerPhotoScore(player);
+		int addScore = 0;
+		const VECTOR shotPos = player->GetCameraWorldPos();
+
+		for (size_t j = 0; j < subjects.size(); ++j)
+		{
+			const Subject* subject = subjects[j];
+			if (subject == nullptr)
+			{
+				continue;
+			}
+
+			if (!IsSubjectInView(player, subject))
+			{
+				continue;
+			}
+
+			// 被写体がしかいないならその被写体のスコアを計算して加算する
+			addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+			// スタン適応　近距離のみ実装
+			{
+				VECTOR diff = VSub(subject->GetTransform().pos, shotPos);
+				diff.y = 0.0f;
+				const float dist = VSize(diff);
+				if (dist <= PHOTO_SCORE_FAR_DISTANCE)
+				{
+					subjectCounted[j] = true;
+				}
+			}
+
+		}
+
 		lastPhotoScorePerPlayer_[i] = addScore;
 
 		if (addScore > 0)
@@ -1488,6 +1534,18 @@ void GameScene::TryTakePhoto(void)
 			photoCountPerPlayer_[i] += 1;
 			totalAddedScore += addScore;
 		}
+	}
+
+	// スタン時間（フレーム）。60fps 想定で 3 秒に設定（要調整可）
+	const int PHOTO_STUN_FRAMES = 180;
+
+	// スタンを適用（1 被写体につき 1 回）
+	for (size_t j = 0; j < subjects.size(); ++j)
+	{
+		if (!subjectCounted[j]) continue;
+		Subject* subj = subjects[j];
+		if (subj == nullptr) continue;
+		subj->Stun(PHOTO_STUN_FRAMES);
 	}
 
 	ApplyPhotoScoreResult(totalAddedScore);
@@ -1676,7 +1734,7 @@ bool GameScene::IsPlayerAlive(const Player* targetPlayer) const { return targetP
 bool GameScene::IsPlayerAtGoal(const Player* targetPlayer) const
 {
 	if (!targetPlayer) return false;
-	VECTOR diff = VSub(targetPlayer->GetTransform().pos, GOAL_POS); diff.y = 0.0f;
+	VECTOR diff = VSub(targetPlayer->GetTransform().pos, goalPos_); diff.y = 0.0f;
 	return VSize(diff) <= GOAL_RADIUS;
 }
 
@@ -2027,7 +2085,18 @@ void GameScene::DrawViewWorld(const Player* targetPlayer, const Player* hidePlay
 
 		stage_->Draw();
 		stage_->SetOpacityRate(1.0f);
-		stage_->DrawGoalMarker();
+		/*stage_->DrawGoalMarker();*/
+		{
+			VECTOR markerPos = goalPos_;
+			markerPos.y += 10.0f; // 少し上げて目立たせる
+			const int fillColor = GetColor(255, 220, 80);
+			const int lineColor = GetColor(255, 255, 255);
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 120);
+			DrawSphere3D(markerPos, GOAL_RADIUS, 12, fillColor, fillColor, TRUE);
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+			DrawSphere3D(markerPos, GOAL_RADIUS + 4.0f, 8, lineColor, lineColor, FALSE);
+			
+		}
 	}
 
 	if (subjectManager_ != nullptr)
@@ -2059,6 +2128,24 @@ void GameScene::DrawViewWorld(const Player* targetPlayer, const Player* hidePlay
 
 	DrawSubjectDistanceGuide(targetPlayer);
 	DrawPlayers(hidePlayer);
+
+	if (targetPlayer != nullptr)
+	{
+		const VECTOR playerHead = targetPlayer->GetHeadWorldPos();
+		VECTOR goalMarkerPos = goalPos_;
+		goalMarkerPos.y += 45.0f; // Stage::DrawGoalMarker と合わせる高さ
+
+		const int guideColor = GetColor(255, 200, 80); // 黄
+		DrawLine3D(playerHead, goalMarkerPos, guideColor);
+
+		// 距離表示（ワールド中点をスクリーン変換して描画）
+		const VECTOR midPos = VScale(VAdd(playerHead, goalMarkerPos), 0.5f);
+		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
+		char distBuf[64];
+		const float dist = VSize(VSub(playerHead, goalPos_));
+		snprintf(distBuf, sizeof(distBuf), "%.0fm", dist);
+		DrawFormatString(static_cast<int>(screenPos.x), static_cast<int>(screenPos.y), GetColor(255, 255, 255), "%s", distBuf);
+	}
 }
 
 void GameScene::DrawViewHud(const Player* targetPlayer, const char* playerName, int drawWidth) const

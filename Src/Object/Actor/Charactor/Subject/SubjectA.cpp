@@ -58,13 +58,14 @@ void SubjectA::UpdateMove(void)
 		}
 	}
 
-	if (nearestIdx < 0)
+	// 検知範囲外なら通常挙動へフォールバック
+	if (nearestIdx < 0 || nearestDist > playerDetectRange_)
 	{
 		Subject::UpdateMove();
 		return;
 	}
 
-	// 追従：最短プレイヤー方向へ moveDir_ を向けて進む
+	// 最短プレイヤー方向へ moveDir_ を向けて進む
 	VECTOR target = players[nearestIdx];
 	VECTOR dir = VSub(target, transform_.pos);
 	dir.y = 0.0f;
