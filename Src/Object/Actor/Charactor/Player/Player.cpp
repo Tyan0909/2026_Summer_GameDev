@@ -1,3 +1,4 @@
+#include"../../Item/Camera/CameraBase.h"
 #include "Player.h"
 #include <cmath>
 #include "../../../../Manager/Camera.h"
@@ -9,6 +10,9 @@
 #include "../../../../Object/Collider/ColliderLine.h"
 #include "../../../../Utility/AsoUtility.h"
 #include "../../../../Application.h"
+#include "../../Item/ItemFactory.h"
+#include"../../Item/ItemBase.h"
+
 
 // 使用アイテム順序の定義（フラグ、スパイク、地雷）
 const std::vector<ITEM_TYPE> Player::usableOrder_ = {
@@ -116,6 +120,11 @@ void Player::Init(void)
 	{
 		animController_ = new AnimationController(transform_.modelId);
 	}
+	cameraItem_ =
+		ItemFactory::Create(
+			ITEM_TYPE::NORMAL_CAMERA);
+
+	hasInsuranceCamera_ = false;
 
 	score_ = 0;
 
@@ -169,6 +178,16 @@ void Player::Update(void)
 	if (animController_ != nullptr)
 	{
 		animController_->Update();
+	}
+
+	if (cameraItem_ && cameraItem_->CanZoom())
+	{
+		SetZooming(
+			InputManager::GetInstance().IsPress(KEY_INPUT_LCONTROL));
+	}
+	else
+	{
+		SetZooming(false);
 	}
 }
 
@@ -432,6 +451,7 @@ void Player::ApplyCamera(Camera* camera) const
 
 	camera->SetPos(GetCameraWorldPos());
 	camera->SetAngles(GetCameraAngles());
+	camera->SetFOV(GetCurrentFOV(IsZooming()));
 	camera->SetBeforeDraw();
 }
 
@@ -449,6 +469,31 @@ void Player::SetInputEnabled(bool isEnabled)
 void Player::SetInputConfig(const INPUT_CONFIG& config)
 {
 	inputConfig_ = config;
+}
+
+void Player::SetInsuranceCamera(bool flag)
+{
+	hasInsuranceCamera_ = flag;
+}
+
+bool Player::HasInsuranceCamera() const
+{
+	return hasInsuranceCamera_;
+}
+
+float Player::GetCurrentFOV(bool zoom) const
+{
+    if (!cameraItem_)
+    {
+        return 60.0f;
+    }
+
+    if (zoom && cameraItem_->CanZoom())
+    {
+        return cameraItem_->GetZoomFOV();
+    }
+
+    return cameraItem_->GetNormalFOV();
 }
 
 void Player::InitLoad(void)
@@ -724,6 +769,32 @@ void Player::OnEnterCrouched(void)
 	}
 }
 
+void Player::EnableZoomCamera()
+{
+	hasZoomCamera_ = true;
+}
+
+
+bool Player::HasZoomCamera() const
+{
+	return hasZoomCamera_;
+}
+
+bool Player::IsZooming() const
+{
+	return isZooming_;
+}
+
+void Player::SetZooming(bool zoom)
+{
+	isZooming_ = zoom;
+}
+
+bool Player::IszoomInput() const
+{
+	return CheckHitKey(KEY_INPUT_LCONTROL) != 0;
+}
+
 bool Player::CanTakeDamage(void) const
 {
 	return hp_ > 0 && damageCooldownFrame_ <= 0;
@@ -745,35 +816,49 @@ float Player::GetHpRate(void) const
 	return static_cast<float>(hp_) / static_cast<float>(HP_MAX);
 }
 
-// 追加実装: アイテム付与
 void Player::AddItem(int itemType)
 {
-	// 重複登録は inventory に保持する（必要ならユニーク化する）
 	inventory_.push_back(itemType);
 
 	switch (static_cast<ITEM_TYPE>(itemType))
 	{
+	case ITEM_TYPE::NORMAL_CAMERA:
+	case ITEM_TYPE::ZOOM_CAMERA:
+	case ITEM_TYPE::INSURANCE_CAMERA:
+	{
+		cameraItem_ =
+			ItemFactory::Create(
+				static_cast<ITEM_TYPE>(itemType));
+
+		if (cameraItem_)
+		{
+			cameraItem_->OnAcquire(this);
+		}
+
+		if (cameraItem_)
+		{
+			cameraItem_->OnAcquire(this);
+
+			printfDx("Insurance = %d\n", HasInsuranceCamera());
+		}
+
+		break;
+	}
+
 	case ITEM_TYPE::HELMET:
-		// ヘルメットは購入で合計 3 回分の防御を付与（仕様）
 		helmetUsesRemaining_ = 3;
 		break;
-	case ITEM_TYPE::INSURANCE_CAMERA:
-		hasInsurance_ = true;
-		break;
-	case ITEM_TYPE::ZOOM_CAMERA:
-		hasZoomCamera_ = true;
-		break;
+
 	case ITEM_TYPE::SPIKE_TRAP:
 		++spikeTrapCount_;
 		break;
+
 	case ITEM_TYPE::EXPLOSIVE_TRAP:
 		++explosiveTrapCount_;
 		break;
+
 	case ITEM_TYPE::FRAG_GRENADE:
 		++fragGrenadeCount_;
-		break;
-	default:
-		// 他アイテムは現状 inventory に保持するのみ
 		break;
 	}
 }
@@ -933,11 +1018,17 @@ void Player::TakeDamage(int damage)
 		return;
 	}
 
-	// 通常ダメージ処理
 	hp_ -= damage;
-	if (hp_ < 0)
+
+	if (hp_ <= 0)
 	{
 		hp_ = 0;
+
+		// 保険カメラならスコアを保持
+		if (!(cameraItem_ && cameraItem_->HasInsurance()))
+		{
+			score_ = 0;
+		}
 	}
 
 	damageCooldownFrame_ = DAMAGE_COOLDOWN_MAX;

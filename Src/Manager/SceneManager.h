@@ -89,6 +89,7 @@ public:
 	void SetPurchasedItemTypes(const std::vector<int>& items);
 	const std::vector<int>& GetPurchasedItemTypes() const;
 
+
 private:
 	static SceneManager* instance_;
 
@@ -136,8 +137,6 @@ private:
 	int lastPhotoScore_ = 0;
 
 	int pauseMenuIndex_ = 0;
-
-	
 
 public:
 

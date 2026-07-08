@@ -114,6 +114,12 @@ void SceneManager::Update(void)
 
 void SceneManager::Draw(void)
 {
+	DrawFormatString(
+		0,
+		0,
+		GetColor(255, 0, 0),
+		"DRAW START");
+
 	SetDrawScreen(DX_SCREEN_BACK);
 	ClearDrawScreen();
 

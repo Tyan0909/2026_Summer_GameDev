@@ -219,11 +219,6 @@ void PlayerNumScene::Update(void)
 		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
 	}
 
-	if (ins.IsTrgDown(KEY_INPUT_W)) playerOffsetY_[cursor_] -= 5;
-	if (ins.IsTrgDown(KEY_INPUT_S)) playerOffsetY_[cursor_] += 5;
-	if (ins.IsTrgDown(KEY_INPUT_A)) playerOffsetX_[cursor_] -= 5;
-	if (ins.IsTrgDown(KEY_INPUT_D)) playerOffsetX_[cursor_] += 5;
-
 	// --- パーティクル更新 / 生成 ---
 	for (int i = 0; i < SELECT_MAX; ++i)
 	{
@@ -272,7 +267,6 @@ void PlayerNumScene::Update(void)
 			}
 		}
 
-		// 🛠️ アニメーションの更新はここ（Update）だけで行うのが原則
 		if (animCtrl_[i])
 		{
 			animCtrl_[i]->Update();

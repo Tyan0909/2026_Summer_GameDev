@@ -2,11 +2,14 @@
 #include <DxLib.h>
 #include <vector>
 #include <string>
+#include <memory>
 #include "../../../../Manager/InputManager.h"
 #include "../../ActorBase.h"
 #include "../../../../Object/Collider/ColliderModel.h"
 #include "../../../../Scene/BuySelect.h"
+#include "../../Item/Camera/CameraBase.h"
 
+class CameraBase;
 class ColliderBase;
 class ResourceManager;
 class AnimationController;
@@ -134,6 +137,25 @@ public:
 	int GetScore() const;
 	void SetScore(int score);
 
+	void EnableZoomCamera();
+
+	bool HasZoomCamera() const;
+	bool IsZooming() const;
+	void SetZooming(bool zoom);
+
+	bool IszoomInput() const;
+
+
+	//カメラアイテムの取得/設定
+	CameraBase* GetCameraItem() const{return cameraItem_.get();}
+	void SetCameraItem(std::unique_ptr<CameraBase> item){cameraItem_ = std::move(item);}
+	
+	//保険カメラの所持フラグ
+	void SetInsuranceCamera(bool flag);
+	bool HasInsuranceCamera() const;
+
+	float GetCurrentFOV(bool zoom) const;
+
 	protected:
 		void InitLoad(void) override;
 		void InitTransform(void) override;
@@ -198,18 +220,24 @@ private:
 	void OnEnterJump(void);
 	void OnEnterCrouched(void);
 
+	
+
 	STATE state_;
 
 	// 追加メンバ: アイテム効果 / 在庫
 	int helmetUsesRemaining_ = 0; // ヘルメット防御回数
-	bool hasInsurance_ = false;
-	bool hasZoomCamera_ = false;
+	bool hasZoomCamera_ = false; // ズームカメラ所持フラグ
+	bool isZooming_ = false;
 
 	int spikeTrapCount_ = 0;
 	int explosiveTrapCount_ = 0;
 	int fragGrenadeCount_ = 0;
 
+	//保険カメラ所持フラグ
+	bool hasInsuranceCamera_ = false;
+
 	std::vector<int> inventory_;
+	std::unique_ptr<CameraBase> cameraItem_;
 
 	// 使用アイテム選択用（固定順序）
 	int selectedUsableIndex_ = -1; // 所持品が無ければ -1

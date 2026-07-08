@@ -13,42 +13,17 @@ void Result::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	if (ins.IsTrgDown(KEY_INPUT_SPACE))
-	{
-		scene.SetCarryMoney(0);
-		scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
-		scene.SetPhotoCount(0);
-		scene.SetLastPhotoScore(0);
-		scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
-		return;
-	}
+    if (ins.IsTrgDown(KEY_INPUT_SPACE))
+    {
+        scene.SetCarryMoney(0);
+        scene.SetPlayerMoney({});
+
+        scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
+    }
 
 	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
-		if (scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR)
-		{
-			auto playerMoney = scene.GetPlayerMoney();
-			auto playerScore = scene.GetPlayerScore();
-
-			int playerNum = scene.GetPlayerNum();
-
-			for (int i = 0; i < playerNum; i++)
-			{
-				playerMoney[i] += playerScore[i];
-			}
-
-			scene.SetPlayerMoney(playerMoney);
-
-			scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
-		}
-		else
-		{
-			scene.SetCarryMoney(0);
-			scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
-			scene.SetPhotoCount(0);
-			scene.SetLastPhotoScore(0);
-			scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
-		}
+		scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
 	}
 }
 

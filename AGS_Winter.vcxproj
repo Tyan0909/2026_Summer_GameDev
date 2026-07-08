@@ -147,13 +147,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Src\Manager\EffectManager.cpp" />
+    <ClCompile Include="Src\Manager\PhotoManager.cpp" />
     <ClCompile Include="Src\Manager\SoundManager.cpp" />
     <ClCompile Include="Src\Manager\SubjectManager.cpp" />
     <ClCompile Include="Src\Object\Actor\ActorBase.cpp" />
     <ClCompile Include="Src\Manager\ResourceManager.cpp" />
     <ClCompile Include="Src\Manager\Resource.cpp" />
     <ClCompile Include="Src\Object\Actor\Charactor\Subject\Subject.cpp" />
+    <ClCompile Include="Src\Object\Actor\Item\Camera\CameraBase.cpp" />
+    <ClCompile Include="Src\Object\Actor\Item\Camera\InsuranceCamera.cpp" />
+    <ClCompile Include="Src\Object\Actor\Item\Camera\NormalCamera.cpp" />
+    <ClCompile Include="Src\Object\Actor\Item\Camera\ZoomCamera.cpp" />
     <ClCompile Include="Src\Object\Actor\Item\ItemBase.cpp" />
+    <ClCompile Include="Src\Object\Actor\Item\ItemFactory.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderBase.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderCapsule.cpp" />
     <ClCompile Include="Src\Object\Collider\ColliderLine.cpp" />
@@ -187,12 +193,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Manager\EffectManager.h" />
+    <ClInclude Include="Src\Manager\PhotoManager.h" />
     <ClInclude Include="Src\Manager\SoundManager.h" />
     <ClInclude Include="Src\Manager\SubjectManager.h" />
     <ClInclude Include="Src\Object\Actor\ActorBase.h" />
     <ClInclude Include="Src\Manager\ResourceManager.h" />
     <ClInclude Include="Src\Manager\Resource.h" />
+    <ClInclude Include="Src\Object\Actor\Item\Camera\CameraBase.h" />
+    <ClInclude Include="Src\Object\Actor\Item\Camera\InsuranceCamera.h" />
+    <ClInclude Include="Src\Object\Actor\Item\Camera\NormalCamera.h" />
+    <ClInclude Include="Src\Object\Actor\Item\Camera\ZoomCamera.h" />
     <ClInclude Include="Src\Object\Actor\Item\ItemBase.h" />
+    <ClInclude Include="Src\Object\Actor\Item\ItemFactory.h" />
     <ClInclude Include="Src\Object\Collider\ColliderBase.h" />
     <ClInclude Include="Src\Object\Collider\ColliderCapsule.h" />
     <ClInclude Include="Src\Object\Collider\ColliderLine.h" />

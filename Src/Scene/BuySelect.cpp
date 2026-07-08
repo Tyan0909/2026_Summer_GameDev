@@ -206,6 +206,24 @@ void BuySelect::Update(void)
 
             return;
         }
+
+        bool hasInsurance = false;
+
+        for (const auto& playerItems : playerItems_)
+        {
+            for (const auto& item : playerItems)
+            {
+                if (item.type == ITEM_TYPE::INSURANCE_CAMERA &&
+                    item.quantity > 0)
+                {
+                    hasInsurance = true;
+                    break;
+                }
+            }
+
+            if (hasInsurance)
+                break;
+        }
         
         // 全員終了
         SceneManager::GetInstance()
@@ -540,7 +558,7 @@ void BuySelect::Draw(void)
             desc = "遠距離ズーム撮影が可能。遠い被写体を狙いやすい。";
             break;
         case ITEM_TYPE::INSURANCE_CAMERA:
-            desc = "死亡してもスコアを保持する。リスクヘッジ用。";
+            desc = "死亡してもスコアを保持する。得点は少し低い。";
             break;
         case ITEM_TYPE::HELMET:
             desc = "被ダメージを軽減する装備。生存率アップ。";
@@ -549,7 +567,7 @@ void BuySelect::Draw(void)
             desc = "敵を吹き飛ばす爆弾。近距離で高ダメージ。";
             break;
         case ITEM_TYPE::SPIKE_TRAP:
-            desc = "床に設置して敵を足止めする罠（通行中ダメージ）。";
+            desc = "床に設置して敵を足止めする罠。";
             break;
         case ITEM_TYPE::EXPLOSIVE_TRAP:
             desc = "衝撃で爆発する罠（近くの敵に大ダメージ）。";

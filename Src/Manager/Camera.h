@@ -9,14 +9,18 @@ public:
 	// カメラの初期座標
 	static constexpr VECTOR DEFAULT_POS = {0.0f,0.0f,0.0f};
 
+	
+
 	// カメラの初期角度
 	static constexpr VECTOR DEFAULT_ANGLES = {
 		30.f * DX_PI_F / 180.f, 0.f, 0.f
 	};
 
 	// カメラのクリップ範囲
-	static constexpr float VIEW_NEAR = 10.0f;		// ニアクリップ
-	static constexpr float VIEW_FAR = 5000.0f;	// ファークリップ
+	static constexpr float VIEW_NEAR = 10.0f;
+	static constexpr float VIEW_FAR = 5000.0f;
+
+	
 
 	// カメラモード
 	enum class MODE
@@ -43,6 +47,7 @@ public:
 	void SetBeforeDrawFixedPoint(void);
 	void SetBeforeDrawFree(void);
 
+
 	// デバッグ用描画
 	void DrawDebug(void);
 
@@ -62,6 +67,9 @@ public:
 
 	void MoveXYZDirection(void);
 
+	void SetFOV(float degree);
+	float GetFOV() const;
+
 private:
 
 	// カメラモード
@@ -72,5 +80,9 @@ private:
 
 	// カメラの角度
 	VECTOR angles_;
+
+	// 視野角
+	float fov_ = 1.04719755f;
+
 
 };
