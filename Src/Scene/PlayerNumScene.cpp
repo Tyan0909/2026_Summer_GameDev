@@ -212,41 +212,28 @@ void PlayerNumScene::Update(void)
 		scene.ChangeScene(SceneManager::SCENE_ID::EXAMPLE);
 	}
 
-	if (isToggle)
+	// Enterキーで参加状態をトグル（確定）
+	if (ins.IsTrgDown(KEY_INPUT_RETURN))
 	{
 		isUsePlayer_[cursor_] = !isUsePlayer_[cursor_];
-		if (pn_toggleSE != -1)
-		{
-			PlaySoundMem(pn_toggleSE, DX_PLAYTYPE_BACK);
-		}
+		// トグル音
+		if (pn_toggleSE != -1) PlaySoundMem(pn_toggleSE, DX_PLAYTYPE_BACK);
 	}
 
-	if (isLeft)
+	// 左右カーソル
+	if (ins.IsTrgDown(KEY_INPUT_LEFT))
 	{
 		cursor_--;
-		if (cursor_ < 0)
-		{
-			cursor_ = 3;
-		}
-
-		if (pn_moveSE != -1)
-		{
-			PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
-		}
+		if (cursor_ < 0) cursor_ = 3;
+		// 移動音
+		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
 	}
-
-	if (isRight)
+	if (ins.IsTrgDown(KEY_INPUT_RIGHT))
 	{
 		cursor_++;
-		if (cursor_ > 3)
-		{
-			cursor_ = 0;
-		}
-
-		if (pn_moveSE != -1)
-		{
-			PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
-		}
+		if (cursor_ > 3) cursor_ = 0;
+		// 移動音
+		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
 	}
 
 	for (int i = 0; i < SELECT_MAX; ++i)

@@ -2,11 +2,14 @@
 #include <DxLib.h>
 #include <vector>
 #include <string>
+#include <memory>
 #include "../../../../Manager/InputManager.h"
 #include "../../ActorBase.h"
 #include "../../../../Object/Collider/ColliderModel.h"
 #include "../../../../Scene/BuySelect.h"
+#include "../../Item/Camera/CameraBase.h"
 
+class CameraBase;
 class ColliderBase;
 class ResourceManager;
 class AnimationController;
@@ -130,6 +133,28 @@ public:
 	// 追加: ヘルメット残数取得
 	int GetHelmetUses() const;
 
+	void AddScore(int score);
+	int GetScore() const;
+	void SetScore(int score);
+
+	void EnableZoomCamera();
+
+	bool HasZoomCamera() const;
+	bool IsZooming() const;
+	void SetZooming(bool zoom);
+
+	bool IszoomInput() const;
+
+
+	//カメラアイテムの取得/設定
+	CameraBase* GetCameraItem() const{return cameraItem_.get();}
+	void SetCameraItem(std::unique_ptr<CameraBase> item){cameraItem_ = std::move(item);}
+	
+	//保険カメラの所持フラグ
+	void SetInsuranceCamera(bool flag);
+	bool HasInsuranceCamera() const;
+
+	float GetCurrentFOV(bool zoom) const;
 	protected:
 		void InitLoad(void) override;
 		void InitTransform(void) override;
@@ -162,6 +187,7 @@ private:
 
 	int hp_;
 	int damageCooldownFrame_;
+	int score_;
 
 	AnimationController* animController_;
 	INPUT_CONFIG inputConfig_;
@@ -204,10 +230,14 @@ private:
 	int explosiveTrapCount_ = 0;
 	int fragGrenadeCount_ = 0;
 
+	bool hasInsuranceCamera_ = false;
 	std::vector<int> inventory_;
+	std::unique_ptr<CameraBase> cameraItem_;
 
 	// 使用アイテム選択用（固定順序）
 	int selectedUsableIndex_ = -1; // 所持品が無ければ -1
 	static const std::vector<ITEM_TYPE> usableOrder_;
+
+	bool isZooming_ = false;
 };
 

@@ -32,6 +32,7 @@ public:
 	// 所持等
 	static const int MAX_AMOUNT = 10000;	// 最大金額
 	static const int MIN_AMOUNT = 500;     // 最低保証
+	static constexpr int TURN_CHANGE_TIME = 120; // 2秒(60FPS)
 
 	BuySelect(void);
 	~BuySelect(void) override;
@@ -46,8 +47,6 @@ private:
 	void ToggleItemSelection(int idx);	// 既存互換（未使用でも可）
 
 private:
-	// 所持金 = 最低保証 + carryMoney
-	int currentAmount_ = 0;
 
 	int itemImg_[7];
 
@@ -59,12 +58,23 @@ private:
 	int fontMid_ = -1;
 	int fontSmall_ = -1;
 
+	int previousPlayer_ = 0;
+
 	// カーソル
 	int cursorIdx_ = 0;
 
+	int currentPlayer_ = 0;
+
+	bool isTurnChange_ = true;      // 手番切替画面中か
+	int turnChangeFrame_ = 0;       // フレーム数
+
+	// プレイヤーごとの購入リスト
+	std::vector<std::vector<Item>> playerItems_;
+	// 現在のプレイヤーの購入リストへの参照
+	std::vector<std::vector<int>> purchasedItemsPerPlayer_;
+	// プレイヤーごとの所持金
+	std::vector<int> playerMoney_;
+
 	// 最低保証
 	int minAmount_ = MIN_AMOUNT;
-
-	// アイテムリスト
-	std::vector<Item> items_;
 };

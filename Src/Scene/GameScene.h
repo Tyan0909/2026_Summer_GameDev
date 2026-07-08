@@ -2,6 +2,7 @@
 #include "SceneBase.h"
 #include "../Object/Actor/Stage/Stage.h"
 #include <vector>
+#include <string>
 
 class Stage;
 class Player;
@@ -53,6 +54,8 @@ private:
 	static constexpr int PREVIEW_WIDTH = 640;
 	static constexpr int PREVIEW_HEIGHT = 360;
 
+	static constexpr int MAX_PHOTO_COUNT = 5;
+
 	/*static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
 	static constexpr float GOAL_RADIUS = 80.0f;*/
 
@@ -83,9 +86,13 @@ private:
 		const char* playerName) const;
 
 	void DrawCompositedScene(void);
-	void CaptureScreenshot(void);
+	void CaptureScreenshot(int playerIndex);
 	void DrawScreenshotThumbnail(void) const;
-	void DrawFlashEffect(void) const;
+	void DrawPhotoCards(int playerIndex);
+	void DrawFlashEffect(int playerIndex);
+	void DrawShutterEffect(int playerIndex);
+	void DrawPlayerScreen(int playerIndex);
+	void DrawRankEffect(int playerIndex);
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
 	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
@@ -102,7 +109,9 @@ private:
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 	int CalculatePlayerPhotoScore(const Player* targetPlayer) const;
-	void ApplyPhotoScoreResult(int totalAddedScore);
+	void ApplyPhotoScoreResult(
+		int playerIndex,
+		int addedScore);
 
 	Player* CreatePlayer(
 		const ColliderBase* stageCollider,
@@ -161,6 +170,49 @@ private:
 		int modelId = -1;
 	};
 
+	//写真評価演出関連
+	struct PhotoEffect
+	{
+		int flashFrame = 0;
+		int shutterFrame = 0;
+		int rankFrame = 0;
+		int flashDelay = 0;
+
+		std::string rankText;
+		int rankColor = GetColor(255, 255, 255);
+
+		int cooldown = 0;
+		int remainingPhoto = MAX_PHOTO_COUNT;
+	};
+	// 写真カードの描画情報
+	struct PhotoCard
+	{
+		bool active = false;
+
+		float x;
+		float y;
+
+		float targetX;
+		float targetY;
+
+		float scale = 1.0f;
+
+		float angle = 0.0f;       // 現在角度
+		float targetAngle = 0.0f; // 最終角度
+
+		int frame = 0;
+
+		int alpha = 255;      
+		bool fading = false;  
+
+		int graph = -1;
+		int playerIndex = 0;
+		int polaroidHandle = -1;
+
+		int score = 0;
+	};
+	std::vector<PhotoCard> photoCards_;
+	std::vector<PhotoEffect> photoEffects_;
 	// トラップ設定
 	static constexpr int SPIKE_DURATION_FRAMES = 4 * 60; // 4秒
 	static constexpr float SPIKE_TRIGGER_RADIUS = 40.0f;
@@ -222,4 +274,23 @@ private:
 
 	// ゴール
 	VECTOR goalPos_;
+	
+		// 写真評価演出
+	std::string photoRank_;
+	int photoRankFrame_ = 0;
+	int photoRankMaxFrame_ = 120;
+	int photoRankFont_ = -1;
+	int shutterFrame_ = 0;
+	
+	// シャッターの待ち時間
+	static constexpr int PHOTO_COOLDOWN = 45; // 約0.75秒(60FPS)
+
+	int photoCooldown_ = 0;
+	int photoIdleFrame_ = 0;
+	int lastPhotoPlayerIndex_ = 0;
+
+	bool isCycleItem;
+	bool isUseItem;
+	
+	int remainingPhotoCount_ = -1;
 };

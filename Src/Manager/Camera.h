@@ -15,8 +15,8 @@ public:
 	};
 
 	// カメラのクリップ範囲
-	static constexpr float VIEW_NEAR = 10.0f;		// ニアクリップ
-	static constexpr float VIEW_FAR = 5000.0f;	// ファークリップ
+	static constexpr float VIEW_NEAR = 10.0f;
+	static constexpr float VIEW_FAR = 5000.0f;
 
 	// カメラモード
 	enum class MODE
@@ -62,6 +62,9 @@ public:
 
 	void MoveXYZDirection(void);
 
+	void SetFOV(float degree);
+	float GetFOV() const;
+
 private:
 
 	// カメラモード
@@ -72,5 +75,9 @@ private:
 
 	// カメラの角度
 	VECTOR angles_;
+
+	// 視野角
+	float fov_ = 1.04719755f;
+
 
 };

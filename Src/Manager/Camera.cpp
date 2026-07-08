@@ -32,6 +32,8 @@ void Camera::SetBeforeDraw(void)
 {
 	// クリップ距離を設定する
 	SetCameraNearFar(VIEW_NEAR, VIEW_FAR);
+	// 視野角(FOV)
+	SetupCamera_Perspective(fov_);
 
 	switch (mode_)
 	{
@@ -93,6 +95,16 @@ void Camera::MoveXYZDirection(void)
 		// 方向×スピードで移動量を作って、座標に足して移動
 		pos_ = VAdd(pos_, VScale(moveDir, movePow));
 	}
+}
+
+void Camera::SetFOV(float degree)
+{
+	fov_ = degree * DX_PI_F / 180.0f;
+}
+
+float Camera::GetFOV() const
+{
+	return fov_;
 }
 
 void Camera::SetBeforeDrawFree(void)

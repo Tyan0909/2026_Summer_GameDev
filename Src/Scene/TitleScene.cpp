@@ -8,6 +8,8 @@
 #include "../Manager/Camera.h"
 #include "../Application.h"
 #include "TitleScene.h"
+#include "../Manager/ResourceManager.h"
+#include "../Manager/SoundManager.h"
 
 TitleScene::TitleScene(void) : SceneBase()
 {
@@ -20,6 +22,9 @@ TitleScene::~TitleScene(void)
 
 void TitleScene::Init(void)
 {
+	SoundManager::GetInstance().SetBgmVolume(180);
+	SoundManager::GetInstance().PlayBgm(
+		ResourceManager::SRC::BGM_TITLE);
 	// カメラセット
 	Camera* camera = SceneManager::GetInstance().GetCamera();
 	camera->ChangeMode(Camera::MODE::FREE);
@@ -83,6 +88,8 @@ void TitleScene::Init(void)
 	{
 		PlaySoundMem(ambientSE_, DX_PLAYTYPE_LOOP);
 	}
+	SoundManager::GetInstance().PlayBgm(
+		ResourceManager::SRC::BGM_TITLE);
 }
 
 static float RandFloat(float a, float b)
@@ -396,6 +403,7 @@ void TitleScene::Release(void)
 	// メモリ解放
 	delete debugGrid_;
 	debugGrid_ = nullptr;
+	SoundManager::GetInstance().StopBgm();
 
 	// 画像
 	if (logoHandle_ != -1) DeleteGraph(logoHandle_);

@@ -62,6 +62,7 @@ void InputManager::Init(void)
 	InputManager::GetInstance().Add(KEY_INPUT_U);
 	InputManager::GetInstance().Add(KEY_INPUT_F1);
 	InputManager::GetInstance().Add(KEY_INPUT_ESCAPE);
+	InputManager::GetInstance().Add(KEY_INPUT_LCONTROL);
 
 	InputManager::MouseInfo info;
 
@@ -155,6 +156,10 @@ bool InputManager::IsTrgUp(int key) const
 	return Find(key).keyTrgUp;
 }
 
+bool InputManager::IsPress(int key) const
+{
+	return Find(key).keyNew;
+}
 Vector2 InputManager::GetMousePos(void) const
 {
 	return mousePos_;

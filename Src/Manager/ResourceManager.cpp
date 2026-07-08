@@ -82,11 +82,6 @@ void ResourceManager::Init(void)
 		PATH_MDL + "Trap/Mine.mv1");
 	resourcesMap_.emplace(SRC::MINE_MODEL,res);
 
-	// BGM: タイトル
-	res = new RES(RES_T::SOUND, PATH_SND +
-		"Bgm/title.wav");
-	resourcesMap_.emplace(SRC::BGM_TITLE, res);
-
 	// BGM: ゲーム
 	res = new RES(RES_T::SOUND, PATH_SND +
 		"Bgm/game.wav");
@@ -101,6 +96,31 @@ void ResourceManager::Init(void)
 	res = new RES(RES_T::SOUND, PATH_SND +
 		"Se/hit.wav");
 	resourcesMap_.emplace(SRC::SE_HIT, res);
+
+	// BGM: タイトル
+	res = new RES(
+		RES_T::SOUND,
+		PATH_SND + "Bgm/Title.mp3");
+	resourcesMap_.emplace(
+		SRC::BGM_TITLE,
+		res);
+
+	// BGM: ゲーム
+	res = new RES(
+		RES_T::SOUND,
+		PATH_SND + "Bgm/Game.wav");
+	resourcesMap_.emplace(
+		SRC::BGM_GAME,
+		res);
+
+	// SE: カメラシャッター
+	res = new RES(
+		RES_T::SOUND,
+		PATH_SND + "shutter.mp3");
+
+	resourcesMap_.emplace(
+		SRC::CAMERA_SHUTTER,
+		res);
 }
 
 void ResourceManager::Release(void)
@@ -162,7 +182,11 @@ int ResourceManager::LoadModelDuplicate(SRC src)
 	}
 
 	int duId = MV1DuplicateModel(res.handleId_);
-	res.duplicateModelIds_.push_back(duId);
+
+	if (duId != -1)
+	{
+		res.duplicateModelIds_.push_back(duId);
+	}
 
 	return duId;
 }
