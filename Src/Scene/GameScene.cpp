@@ -48,7 +48,9 @@ GameScene::GameScene()
 	iconHelmetHandle_(-1),
 	iconFragHandle_(-1),
 	iconSpikeHandle_(-1),
-	iconMineHandle_(-1)
+	iconMineHandle_(-1),
+	debugLogEnabled_(false),
+	debugLogFrameCounter_(0)
 {
 }
 
@@ -81,6 +83,9 @@ void GameScene::Init()
 		{
 			stage_->SetGoalPos(goalPos_);
 		}
+		// ログ出力（選択したゴール）
+		printfDx("GameScene: goal selected idx=%d pos=(%.1f, %.1f, %.1f)\n",
+			idx, goalPos_.x, goalPos_.y, goalPos_.z);
 	}
 
 	effectManager_ =std::make_unique<EffectManager>();
@@ -337,6 +342,13 @@ void GameScene::Update()
 
 	const bool isTogglePreview =
 		ins.IsTrgDown(KEY_INPUT_F1);
+
+	// F2 でデバッグログの ON/OFF 切替
+	if (ins.IsTrgDown(KEY_INPUT_F2))
+	{
+		debugLogEnabled_ = !debugLogEnabled_;
+		printfDx("GameScene: debugLogEnabled = %s\n", debugLogEnabled_ ? "ON" : "OFF");
+	}
 
 	if (flashFrame_ > 0)
 	{
@@ -657,6 +669,9 @@ void GameScene::Update()
 
 	if (IsPlayerReachedGoal())
 	{
+		// ログ出力: ゴール到達
+		printfDx("GameScene: players reached goal at pos=(%.1f, %.1f, %.1f)\n", goalPos_.x, goalPos_.y, goalPos_.z);
+
 		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.SetPhotoCount(photoCount_);
 		scene.SetLastPhotoScore(lastPhotoScore_);
@@ -1618,6 +1633,113 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 	}
 }
 
+namespace
+{
+	// clamp
+	inline float Clampf(float v, float a, float b) { return v < a ? a : (v > b ? b : v); }
+}
+
+// map world -> minimap screen (右上基準)
+void GameScene::DrawMinimap(const Player* targetPlayer, int rightX, int topY, int size) const
+{
+	if (size <= 8) return;
+	// ミニマップ左上座標
+	const int mapRight = rightX - MINIMAP_MARGIN;
+	const int mapLeft = mapRight - size;
+	const int mapTop = topY + MINIMAP_MARGIN;
+	const int mapBottom = mapTop + size;
+
+	// 背景
+	const int bgColor = GetColor(8, 12, 30);
+	const int borderColor = GetColor(200, 200, 200);
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 200);
+	DrawBox(mapLeft, mapTop, mapRight, mapBottom, bgColor, TRUE);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+	// 枠
+	for (int i = 0; i < MINIMAP_BORDER; ++i)
+	{
+		DrawBox(mapLeft + i, mapTop + i, mapRight - i, mapBottom - i, borderColor, FALSE);
+	}
+
+	// ワールド範囲（X,Z）をミニマップに線形写像
+	const float worldMinX = SUBJECT_AREA_MIN.x;
+	const float worldMaxX = SUBJECT_AREA_MAX.x;
+	const float worldMinZ = SUBJECT_AREA_MIN.z;
+	const float worldMaxZ = SUBJECT_AREA_MAX.z;
+
+	const float worldW = worldMaxX - worldMinX;
+	const float worldH = worldMaxZ - worldMinZ;
+	if (worldW <= 0.0001f || worldH <= 0.0001f) return;
+
+	auto worldToMap = [&](const VECTOR& wpos)->VECTOR
+		{
+			float nx = (wpos.x - worldMinX) / worldW; // 0..1
+			float nz = (wpos.z - worldMinZ) / worldH; // 0..1
+			nx = Clampf(nx, 0.0f, 1.0f);
+			nz = Clampf(nz, 0.0f, 1.0f);
+			// マップでは Z 増加を下方向にする（必要に応じ反転）
+			float sx = mapLeft + nx * static_cast<float>(size);
+			float sy = mapTop + (1.0f - nz) * static_cast<float>(size);
+			return VGet(sx, sy, 0.0f);
+		};
+
+	// 被写体（赤点）
+	if (subjectManager_ != nullptr)
+	{
+		const auto& subjects = subjectManager_->GetSubjects();
+		for (const auto* s : subjects)
+		{
+			if (s == nullptr) continue;
+			// 生存確認: IsDead がある前提（存在しないなら常に描画される）
+			bool isDead = false;
+			// 実装依存: Subject に IsDead() があれば使う（存在しない場合はコメントアウト）
+			// isDead = s->IsDead();
+			if (isDead) continue;
+			VECTOR mp = worldToMap(s->GetTransform().pos);
+			const int dotColor = GetColor(220, 60, 60);
+			DrawCircle(static_cast<int>(mp.x), static_cast<int>(mp.y), 3, dotColor, TRUE);
+		}
+	}
+
+	// ゴール（黄）
+	{
+		VECTOR gmp = worldToMap(goalPos_);
+		const int goalFill = GetColor(255, 200, 60);
+		const int goalOutline = GetColor(255, 255, 200);
+		DrawBox(static_cast<int>(gmp.x) - 6, static_cast<int>(gmp.y) - 6, static_cast<int>(gmp.x) + 6, static_cast<int>(gmp.y) + 6, goalFill, TRUE);
+		DrawBox(static_cast<int>(gmp.x) - 8, static_cast<int>(gmp.y) - 8, static_cast<int>(gmp.x) + 8, static_cast<int>(gmp.y) + 8, goalOutline, FALSE);
+	}
+
+	// プレイヤー（色・矢印で向き）
+	const int playerColors[4] = { GetColor(220,80,80), GetColor(80,220,200), GetColor(80,220,100), GetColor(240,220,80) };
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		const Player* pl = players_[i];
+		if (pl == nullptr) continue;
+		VECTOR pmp = worldToMap(pl->GetTransform().pos);
+		int col = playerColors[i % 4];
+		// 本体点
+		DrawCircle(static_cast<int>(pmp.x), static_cast<int>(pmp.y), 4, col, TRUE);
+
+		// 向き矢印（プレイヤーカメラ角度 y を使用）
+		VECTOR camAng = pl->GetCameraAngles();
+		const float yaw = camAng.y;
+		const float dx = sinf(yaw);
+		const float dz = cosf(yaw);
+		// 表示長さをマップにスケール
+		const float dirLen = 12.0f;
+		// ワールド方向からスクリーン方向に変換（同じスケールで近似）
+		const float ndx = dx * dirLen * (static_cast<float>(size) / worldW);
+		const float ndy = -dz * dirLen * (static_cast<float>(size) / worldH);
+		DrawLine3D(VGet(pmp.x, pmp.y, 0.0f), VGet(pmp.x + ndx, pmp.y + ndy, 0.0f), GetColor(255, 255, 255));
+	}
+
+	// 小ラベル: 縮尺情報
+	char buf[64];
+	snprintf(buf, sizeof(buf), "Map: %.0fx%.0f", worldW, worldH);
+	DrawFormatString(mapLeft + 6, mapBottom + 6, GetColor(200, 200, 200), "%s", buf);
+}
+
 bool GameScene::IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const
 {
 	if (targetPlayer == nullptr || targetSubject == nullptr || stage_ == nullptr)
@@ -2160,6 +2282,7 @@ void GameScene::DrawViewHud(const Player* targetPlayer, const char* playerName, 
 
 	DrawPlayerPhotoInfo(targetPlayer);
 	DrawPlayerHpBar(targetPlayer, drawWidth);
+	DrawMinimap(targetPlayer, MINIMAP_SIZE + 2 * MINIMAP_MARGIN, screenHeight_ - MINIMAP_SIZE - 2 * MINIMAP_MARGIN, MINIMAP_SIZE);
 }
 
 void GameScene::DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const

@@ -56,11 +56,18 @@ private:
 	/*static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
 	static constexpr float GOAL_RADIUS = 80.0f;*/
 
+	static constexpr int MINIMAP_SIZE = 160;           // ミニマップ正方サイズ（px）
+	static constexpr int MINIMAP_MARGIN = 16;          // 画面端からの余白
+	static constexpr int MINIMAP_BORDER = 2;           // 枠線太さ
+
+	
+	// --- 追加終了 ---
+
 	static constexpr VECTOR GOAL_CANDIDATES[5] =
 	{
 		{ 2280.0f, 0.0f, 1300.0f },
-		{ 1520.0f, 0.0f, 520.0f },
-		{ 4020.0f, 0.0f, 620.0f },
+		{ 520.0f, 0.0f, 420.0f },
+		{ 4020.0f, 0.0f, 320.0f },
 		{ 2020.0f, 0.0f, 1120.0f },
 		{ 1520.0f, 0.0f, 1320.0f }
 	};
@@ -87,6 +94,8 @@ private:
 	void DrawScreenshotThumbnail(void) const;
 	void DrawFlashEffect(void) const;
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
+	// ミニマップ描画（HUD 内から呼ぶ）
+	void DrawMinimap(const Player* targetPlayer, int rightX, int topY, int size) const;
 
 	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
 	void ApplyStageOpacityForCamera(const Player* targetPlayer);
@@ -222,4 +231,9 @@ private:
 
 	// ゴール
 	VECTOR goalPos_;
+
+	// デバッグログ制御
+	bool debugLogEnabled_ = false;
+	int debugLogFrameCounter_ = 0;
+	static constexpr int DEBUG_LOG_INTERVAL_FRAMES = 60; // ログ出力間隔（フレーム）
 };

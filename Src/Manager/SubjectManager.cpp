@@ -131,11 +131,11 @@ Subject* SubjectManager::CreateRandomSubject()
 
 	if (type == SUBJECT_TYPE::SUBJECT_A)
 	{
-		printfDx("SubjectAê∂ê¨\n");
+		/*printfDx("SubjectAê∂ê¨\n");*/
 	}
 	else if (type == SUBJECT_TYPE::SUBJECT_B)
 	{
-		printfDx("SubjectBê∂ê¨\n");
+		/*printfDx("SubjectBê∂ê¨\n");*/
 	}
 
 
