@@ -54,7 +54,7 @@ private:
 	static constexpr int PREVIEW_WIDTH = 640;
 	static constexpr int PREVIEW_HEIGHT = 360;
 
-	static constexpr int MAX_PHOTO_COUNT = 5;
+	static constexpr int MAX_PHOTO_COUNT = 50;
 
 	/*static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
 	static constexpr float GOAL_RADIUS = 80.0f;*/
