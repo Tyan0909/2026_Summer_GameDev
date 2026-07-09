@@ -113,18 +113,28 @@ void Resource::Release(void)
 		break;
 
 	case Resource::TYPE::MODEL:
+	{
+		// æ‚É•¡»ƒ‚ƒfƒ‹‚ğ‰ğ•ú
+		for (auto id : duplicateModelIds_)
+		{
+			if (id != -1)
+			{
+				MV1DeleteModel(id);
+			}
+		}
+
+		duplicateModelIds_.clear();
+
+
+		// ÅŒã‚ÉŒ³ƒ‚ƒfƒ‹‚ğ‰ğ•ú
 		if (handleId_ != -1)
 		{
 			MV1DeleteModel(handleId_);
 			handleId_ = -1;
 		}
 
-		for (auto id : duplicateModelIds_)
-		{
-			MV1DeleteModel(id);
-		}
-		duplicateModelIds_.clear();
 		break;
+	}
 
 	case Resource::TYPE::EFFEKSEER:
 		if (handleId_ != -1)

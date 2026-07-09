@@ -22,5 +22,8 @@ private:
 	// ‚±‚±‚Éƒƒ“ƒo•Ï”‚ğ’Ç‰Á‚µ‚Ä‚¢‚­
 	int playerWinID_;
 	int playerScores_[4];
+	int bestPhotoHandle_ = -1;
+	int bestPhotoScore_ = 0;
+	int bestPhotoPlayer_ = -1;
 };
 

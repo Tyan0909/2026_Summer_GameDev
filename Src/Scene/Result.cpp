@@ -2,11 +2,23 @@
 #include "../Manager/SceneManager.h"
 #include "../Manager/InputManager.h"
 #include <DxLib.h>
+#include "../Manager/PhotoManager.h"
 
 Result::Result(void) {}
 Result::~Result(void) {}
 
-void Result::Init(void) {}
+void Result::Init(void) 
+{
+	const PhotoData* best =
+		PhotoManager::GetInstance().GetBestPhoto();
+
+	if (best)
+	{
+		bestPhotoHandle_ = best->graphHandle;
+		bestPhotoScore_ = best->score;
+		bestPhotoPlayer_ = best->playerIndex;
+	}
+}
 
 void Result::Update(void)
 {
@@ -54,6 +66,37 @@ void Result::Draw(void)
 	}
 
 	DrawString(200, 420, "SPACE : TITLE", GetColor(255, 255, 255));
+
+	if (bestPhotoHandle_ != -1)
+	{
+		DrawExtendGraph(
+			350,
+			80,
+			930,
+			520,
+			bestPhotoHandle_,
+			TRUE);
+
+		DrawFormatString(
+			430,
+			540,
+			GetColor(255, 255, 0),
+			"BEST SHOT");
+
+		DrawFormatString(
+			430,
+			570,
+			GetColor(255, 255, 255),
+			"SCORE : %d",
+			bestPhotoScore_);
+
+		DrawFormatString(
+			430,
+			600,
+			GetColor(255, 255, 255),
+			"PLAYER %d",
+			bestPhotoPlayer_ + 1);
+	}
 }
 
 void Result::Release(void) {}

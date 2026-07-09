@@ -29,6 +29,7 @@ public:
 		BGM_GAME,
 		SE_DECIDE,
 		SE_HIT,
+		CAMERA_SHUTTER,
 
 		SPIKE_MODEL,
 		MINE_MODEL,

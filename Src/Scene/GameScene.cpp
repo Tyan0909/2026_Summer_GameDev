@@ -20,6 +20,7 @@
 #include"../Manager/EffectManager.h"
 #include <EffekseerForDXLib.h>
 #include "../Manager/PhotoManager.h"
+#include "../Manager/SoundManager.h"
 
 
 // ファイルローカル: 設置効果音ハンドル
@@ -73,6 +74,10 @@ GameScene::~GameScene()
 //====================================================
 void GameScene::Init()
 {
+	SoundManager::GetInstance().SetBgmVolume(150);
+	SoundManager::GetInstance().PlayBgm(
+		ResourceManager::SRC::BGM_GAME);
+
 	SceneManager& scene = SceneManager::GetInstance();
 
 	stage_ = new Stage();
@@ -320,6 +325,9 @@ void GameScene::Init()
 	remainingPhotoCount_ = MAX_PHOTO_COUNT;
 
 	camera->ChangeMode(Camera::MODE::FREE);
+
+	SoundManager::GetInstance().PlayBgm(
+		ResourceManager::SRC::BGM_GAME);
 }
 
 
@@ -1064,16 +1072,9 @@ void GameScene::Release()
 {
 	ReleasePlayers();
 
-
+	SoundManager::GetInstance().StopBgm();
 	
 	if (stage_) { stage_->Release(); delete stage_; stage_ = nullptr; }
-
-	if (leftScreenHandle_ != -1) { DeleteGraph(leftScreenHandle_); leftScreenHandle_ = -1; }
-	if (rightScreenHandle_ != -1) { DeleteGraph(rightScreenHandle_); rightScreenHandle_ = -1; }
-	if (bottomLeftScreenHandle_ != -1) { DeleteGraph(bottomLeftScreenHandle_); bottomLeftScreenHandle_ = -1; }
-	if (bottomRightScreenHandle_ != -1) { DeleteGraph(bottomRightScreenHandle_); bottomRightScreenHandle_ = -1; }
-	if (sceneScreenHandle_ != -1) { DeleteGraph(sceneScreenHandle_); sceneScreenHandle_ = -1; }
-	if (screenshotScreenHandle_ != -1) { DeleteGraph(screenshotScreenHandle_); screenshotScreenHandle_ = -1; }
 
 	if (iconHelmetHandle_ != -1) { DeleteGraph(iconHelmetHandle_); iconHelmetHandle_ = -1; }
 	if (iconFragHandle_ != -1) { DeleteGraph(iconFragHandle_); iconFragHandle_ = -1; }
@@ -1083,14 +1084,19 @@ void GameScene::Release()
 	if (gs_placeSE != -1) { DeleteSoundMem(gs_placeSE); gs_placeSE = -1; }
 	if (gs_explodeSE != -1) { DeleteSoundMem(gs_explodeSE); gs_explodeSE = -1; } // 追加: 爆発音ハンドルを削除
 
-	for (auto& trap : traps_)
+	for (auto& card : photoCards_)
 	{
-		if (trap.modelId != -1)
+		if (card.polaroidHandle != -1)
 		{
-			MV1DeleteModel(trap.modelId);
-			trap.modelId = -1;
+			DeleteGraph(card.polaroidHandle);
+			card.polaroidHandle = -1;
 		}
+
+		// card.graph は PhotoManager が解放するので削除しない
+		card.graph = -1;
 	}
+
+	photoCards_.clear();
 
 	if (photoRankFont_ != -1)
 	{
@@ -1100,7 +1106,7 @@ void GameScene::Release()
 
 	traps_.clear();
 
-	traps_.clear();
+	PhotoManager::GetInstance().Clear();
 
 	ReleaseScreenHandles();
 }
@@ -1450,13 +1456,8 @@ void GameScene::DrawCompositedScene(void)
 
 void GameScene::CaptureScreenshot(int playerIndex)
 {
-
-	printfDx("CaptureScreenshot\n");
-	if (screenshotScreenHandle_ == -1)
-	{
-		isScreenshotRequested_ = false;
-		return;
-	}
+	SoundManager::GetInstance().PlaySe(
+		ResourceManager::SRC::CAMERA_SHUTTER);
 
 	int sourceHandle = -1;
 	int sourceWidth = screenWidth_;
@@ -2093,15 +2094,15 @@ void GameScene::ApplyPhotoScoreResult(int playerIndex,int addedScore) {
 		addedScore;
 
 	// 評価文字を決定
-	if (addedScore >= 2000)
+	if (addedScore >= 900)
 	{
 		effect.rankText = "PERFECT!";
 	}
-	else if (addedScore >= 1200)
+	else if (addedScore >= 750)
 	{
 		effect.rankText = "EXCELLENT!";
 	}
-	else if (addedScore >= 700)
+	else if (addedScore >= 500)
 	{
 		effect.rankText = "GREAT!";
 	}
@@ -2450,14 +2451,43 @@ void GameScene::ReleaseScreenHandles(void)
 	DeleteScreenHandle(screenshotScreenHandle_);
 }
 
-void GameScene::ResetScreenHandles(void)
+void GameScene::ResetScreenHandles()
 {
-	leftScreenHandle_ = -1;
-	rightScreenHandle_ = -1;
-	bottomLeftScreenHandle_ = -1;
-	bottomRightScreenHandle_ = -1;
-	sceneScreenHandle_ = -1;
-	screenshotScreenHandle_ = -1;
+	if (leftScreenHandle_ != -1)
+	{
+		DeleteGraph(leftScreenHandle_);
+		leftScreenHandle_ = -1;
+	}
+
+	if (rightScreenHandle_ != -1)
+	{
+		DeleteGraph(rightScreenHandle_);
+		rightScreenHandle_ = -1;
+	}
+
+	if (bottomLeftScreenHandle_ != -1)
+	{
+		DeleteGraph(bottomLeftScreenHandle_);
+		bottomLeftScreenHandle_ = -1;
+	}
+
+	if (bottomRightScreenHandle_ != -1)
+	{
+		DeleteGraph(bottomRightScreenHandle_);
+		bottomRightScreenHandle_ = -1;
+	}
+
+	if (sceneScreenHandle_ != -1)
+	{
+		DeleteGraph(sceneScreenHandle_);
+		sceneScreenHandle_ = -1;
+	}
+
+	if (screenshotScreenHandle_ != -1)
+	{
+		DeleteGraph(screenshotScreenHandle_);
+		screenshotScreenHandle_ = -1;
+	}
 }
 
 void GameScene::DrawSinglePlayerScene(void)

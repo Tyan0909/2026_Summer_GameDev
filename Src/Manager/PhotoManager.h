@@ -24,8 +24,10 @@ public:
     }
 
     void Clear();
+    const PhotoData* GetBestPhoto() const;
 
 private:
 
     std::vector<PhotoData> photos_;
+    
 };
