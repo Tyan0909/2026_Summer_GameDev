@@ -129,14 +129,14 @@ Subject* SubjectManager::CreateRandomSubject()
 		static_cast<SUBJECT_TYPE>(
 			GetRand(static_cast<int>(SUBJECT_TYPE::MAX) - 1));
 
-	if (type == SUBJECT_TYPE::SUBJECT_A)
-	{
-		printfDx("SubjectAê∂ê¨\n");
-	}
-	else if (type == SUBJECT_TYPE::SUBJECT_B)
-	{
-		printfDx("SubjectBê∂ê¨\n");
-	}
+	//if (type == SUBJECT_TYPE::SUBJECT_A)
+	//{
+	//	printfDx("SubjectAê∂ê¨\n");
+	//}
+	//else if (type == SUBJECT_TYPE::SUBJECT_B)
+	//{
+	//	printfDx("SubjectBê∂ê¨\n");
+	//}
 
 
 	return CreateSubject(type, pos);

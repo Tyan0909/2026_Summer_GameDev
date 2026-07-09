@@ -84,6 +84,7 @@ public:
 	void SetPlayerDetectRange(float range);
 
 	const std::vector<VECTOR>& GetPlayerPos() const { return playerPos_; }
+	VECTOR GetForward() const;
 
 protected:
 

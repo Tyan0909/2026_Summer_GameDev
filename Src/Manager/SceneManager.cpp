@@ -169,6 +169,12 @@ const std::vector<int>&SceneManager::GetPurchasedItemTypes() const
 	return purchasedItemTypes_;
 }
 
+void SceneManager::AddPurchasedItemType(int type)
+{
+	purchasedItemTypes_.push_back(type);
+}
+
+
 SceneManager::SceneManager(void)
 {
 	sceneId_ = SCENE_ID::NONE;
@@ -198,6 +204,7 @@ void SceneManager::ResetDeltaTime(void)
 
 void SceneManager::DoChangeScene(SCENE_ID sceneId)
 {
+	printf("DoChangeScene : %d\n", (int)sceneId_);
 	sceneId_ = sceneId;
 
 	if (scene_ != nullptr)

@@ -131,12 +131,51 @@ void BuySelect::Update(void)
     // Zキーで数量を +1 (購入を増やす)
     if (ins.IsTrgDown(KEY_INPUT_Z))
     {
-        int total = CalculateTotalPrice();
         const Item& it = items[cursorIdx_];
-        if (total + it.price <=playerMoney_[currentPlayer_])
+
+
+        // カメラの場合
+        if (IsCameraItem(it.type))
+        {
+            bool alreadyCamera = false;
+
+
+            // 現在カート内にカメラがあるか確認
+            for (const auto& item : items)
+            {
+                if (IsCameraItem(item.type) &&
+                    item.quantity > 0)
+                {
+                    alreadyCamera = true;
+                    break;
+                }
+            }
+
+
+            // 別のカメラが選択済みなら購入不可
+            if (alreadyCamera &&
+                items[cursorIdx_].quantity == 0)
+            {
+                buyMessage_ = "カメラは1種類までです";
+                buyMessageFrame_ = 120;
+                return;
+            }
+        }
+
+
+        int total = CalculateTotalPrice();
+
+
+        if (total + it.price <= playerMoney_[currentPlayer_])
         {
             items[cursorIdx_].quantity += 1;
-            if (bs_toggleSE != -1) PlaySoundMem(bs_toggleSE, DX_PLAYTYPE_BACK);
+
+            if (bs_toggleSE != -1)
+            {
+                PlaySoundMem(
+                    bs_toggleSE,
+                    DX_PLAYTYPE_BACK);
+            }
         }
     }
 
@@ -157,8 +196,39 @@ void BuySelect::Update(void)
 		// 現在のプレイヤーの購入リストを保存
         std::vector<int> purchased;
 
+        bool hasCamera = false;
+
+        // すでにカメラ購入済みか確認
+        for (const auto& item : purchasedItemsPerPlayer_[currentPlayer_])
+        {
+            if (IsCameraItem(static_cast<ITEM_TYPE>(item)))
+            {
+                hasCamera = true;
+                break;
+            }
+        }
+
+
         for (const auto& it : items)
         {
+            if (it.quantity <= 0)
+                continue;
+
+
+            // カメラの場合
+            if (IsCameraItem(it.type))
+            {
+                // すでにカメラがある場合は追加しない
+                if (hasCamera)
+                {
+                    continue;
+                }
+
+                // カメラ購入済みにする
+                hasCamera = true;
+            }
+
+
             for (int q = 0; q < it.quantity; q++)
             {
                 purchased.push_back(
@@ -242,6 +312,11 @@ void BuySelect::Update(void)
         scene.ChangeScene(
             SceneManager::SCENE_ID::LOADING);
     }
+
+    if (buyMessageFrame_ > 0)
+    {
+        buyMessageFrame_--;
+    }
 }
 
 void BuySelect::Draw(void)
@@ -324,6 +399,16 @@ void BuySelect::Draw(void)
             "SPACEで開始");
 
         return;
+    }
+    //
+    if (buyMessageFrame_ > 0)
+    {
+        DrawString(
+            700,
+            600,
+            buyMessage_.c_str(),
+            GetColor(255, 100, 100)
+        );
     }
 
     if (currentPlayer_ >= playerItems_.size())
@@ -613,6 +698,56 @@ void BuySelect::Release(void)
     if (bs_confirmSE != -1) { DeleteSoundMem(bs_confirmSE); bs_confirmSE = -1; }
 }
 
+bool BuySelect::IsCameraItem(ITEM_TYPE type) const
+{
+    switch (type)
+    {
+    case ITEM_TYPE::NORMAL_CAMERA:
+    case ITEM_TYPE::ZOOM_CAMERA:
+    case ITEM_TYPE::INSURANCE_CAMERA:
+        return true;
+    }
+
+    return false;
+}
+
+bool BuySelect::HasCamera()
+{
+    const auto& items =
+        SceneManager::GetInstance()
+        .GetPurchasedItemTypes();
+
+
+    for (auto item : items)
+    {
+        if (IsCameraItem(static_cast<ITEM_TYPE>(item)))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void BuySelect::BuyItem(ITEM_TYPE type)
+{
+    // カメラの場合
+    if (IsCameraItem(type))
+    {
+        if (HasCamera())
+        {
+        
+            return;
+        }
+    }
+
+
+    // 通常購入処理
+    SceneManager::GetInstance()
+        .AddPurchasedItemType(
+            static_cast<int>(type));
+
+}
 int BuySelect::CalculateTotalPrice() const
 {
     int total = 0;

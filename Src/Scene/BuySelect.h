@@ -42,6 +42,10 @@ public:
 	void Draw(void) override;
 	void Release(void) override;
 
+	bool IsCameraItem(ITEM_TYPE type) const;	// カメラアイテムかどうか
+	bool HasCamera();
+	void BuyItem(ITEM_TYPE type);
+
 private:
 	int CalculateTotalPrice() const;	// カート合計
 	void ToggleItemSelection(int idx);	// 既存互換（未使用でも可）
@@ -62,6 +66,8 @@ private:
 
 	// カーソル
 	int cursorIdx_ = 0;
+	std::string buyMessage_;
+	int buyMessageFrame_ = 0;
 
 	int currentPlayer_ = 0;
 

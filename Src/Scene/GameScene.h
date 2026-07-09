@@ -1,6 +1,9 @@
 #pragma once
 #include "SceneBase.h"
 #include "../Object/Actor/Stage/Stage.h"
+#include "../Manager/PhotoScoreManager.h"
+#include "../Object/Actor/Item/Trap/Trap.h"
+
 #include <vector>
 #include <string>
 
@@ -22,6 +25,11 @@ public:
 	void Draw(void) override;
 	void Draw3D(void);
 	void Release(void) override;
+
+	const std::vector<Trap>& GetTraps() const
+	{
+		return traps_;
+	}
 
 private:
 
@@ -107,7 +115,6 @@ private:
 	void TryTakePhoto(void);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
-	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 	int CalculatePlayerPhotoScore(const Player* targetPlayer) const;
 	void ApplyPhotoScoreResult(
 		int playerIndex,
@@ -156,19 +163,6 @@ private:
 	static constexpr int ITEM_ICON_SIZE = 48;
 	static constexpr int ITEM_ICON_SPACING = 8;
 	static constexpr int ITEM_ICON_MARGIN = 16;
-
-	// 追加: トラップ関連
-	enum class TRAP_TYPE { SPIKE = 0, MINE = 1 };
-	struct Trap
-	{
-		TRAP_TYPE type;
-		VECTOR pos;
-		bool triggered = false;
-		int lifeFrames = 0; // 残存フレーム（スパイク持続等）
-		int ownerPlayerIndex = 0; // owner index in players_ (optional)
-
-		int modelId = -1;
-	};
 
 	//写真評価演出関連
 	struct PhotoEffect
@@ -293,4 +287,6 @@ private:
 	bool isUseItem;
 	
 	int remainingPhotoCount_ = -1;
+
+	PhotoScoreManager photoScoreManager_;
 };

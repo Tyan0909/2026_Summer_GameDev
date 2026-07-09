@@ -89,6 +89,7 @@ public:
 	void SetPurchasedItemTypes(const std::vector<int>& items);
 	const std::vector<int>& GetPurchasedItemTypes() const;
 
+	void AddPurchasedItemType(int type);
 private:
 	static SceneManager* instance_;
 

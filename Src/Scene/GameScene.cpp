@@ -21,6 +21,7 @@
 #include <EffekseerForDXLib.h>
 #include "../Manager/PhotoManager.h"
 #include "../Manager/SoundManager.h"
+#include "../Manager/PhotoScoreManager.h"
 
 // ファイルローカル: 設置効果音ハンドル
 static int gs_placeSE = -1;
@@ -107,69 +108,7 @@ void GameScene::Init()
 	SetupPlayers(stageCollider, selectedPlayerCount);
 	RebuildPlayersArray();
 
-	// プレイヤー1（常に作成）
-	player_ = new Player();
-	player_->Init();
-	player_->SetInputConfig(Player::KEYBOARD_AND_PAD1_INPUT_CONFIG);
-	player_->SetInputEnabled(true);
-	player_->AddHitCollider(stageCollider);
-
-	// プレイヤー2は選択人数が2人以上の場合のみ作成
-	if (selectedPlayerCount >= 2)
-	{
-		player2_ = new Player();
-		player2_->Init();
-		player2_->SetInputConfig(Player::PLAYER2_KEYBOARD_INPUT_CONFIG);
-		player2_->SetInputEnabled(true);
-		player2_->SetPos(PLAYER2_INIT_POS);
-		player2_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-		player2_->AddHitCollider(stageCollider);
-	}
-	else
-	{
-		player2_ = nullptr;
-	}
-
-	// プレイヤー3は選択人数が3人以上の場合のみ作成
-	if (selectedPlayerCount >= 3)
-	{
-		player3_ = new Player();
-		player3_->Init();
-		player3_->SetInputEnabled(true);
-		player3_->SetPos(PLAYER3_INIT_POS);
-		player3_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-		player3_->AddHitCollider(stageCollider);
-	}
-	else
-	{
-		player3_ = nullptr;
-	}
-
-	// プレイヤー4は選択人数が4人の場合に作成（今は最大4に対応）
-	if (selectedPlayerCount >= 4)
-	{
-		player4_ = new Player();
-		player4_->Init();
-		player4_->SetInputEnabled(true);
-		player4_->SetPos(PLAYER4_INIT_POS);
-		player4_->SetCameraAngles(VGet(0.0f, DX_PI_F, 0.0f));
-		player4_->AddHitCollider(stageCollider);
-	}
-	else
-	{
-		player4_ = nullptr;
-	}
-
-	// --- players_ 配列を構築し、プレイヤーごとのスコア配列を初期化 ---
-	players_.clear();
-	if (player_) players_.push_back(player_);
-	if (player2_) players_.push_back(player2_);
-	if (player3_) players_.push_back(player3_);
-	if (player4_) players_.push_back(player4_);
-
 	const size_t pcount = players_.size();
-	lastPhotoScorePerPlayer_.assign(pcount, 0);
-	photoCountPerPlayer_.assign(pcount, 0);
 	// -------------------------------------------------------------
 
 	// 追加: 各プレイヤーが持っている最初の使用可能アイテムを初期選択する
@@ -181,6 +120,14 @@ void GameScene::Init()
 	// 追加: BuySelect で購入したアイテムをプレイヤーに配布
 	{
 		const auto& purchased = SceneManager::GetInstance().GetPurchasedItemTypes();
+
+		printf("購入アイテム数 = %d\n", (int)purchased.size());
+
+		for (int item : purchased)
+		{
+			printf("item = %d\n", item);
+		}
+
 		if (!purchased.empty() && !players_.empty())
 		{
 			for (size_t i = 0; i < purchased.size(); ++i)
@@ -350,6 +297,8 @@ void GameScene::Update()
 
 	// --- 入力状態の更新（例: Qキーでアイテムサイクル） ---
 	isCycleItem = (ins.IsTrgDown(KEY_INPUT_Q) != 0);
+	// --- 入力状態の更新（例: Fキーでアイテム使用） ---
+	isUseItem = (ins.IsTrgDown(KEY_INPUT_E) != 0);
 
 	if (flashFrame_ > 0)
 
@@ -1963,38 +1912,6 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targe
 	return IsSubjectVisible(targetPlayer, targetSubject);
 }
 
-int GameScene::CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const
-{
-	const float distance = VSize(VSub(targetPos, shotPos));
-
-	if (distance <= PHOTO_SCORE_NEAR_DISTANCE)
-	{
-		return PHOTO_SCORE_MAX;
-	}
-
-	if (distance >= PHOTO_SCORE_FAR_DISTANCE)
-	{
-		return PHOTO_SCORE_MIN;
-	}
-
-	const float t =
-		(distance - PHOTO_SCORE_NEAR_DISTANCE) /
-		(PHOTO_SCORE_FAR_DISTANCE - PHOTO_SCORE_NEAR_DISTANCE);
-
-	int score = static_cast<int>(
-		PHOTO_SCORE_MAX - (PHOTO_SCORE_MAX - PHOTO_SCORE_MIN) * t);
-
-	if (score < PHOTO_SCORE_MIN)
-	{
-		score = PHOTO_SCORE_MIN;
-	}
-	if (score > PHOTO_SCORE_MAX)
-	{
-		score = PHOTO_SCORE_MAX;
-	}
-
-	return score;
-}
 
 int GameScene::CalculatePlayerPhotoScore(const Player* targetPlayer) const
 {
@@ -2010,7 +1927,6 @@ int GameScene::CalculatePlayerPhotoScore(const Player* targetPlayer) const
 	}
 
 	int addScore = 0;
-	const VECTOR shotPos = targetPlayer->GetCameraWorldPos();
 
 	for (const auto* subject : subjects)
 	{
@@ -2024,7 +1940,10 @@ int GameScene::CalculatePlayerPhotoScore(const Player* targetPlayer) const
 			continue;
 		}
 
-		addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+		addScore += photoScoreManager_.CalculateScore(
+			targetPlayer,
+			subject,
+			this);
 	}
 
 	return addScore;
@@ -2076,8 +1995,7 @@ void GameScene::TryTakePhoto(void)
 				continue;
 			}
 
-			// 被写体がしかいないならその被写体のスコアを計算して加算する
-			addScore += CalculatePhotoScore(shotPos, subject->GetTransform().pos);
+			
 			// スタン適応　近距離のみ実装
 			{
 				VECTOR diff = VSub(subject->GetTransform().pos, shotPos);

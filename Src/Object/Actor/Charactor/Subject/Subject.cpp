@@ -340,6 +340,11 @@ void Subject::SetPlayerDetectRange(float range)
 	playerDetectRange_ = range;
 }
 
+VECTOR Subject::GetForward() const
+{
+	return transform_.GetForward();
+}
+
 void Subject::PickRandomMoveDirection(void)
 {
 	const float angle = static_cast<float>(GetRand(359)) * DX_PI_F / 180.0f;
