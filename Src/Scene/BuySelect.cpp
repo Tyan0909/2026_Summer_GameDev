@@ -232,6 +232,20 @@ void BuySelect::Update(void)
             .SetPlayerMoney(
                 playerMoney_);
 
+        // ここで GameScene が参照するフラットな購入リストもセットする
+        {
+            std::vector<int> flat;
+            flat.reserve(128);
+            for (const auto& perPlayer : purchasedItemsPerPlayer_)
+            {
+                for (int id : perPlayer)
+                {
+                    flat.push_back(id);
+                }
+            }
+            SceneManager::GetInstance().SetPurchasedItemTypes(flat);
+        }
+
         if (bs_confirmSE != -1)
         {
             PlaySoundMem(

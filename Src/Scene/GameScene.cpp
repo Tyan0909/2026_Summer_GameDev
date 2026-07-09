@@ -352,6 +352,8 @@ void GameScene::Update()
 
 	// --- 入力状態の更新（例: Qキーでアイテムサイクル） ---
 	isCycleItem = (ins.IsTrgDown(KEY_INPUT_Q) != 0);
+	// アイテム使用キーを F キーに変更
+	isUseItem = (ins.IsTrgDown(KEY_INPUT_F) != 0);
 
 	if (flashFrame_ > 0)
 
@@ -951,7 +953,8 @@ void GameScene::Draw()
 	DrawString(x, y, "LT　　　　　：写真撮影", color);
 
 	y += 30;
-	DrawString(x, y, "RT　　　　　：アイテム投下", color);
+	// アイテム使用キーを RT -> F に変更して表示も更新
+	DrawString(x, y, "F　　　　　：アイテム投下", color);
 
 	
 
