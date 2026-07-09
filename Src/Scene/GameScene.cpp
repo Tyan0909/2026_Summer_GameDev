@@ -958,7 +958,18 @@ void GameScene::Draw()
 
 	
 
-	DrawFlashEffect(0);
+	// すべてのプレイヤーにシャッター演出を適用
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		DrawFlashEffect(static_cast<int>(i));
+		DrawShutterEffect(static_cast<int>(i));
+	}
+
+	// ミニマップを各プレイヤーに描画
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		DrawMinimap(static_cast<int>(i));
+	}
 }
 
 void GameScene::DrawInventoryHUD(const Player* targetPlayer, int drawWidth, int drawHeight) const
@@ -1980,6 +1991,12 @@ bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targe
 		return true;
 	}
 
+	// 距離チェックを追加: 750.0fより遠い場合は視界外とみなす
+	if (distance > PHOTO_SCORE_FAR_DISTANCE)
+	{
+		return false;
+	}
+
 	const VECTOR subjectDir = VScale(toSubject, 1.0f / distance);
 	const VECTOR cameraForward = targetPlayer->GetCameraForward();
 
@@ -2149,6 +2166,197 @@ void GameScene::TryTakePhoto(void)
 	photoCount_ = 0;
 	for (int count : photoCountPerPlayer_) photoCount_ += count;
 }
+
+void GameScene::DrawMinimap(int playerIndex)
+{
+	// プレイヤーごとのビュー領域を計算
+	int viewX = 0;
+	int viewY = 0;
+	int viewW = screenWidth_;
+	int viewH = screenHeight_;
+
+	switch (players_.size())
+	{
+	case 1:
+		break;
+
+	case 2:
+		viewW /= 2;
+		viewX = playerIndex * viewW;
+		break;
+
+	case 3:
+	case 4:
+		viewW /= 2;
+		viewH /= 2;
+		viewX = (playerIndex % 2) * viewW;
+		viewY = (playerIndex / 2) * viewH;
+		break;
+	}
+
+	// ミニマップの位置を右下に変更
+	const int minimapX = viewX + viewW - MINIMAP_SIZE - MINIMAP_MARGIN;
+	const int minimapY = viewY + viewH - MINIMAP_SIZE - MINIMAP_MARGIN;
+	const int minimapSize = MINIMAP_SIZE;
+
+	// 背景（半透明の黒）
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 180);
+	DrawBox(
+		minimapX,
+		minimapY,
+		minimapX + minimapSize,
+		minimapY + minimapSize,
+		GetColor(10, 10, 10),
+		TRUE);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+	// 枠線
+	DrawBox(
+		minimapX,
+		minimapY,
+		minimapX + minimapSize,
+		minimapY + minimapSize,
+		GetColor(200, 200, 200),
+		FALSE);
+
+	// 内枠（より太い枠線）
+	for (int i = 1; i < MINIMAP_BORDER_THICKNESS; ++i)
+	{
+		DrawBox(
+			minimapX - i,
+			minimapY - i,
+			minimapX + minimapSize + i,
+			minimapY + minimapSize + i,
+			GetColor(200, 200, 200),
+			FALSE);
+	}
+
+	// グリッド線（オプション）
+	const int gridLines = 4;
+	for (int i = 1; i < gridLines; ++i)
+	{
+		int gridX = minimapX + (minimapSize * i / gridLines);
+		int gridY = minimapY + (minimapSize * i / gridLines);
+
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA, 50);
+		DrawLine(gridX, minimapY, gridX, minimapY + minimapSize, GetColor(100, 100, 100), 1);
+		DrawLine(minimapX, gridY, minimapX + minimapSize, gridY, GetColor(100, 100, 100), 1);
+		SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+	}
+
+	// ゴール位置を描画
+	int goalX, goalY;
+	WorldToMinimapCoords(goalPos_, minimapX, minimapY, minimapSize, goalX, goalY);
+
+	// ゴールの外円
+	DrawCircle(goalX, goalY, 8, GetColor(255, 220, 80), TRUE);
+	DrawCircle(goalX, goalY, 10, GetColor(255, 255, 100), FALSE);
+	DrawCircle(goalX, goalY, 9, GetColor(255, 255, 100), FALSE);
+
+	// 敵（被写体）を描画
+	if (subjectManager_ != nullptr)
+	{
+		const auto& subjects = subjectManager_->GetSubjects();
+		for (const auto* subject : subjects)
+		{
+			if (subject == nullptr || subject->IsDead())
+			{
+				continue;
+			}
+
+			int subjX, subjY;
+			WorldToMinimapCoords(
+				subject->GetTransform().pos,
+				minimapX,
+				minimapY,
+				minimapSize,
+				subjX,
+				subjY);
+
+			// スタン状態によって色を変更
+			unsigned int enemyColor = subject->IsStunned()
+				? GetColor(150, 150, 255)  // スタン中は青っぽく
+				: GetColor(255, 100, 100); // 通常は赤
+
+			DrawCircle(subjX, subjY, 3, enemyColor, TRUE);
+		}
+	}
+
+	// すべてのプレイヤーを描画
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		const Player* player = players_[i];
+		if (player == nullptr || player->IsDead())
+		{
+			continue;
+		}
+
+		int plrX, plrY;
+		WorldToMinimapCoords(
+			player->GetPos(),
+			minimapX,
+			minimapY,
+			minimapSize,
+			plrX,
+			plrY);
+
+		// 自分のプレイヤーは大きく明るく表示
+		if (static_cast<int>(i) == playerIndex)
+		{
+			// 視線方向の表示
+			VECTOR forward = player->GetCameraForward();
+			float angle = atan2f(forward.z, forward.x);
+			int dirX = plrX + static_cast<int>(cosf(angle) * 12);
+			int dirY = plrY + static_cast<int>(sinf(angle) * 12);
+
+			DrawLine(plrX, plrY, dirX, dirY, GetColor(0, 255, 255), 2);
+
+			// プレイヤー本体
+			DrawCircle(plrX, plrY, 6, GetColor(0, 255, 255), TRUE);
+			DrawCircle(plrX, plrY, 7, GetColor(255, 255, 255), FALSE);
+		}
+		else
+		{
+			// 他のプレイヤー
+			unsigned int playerColor = GetColor(100, 255, 100);
+			DrawCircle(plrX, plrY, 4, playerColor, TRUE);
+			DrawCircle(plrX, plrY, 5, GetColor(200, 255, 200), FALSE);
+		}
+	}
+
+	// ミニマップラベル
+	DrawFormatString(
+		minimapX + 5,
+		minimapY + 5,
+		GetColor(200, 200, 200),
+		"MAP");
+}
+
+void GameScene::WorldToMinimapCoords(
+	const VECTOR& worldPos,
+	int minimapX,
+	int minimapY,
+	int minimapSize,
+	int& outX,
+	int& outY) const
+{
+	// ワールド座標をミニマップ座標に変換
+	const float worldWidth = MINIMAP_WORLD_MAX_X - MINIMAP_WORLD_MIN_X;
+	const float worldDepth = MINIMAP_WORLD_MAX_Z - MINIMAP_WORLD_MIN_Z;
+
+	const float normalizedX = (worldPos.x - MINIMAP_WORLD_MIN_X) / worldWidth;
+	const float normalizedZ = (worldPos.z - MINIMAP_WORLD_MIN_Z) / worldDepth;
+
+	outX = minimapX + static_cast<int>(normalizedX * minimapSize);
+	outY = minimapY + static_cast<int>(normalizedZ * minimapSize);
+
+	// ミニマップの範囲内にクランプ
+	if (outX < minimapX) outX = minimapX;
+	if (outX > minimapX + minimapSize) outX = minimapX + minimapSize;
+	if (outY < minimapY) outY = minimapY;
+	if (outY > minimapY + minimapSize) outY = minimapY + minimapSize;
+}
+
 
 // 指定プレイヤーだけ撮影する（TryTakePhoto のプレイヤー単体版）
 void GameScene::TryTakePhotoForPlayer(int playerIndex)

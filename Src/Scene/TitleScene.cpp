@@ -268,7 +268,7 @@ void TitleScene::Update(void)
 void TitleScene::Draw(void)
 {
 	// 3Dデバッググリッド
-	debugGrid_->Draw();
+	/*debugGrid_->Draw();*/
 
 	// 背景を暗くする（ベースの暗転）
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 220);

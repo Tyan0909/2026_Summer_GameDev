@@ -57,6 +57,17 @@ private:
 
 	static constexpr int MAX_PHOTO_COUNT = 50;
 
+	// ミニマップ関連の定数
+	static constexpr int MINIMAP_SIZE = 180;           // ミニマップのサイズ
+	static constexpr int MINIMAP_MARGIN = 20;          // 画面端からの余白
+	static constexpr int MINIMAP_BORDER_THICKNESS = 3; // 枠線の太さ
+
+	// ミニマップのワールド範囲（SUBJECT_AREAと同じ）
+	static constexpr float MINIMAP_WORLD_MIN_X = -3600.0f;
+	static constexpr float MINIMAP_WORLD_MAX_X = 11100.0f;
+	static constexpr float MINIMAP_WORLD_MIN_Z = -790.0f;
+	static constexpr float MINIMAP_WORLD_MAX_Z = 11900.0f;
+
 	/*static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
 	static constexpr float GOAL_RADIUS = 80.0f;*/
 
@@ -159,6 +170,16 @@ private:
 
 	// 手榴弾関連
 	void ExplodeGrenade(const VECTOR& pos);
+
+	// ミニマップ描画
+	void DrawMinimap(int playerIndex);
+	void WorldToMinimapCoords(
+		const VECTOR& worldPos,
+		int minimapX,
+		int minimapY,
+		int minimapSize,
+		int& outX,
+		int& outY) const;
 
 	static constexpr int ITEM_ICON_SIZE = 48;
 	static constexpr int ITEM_ICON_SPACING = 8;
@@ -300,4 +321,6 @@ private:
 	bool isUseItem;
 	
 	int remainingPhotoCount_ = -1;
+
+	
 };
