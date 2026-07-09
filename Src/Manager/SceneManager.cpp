@@ -227,11 +227,18 @@ void SceneManager::DoChangeScene(SCENE_ID sceneId)
 		scene_ = new GameScene();
 		break;
 	case SCENE_ID::RESULT:
+		DrawString(
+			50,
+			80,
+			"CREATE RESULT",
+			GetColor(255, 255, 255)
+		);
 		scene_ = new Result();
 		break;
 	default:
 		break;
 	}
+
 
 	scene_->Init();
 

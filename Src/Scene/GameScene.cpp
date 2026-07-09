@@ -686,6 +686,13 @@ void GameScene::Update()
 
 	if (IsPlayerReachedGoal())
 	{
+		DrawString(
+			20,
+			20,
+			"GOAL REACHED",
+			GetColor(255, 255, 255)
+		);
+
 		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.SetPhotoCount(photoCount_);
 		scene.SetLastPhotoScore(lastPhotoScore_);
@@ -710,7 +717,12 @@ void GameScene::Update()
 
 	if (IsAllPlayersDead())
 	{
-std::vector<int> scores;
+		DrawString(
+			20,
+			20,
+			"ALL PLAYERS DEAD",
+			GetColor(255, 255, 255));
+	std::vector<int> scores;
 
 		for (auto* player : players_)
 		{
@@ -1060,8 +1072,6 @@ void GameScene::Draw3D()
 void GameScene::Release()
 {
 	ReleasePlayers();
-
-
 	
 	if (stage_) { stage_->Release(); delete stage_; stage_ = nullptr; }
 
@@ -1101,10 +1111,6 @@ for (auto& card : photoCards_)
 	}
 
 	traps_.clear();
-
-	PhotoManager::GetInstance().Clear();
-
-	ReleaseScreenHandles();
 }
 
 Player* GameScene::CreatePlayer(
@@ -2026,6 +2032,7 @@ int GameScene::CalculatePlayerPhotoScore(const Player* targetPlayer) const
 
 void GameScene::TryTakePhoto(void)
 {
+	printf("CaptureScreenshot\n");
 	if (players_.empty() || subjectManager_ == nullptr)
 	{
 		return;
@@ -2084,11 +2091,14 @@ void GameScene::TryTakePhoto(void)
 
 		}
 
+		lastPhotoPlayerIndex_ = static_cast<int>(i);
 		lastPhotoScorePerPlayer_[i] = addScore;
 
 		if (addScore > 0)
 		{
-			photoCountPerPlayer_[i] += 1;
+			CaptureScreenshot(static_cast<int>(i));
+
+			photoCountPerPlayer_[i]++;
 			totalAddedScore += addScore;
 		}
 	}

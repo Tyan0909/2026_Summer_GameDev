@@ -4,11 +4,18 @@
 #include "../Manager/PhotoManager.h"
 #include <DxLib.h>
 
-Result::Result(void) {}
+Result::Result(void) { printf("Result Constructor\n"); }
 Result::~Result(void) {}
 
-void Result::Init(void) 
+void Result::Init(void)
 {
+	DrawString(
+		50,
+		50,
+		"RESULT INIT",
+		GetColor(255, 255, 255)
+	);
+
 	const PhotoData* best =
 		PhotoManager::GetInstance().GetBestPhoto();
 
@@ -122,4 +129,10 @@ void Result::Draw(void)
 	}
 }
 
-void Result::Release(void) {}
+void Result::Release(void)
+{
+	/*printf("Result Release\n");
+	PhotoManager::GetInstance().Clear();
+
+	bestPhotoHandle_ = -1;*/
+}

@@ -44,6 +44,7 @@ void LoadingScene::Init(void)
 	// ユニット画像読み込み（Unit1..Unit7.png を優先、なければ Unit.png でフォールバック）
 	for (int i = 0; i < 7; ++i)
 	{
+
 		char path[256];
 		snprintf(path, sizeof(path), "Data/Image/Loading/Unit%d.png", i + 1);
 		s_unitImg[i] = LoadGraph(path);

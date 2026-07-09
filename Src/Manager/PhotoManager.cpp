@@ -10,6 +10,11 @@ PhotoManager& PhotoManager::GetInstance()
 void PhotoManager::AddPhoto(const PhotoData& photo)
 {
     photos_.push_back(photo);
+    printf(
+        "ADD PHOTO handle:%d score:%d player:%d\n",
+        photo.graphHandle,
+        photo.score,
+        photo.playerIndex);
 }
 
 void PhotoManager::Clear()
