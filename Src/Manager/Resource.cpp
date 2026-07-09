@@ -115,13 +115,13 @@ void Resource::Release(void)
 	case Resource::TYPE::MODEL:
 	{
 		// æ‚É•¡»ƒ‚ƒfƒ‹‚ğ‰ğ•ú
-		for (auto id : duplicateModelIds_)
+	/*	for (auto id : duplicateModelIds_)
 		{
 			if (id != -1)
 			{
 				MV1DeleteModel(id);
 			}
-		}
+		}*/
 
 		duplicateModelIds_.clear();
 

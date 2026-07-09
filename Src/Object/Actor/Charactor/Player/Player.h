@@ -32,6 +32,8 @@ public:
 
 	static constexpr VECTOR TPS_CAMERA_LOCAL_POS = { 0.0f, 120.0f, -180.0f };
 
+	static constexpr float PHOTO_ACT_FRAME_MAX = 60.0f;
+
 	enum class COLLIDER_TYPE
 	{
 		MODEL,
@@ -47,6 +49,7 @@ public:
 		JUMP,
 		CROUCHED,
 		WALK,
+		TAKE_PHOTO,
 		MAX,
 	};
 
@@ -57,6 +60,7 @@ public:
 		RUN,
 		JUMP,
 		CROUCHED,
+		TAKE_PHOTO,
 	};
 
 	enum class INPUT_DEVICE
@@ -144,6 +148,9 @@ public:
 	void SetZooming(bool zoom);
 
 	bool IszoomInput() const;
+
+	void StartTakePhoto();
+	bool IsTakingPhoto() const;
 
 
 	//カメラアイテムの取得/設定
@@ -239,5 +246,8 @@ private:
 	static const std::vector<ITEM_TYPE> usableOrder_;
 
 	bool isZooming_ = false;
+
+	bool isTakingPhoto_ = false;
+	int photoActFrame_ = 0;
 };
 

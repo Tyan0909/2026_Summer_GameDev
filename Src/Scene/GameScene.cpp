@@ -73,6 +73,9 @@ GameScene::~GameScene()
 //====================================================
 void GameScene::Init()
 {
+	// 前回ゲームの写真を消してから新規ゲームを開始
+	PhotoManager::GetInstance().Clear();
+
 	SoundManager::GetInstance().SetBgmVolume(150);
 	SoundManager::GetInstance().PlayBgm(
 		ResourceManager::SRC::BGM_GAME);
@@ -330,7 +333,6 @@ void GameScene::Init()
 	SoundManager::GetInstance().PlayBgm(
 		ResourceManager::SRC::BGM_GAME);
 }
-
 
 //====================================================
 // 毎フレーム更新
@@ -748,23 +750,48 @@ std::vector<int> scores;
 		return;
 	}
 
+	// プレイヤー別撮影入力:
+	// プレイヤー1: Enter
 	if (ins.IsTrgDown(KEY_INPUT_RETURN) &&
 		photoCooldown_ == 0 &&
 		remainingPhotoCount_ > 0)
 	{
-		TryTakePhoto();
+		if (!players_.empty() && IsPlayerAlive(players_[0]))
+		{
+			TryTakePhotoForPlayer(0);
 
-		photoIdleFrame_ = 0;
+			photoIdleFrame_ = 0;
 
-		auto& effect = photoEffects_[0];
+			auto& effect = photoEffects_[0];
+			effect.flashDelay = 2;
+			effect.shutterFrame = 1;
+			effect.cooldown = PHOTO_COOLDOWN;
 
-		effect.flashDelay = 2;      // 2フレーム後に光る
-		effect.shutterFrame = 1;
-		effect.cooldown = PHOTO_COOLDOWN;
+			photoCooldown_ = PHOTO_COOLDOWN;
+			remainingPhotoCount_--;
+		}
+	}
 
-		photoCooldown_ = PHOTO_COOLDOWN;   
-		remainingPhotoCount_--;            
+	// プレイヤー2: F1
+	if (ins.IsTrgDown(KEY_INPUT_F1) &&
+		photoCooldown_ == 0 &&
+		remainingPhotoCount_ > 0 &&
+		players_.size() >= 2)
+	{
+		if (IsPlayerAlive(players_[1]))
+		{
+			TryTakePhotoForPlayer(1);
 
+			photoIdleFrame_ = 0;
+
+			auto& effect = photoEffects_[1];
+			effect.flashDelay = 2;
+			effect.shutterFrame = 1;
+			effect.cooldown = PHOTO_COOLDOWN;
+
+			photoCooldown_ = PHOTO_COOLDOWN;
+			remainingPhotoCount_--;
+		}
 	}
 
 	photoIdleFrame_++;
@@ -1062,7 +1089,7 @@ void GameScene::Release()
 	ReleasePlayers();
 
 	SoundManager::GetInstance().StopBgm();
-	
+
 	if (stage_) { stage_->Release(); delete stage_; stage_ = nullptr; }
 
 	if (leftScreenHandle_ != -1) { DeleteGraph(leftScreenHandle_); leftScreenHandle_ = -1; }
@@ -1080,7 +1107,7 @@ void GameScene::Release()
 	if (gs_placeSE != -1) { DeleteSoundMem(gs_placeSE); gs_placeSE = -1; }
 	if (gs_explodeSE != -1) { DeleteSoundMem(gs_explodeSE); gs_explodeSE = -1; } // 追加: 爆発音ハンドルを削除
 
-for (auto& card : photoCards_)
+	for (auto& card : photoCards_)
 	{
 		if (card.polaroidHandle != -1)
 		{
@@ -1102,7 +1129,8 @@ for (auto& card : photoCards_)
 
 	traps_.clear();
 
-	PhotoManager::GetInstance().Clear();
+	// PhotoManager::Clear() をここで呼ばないように変更しました。
+	// Result シーンで最良写真を表示するため、写真データは Result 側で参照可能にする必要があります。
 
 	ReleaseScreenHandles();
 }
@@ -1243,7 +1271,7 @@ void GameScene::DrawView(
 
 
 	DrawViewWorld(targetPlayer, hidePlayer);
-
+	
 
 
 	//----------------------------------------------------
@@ -1458,28 +1486,61 @@ void GameScene::CaptureScreenshot(int playerIndex)
 	int sourceHeight = screenHeight_;
 
 	//----------------------------------------------------
-	// 撮影対象のスクリーンを決定
+	// 撮影対象のスクリーンを決定（playerIndex に応じて正しい分割バッファを選ぶ）
 	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
 	{
 		sourceHandle = sceneScreenHandle_;
+		sourceWidth = screenWidth_;
+		sourceHeight = screenHeight_;
 	}
 	else if (activePlayerCount_ == 2)
 	{
-		sourceHandle = leftScreenHandle_;
+		// 2人時は playerIndex で左右を選択
+		if (playerIndex == 0)
+		{
+			sourceHandle = leftScreenHandle_;
+		}
+		else
+		{
+			sourceHandle = rightScreenHandle_;
+		}
 		sourceWidth = screenWidth_ / 2;
 		sourceHeight = screenHeight_;
 	}
-	else
+	else // 3 or 4 players
 	{
-		sourceHandle = leftScreenHandle_;
+		// 4分割レイアウトにマップ（存在しないハンドルは sceneScreenHandle_ にフォールバック）
+		switch (playerIndex)
+		{
+		case 0:
+			sourceHandle = leftScreenHandle_;
+			break;
+		case 1:
+			sourceHandle = rightScreenHandle_;
+			break;
+		case 2:
+			sourceHandle = bottomLeftScreenHandle_;
+			break;
+		case 3:
+			sourceHandle = bottomRightScreenHandle_;
+			break;
+		default:
+			sourceHandle = leftScreenHandle_;
+			break;
+		}
 		sourceWidth = screenWidth_ / 2;
 		sourceHeight = screenHeight_ / 2;
 	}
+
+	// フォールバック: 対応する分割バッファが無ければシーン全体を使う
 	if (sourceHandle == -1)
 	{
-		isScreenshotRequested_ = false;
-		return;
+		sourceHandle = sceneScreenHandle_;
+		sourceWidth = screenWidth_;
+		sourceHeight = screenHeight_;
 	}
+
+	// キャプチャ用に一旦スクリーンへ描画（分割バッファを画面全体に伸張して取り込む）
 	SetDrawScreen(screenshotScreenHandle_);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 	ClearDrawScreen();
@@ -1532,29 +1593,14 @@ void GameScene::CaptureScreenshot(int playerIndex)
 	card.alpha = 255;
 
 	// --- view サイズ（カードが描画される各ビューのローカル幅・高さ）を決定 ---
-	int viewW = screenWidth_;
-	int viewH = screenHeight_;
-	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
-	{
-		viewW = screenWidth_;
-		viewH = screenHeight_;
-	}
-	else if (activePlayerCount_ == 2)
-	{
-		viewW = screenWidth_ / 2;
-		viewH = screenHeight_;
-	}
-	else
-	{
-		viewW = screenWidth_ / 2;
-		viewH = screenHeight_ / 2;
-	}
+	int viewW = sourceWidth;
+	int viewH = sourceHeight;
 
 	// 初期位置はそのビューの中心に設定（ローカル座標）
 	card.x = viewW / 2;
 	card.y = viewH / 2;
 
-	// 写真カードのターゲット位置を計算（ローカル座標）
+	// 写真カードのターゲット位置を計算（ビュー内座標で計算）
 	int count = 0;
 	for (auto& p : photoCards_)
 	{
@@ -1582,6 +1628,7 @@ void GameScene::CaptureScreenshot(int playerIndex)
 		GetColor(255, 255, 255),
 		TRUE);
 
+	// カード内に撮った画像（スクリーン全体を縮小して貼る）
 	DrawExtendGraph(
 		10,
 		10,
@@ -1599,7 +1646,7 @@ void GameScene::CaptureScreenshot(int playerIndex)
 
 	DrawString(
 		20,
-	230,
+		230,
 		photoRank_.c_str(),
 		GetColor(0, 0, 0));
 
@@ -2094,8 +2141,77 @@ void GameScene::TryTakePhoto(void)
 		if (subj == nullptr) continue;
 		subj->Stun(PHOTO_STUN_FRAMES);
 	}
+
+	// 合計写真数更新
+	photoCount_ = 0;
+	for (int count : photoCountPerPlayer_) photoCount_ += count;
 }
 
+// 指定プレイヤーだけ撮影する（TryTakePhoto のプレイヤー単体版）
+void GameScene::TryTakePhotoForPlayer(int playerIndex)
+{
+	if (playerIndex < 0 || playerIndex >= static_cast<int>(players_.size())) return;
+	Player* player = players_[playerIndex];
+	if (!player || !IsPlayerAlive(player) || subjectManager_ == nullptr) return;
+
+	const auto& subjects = subjectManager_->GetSubjects();
+	if (subjects.empty()) return;
+
+	// 被写体ごとにスタンさせるためのフラグ配列
+	std::vector<bool> subjectCounted(subjects.size(), false);
+
+	// スコア計算
+	int addScore = CalculatePlayerPhotoScore(player);
+
+	// カメラ倍率適用
+	if (player->GetCameraItem())
+	{
+		addScore = static_cast<int>(
+			addScore * player->GetCameraItem()->GetScoreMultiplier());
+	}
+
+	// どの被写体が撮られたか記録（スタン判定）
+	for (size_t j = 0; j < subjects.size(); ++j)
+	{
+		const Subject* subject = subjects[j];
+		if (subject == nullptr) continue;
+		if (!IsSubjectInView(player, subject)) continue;
+		subjectCounted[j] = true;
+	}
+
+	// スコア反映・スクショ作成・演出
+	if (addScore != 0)
+	{
+		player->AddScore(addScore);
+		if (playerIndex < static_cast<int>(photoCountPerPlayer_.size()))
+			photoCountPerPlayer_[playerIndex] += 1;
+	}
+
+	lastPhotoPlayerIndex_ = playerIndex;
+	if (playerIndex < static_cast<int>(lastPhotoScorePerPlayer_.size()))
+		lastPhotoScorePerPlayer_[playerIndex] = addScore;
+
+	// スクリーンショット（playerIndex に紐づくキャプチャ）
+	CaptureScreenshot(playerIndex);
+
+	if (addScore > 0)
+	{
+		ApplyPhotoScoreResult(playerIndex, addScore);
+	}
+
+	// スタンを適用（1 被写体につき 1 回）
+	for (size_t j = 0; j < subjects.size(); ++j)
+	{
+		if (!subjectCounted[j]) continue;
+		Subject* subj = subjects[j];
+		if (subj == nullptr) continue;
+		subj->Stun(PHOTO_STUN_FRAMES);
+	}
+
+	// 合計写真数更新
+	photoCount_ = 0;
+	for (int count : photoCountPerPlayer_) photoCount_ += count;
+}
 
 void GameScene::ApplyPhotoScoreResult(int playerIndex,int addedScore) {
 	auto& effect =
@@ -2440,8 +2556,8 @@ void GameScene::ResetPlayerSlots(void)
 {
 	player_ = nullptr;
  player2_ = nullptr;
-	player3_ = nullptr;
-	player4_ = nullptr;
+ player3_ = nullptr;
+ player4_ = nullptr;
 }
 
 void GameScene::CreateScreenHandles(int selectedPlayerCount)

@@ -92,8 +92,13 @@ private:
 	void DrawPhotoCards(int playerIndex);
 	void DrawFlashEffect(int playerIndex);
 	void DrawShutterEffect(int playerIndex);
+	// ビュー単位描画（DrawView から呼ぶ用）
+	void DrawFlashEffectForView(int playerIndex, int viewWidth, int viewHeight);
+	void DrawShutterEffectForView(int playerIndex, int viewWidth, int viewHeight);
+	void DrawRankEffectForView(int playerIndex, int viewWidth, int viewHeight);
 	void DrawPlayerScreen(int playerIndex);
 	void DrawRankEffect(int playerIndex);
+
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
 	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
@@ -106,6 +111,7 @@ private:
 	bool IsAllPlayersDead(void) const;
 
 	void TryTakePhoto(void);
+	void TryTakePhotoForPlayer(int playerIndex);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
 	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
