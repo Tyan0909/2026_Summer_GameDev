@@ -34,6 +34,7 @@ private:
 	static constexpr VECTOR SUBJECT_AREA_MIN = { -3600.0f, 0.0f, -790.0f };
 	static constexpr VECTOR SUBJECT_AREA_MAX = { 11100.0f, 0.0f, 11900.0f };
 	static constexpr int SUBJECT_COUNT = 50;
+	static constexpr int PHOTO_STUN_FRAMES = 3 * 60;
 	// 撮影スコア関連
 	static constexpr int PHOTO_SCORE_MAX = 1000;
 	static constexpr int PHOTO_SCORE_MIN = 0;

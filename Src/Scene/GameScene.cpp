@@ -2028,17 +2028,21 @@ void GameScene::TryTakePhoto(void)
 
 	int totalAddedScore = 0;
 
+	// 被写体ごとにスタンさせるためのフラグ配列
+	std::vector<bool> subjectCounted(subjects.size(), false);
+
 	for (size_t i = 0; i < players_.size(); ++i)
 	{
 		Player* player = players_[i];
 		if (player == nullptr || !IsPlayerAlive(player))
 		{
+			lastPhotoScorePerPlayer_[i] = 0;
 			continue;
 		}
 
+		// プレイヤーごとのスコア計算
 		int addScore = CalculatePlayerPhotoScore(player);
 
-		// カメラの倍率を適用
 		// カメラの倍率を適用
 		if (player->GetCameraItem())
 		{
@@ -2047,27 +2051,49 @@ void GameScene::TryTakePhoto(void)
 				player->GetCameraItem()->GetScoreMultiplier());
 		}
 
-		// スコア加算
-		player->AddScore(addScore);
+		// 「どの被写体が撮られたか」を記録（スタン判定用）
+		for (size_t j = 0; j < subjects.size(); ++j)
+		{
+			const Subject* subject = subjects[j];
+			if (subject == nullptr) continue;
 
-		lastPhotoPlayerIndex_ = (int)i;
+			if (!IsSubjectInView(player, subject))
+			{
+				continue;
+			}
+
+			// 視界に入っていればその被写体はスタン対象
+			subjectCounted[j] = true;
+		}
+
+		// スコア反映・スクショ作成・演出
+		if (addScore != 0)
+		{
+			player->AddScore(addScore);
+			photoCountPerPlayer_[i] += 1;
+			totalAddedScore += addScore;
+		}
+
+		lastPhotoPlayerIndex_ = static_cast<int>(i);
 		lastPhotoScorePerPlayer_[i] = addScore;
 
-
-		CaptureScreenshot((int)i);
+		// スクリーンショット（PhotoCard 生成を内部で行う）
+		CaptureScreenshot(static_cast<int>(i));
 
 		if (addScore > 0)
 		{
-			photoCountPerPlayer_[i]++;
-
-			totalAddedScore += addScore;
-
-			ApplyPhotoScoreResult(
-				(int)i,
-				addScore);
+			ApplyPhotoScoreResult(static_cast<int>(i), addScore);
 		}
 	}
 
+	// スタンを適用（1 被写体につき 1 回）
+	for (size_t j = 0; j < subjects.size(); ++j)
+	{
+		if (!subjectCounted[j]) continue;
+		Subject* subj = subjects[j];
+		if (subj == nullptr) continue;
+		subj->Stun(PHOTO_STUN_FRAMES);
+	}
 }
 
 
