@@ -114,6 +114,12 @@ void SceneManager::Update(void)
 
 void SceneManager::Draw(void)
 {
+	DrawFormatString(
+		0,
+		0,
+		GetColor(255, 0, 0),
+		"DRAW START");
+
 	SetDrawScreen(DX_SCREEN_BACK);
 	ClearDrawScreen();
 
@@ -151,6 +157,16 @@ void SceneManager::ChangeScene(SCENE_ID nextId)
 	waitSceneId_ = nextId;
 	fader_->SetFade(Fader::STATE::FADE_OUT);
 	isSceneChanging_ = true;
+}
+
+void SceneManager::SetPurchasedItemTypes(const std::vector<int>& items)
+{
+	purchasedItemTypes_ = items;
+}
+
+const std::vector<int>&SceneManager::GetPurchasedItemTypes() const
+{
+	return purchasedItemTypes_;
 }
 
 SceneManager::SceneManager(void)

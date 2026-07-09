@@ -1,3 +1,6 @@
+#ifndef DX_FONTTYPE_ANTIALIAS
+#define DX_FONTTYPE_ANTIALIAS 0
+#endif
 #define NOMINMAX
 #include <DxLib.h>
 #include <vector>
@@ -16,6 +19,8 @@
 #include "../Utility/AsoUtility.h"
 #include"../Manager/EffectManager.h"
 #include <EffekseerForDXLib.h>
+#include "../Manager/PhotoManager.h"
+#include "../Manager/SoundManager.h"
 
 // ファイルローカル: 設置効果音ハンドル
 static int gs_placeSE = -1;
@@ -70,6 +75,9 @@ GameScene::~GameScene()
 //====================================================
 void GameScene::Init()
 {
+	SoundManager::GetInstance().SetBgmVolume(150);
+	SoundManager::GetInstance().PlayBgm(
+		ResourceManager::SRC::BGM_GAME);
 	SceneManager& scene = SceneManager::GetInstance();
 
 	stage_ = new Stage();
@@ -302,12 +310,30 @@ void GameScene::Init()
 	scene.SetPhotoCount(0);
 	scene.SetLastPhotoScore(0);
 
+	photoRankFont_ =
+		CreateFontToHandle(
+			NULL,
+			48,
+			-1,
+			DX_FONTTYPE_ANTIALIAS);
 	auto* camera = scene.GetCamera();
 	if (player_ != nullptr)
 	{
 		camera->SetAngles(player_->GetCameraAngles());
 	}
+	// 撮影可能枚数の初期化
+	photoEffects_.clear();
+	photoEffects_.resize(players_.size());
+	// 撮影可能枚数を各プレイヤーのエフェクト構造体に設定
+	for (auto& effect : photoEffects_)
+	{
+		effect.remainingPhoto = MAX_PHOTO_COUNT;
+	}
+
+	remainingPhotoCount_ = MAX_PHOTO_COUNT;
 	camera->ChangeMode(Camera::MODE::FREE);
+	SoundManager::GetInstance().PlayBgm(
+		ResourceManager::SRC::BGM_GAME);
 }
 
 
@@ -327,21 +353,8 @@ void GameScene::Update()
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
-	const auto padNo = InputManager::JOYPAD_NO::PAD1;
-
-	const bool isCycleItem =
-		ins.IsTrgDown(KEY_INPUT_TAB);
-
-	const bool isUseItem =
-		ins.IsTrgDown(KEY_INPUT_E) ||
-		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::R_TRIGGER);
-
-	const bool isTakePhoto =
-		ins.IsTrgDown(KEY_INPUT_RETURN) ||
-		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::L_TRIGGER);
-
-	const bool isTogglePreview =
-		ins.IsTrgDown(KEY_INPUT_F1);
+	// --- 入力状態の更新（例: Qキーでアイテムサイクル） ---
+	isCycleItem = (ins.IsTrgDown(KEY_INPUT_Q) != 0);
 
 	// F2 でデバッグログの ON/OFF 切替
 	if (ins.IsTrgDown(KEY_INPUT_F2))
@@ -351,8 +364,24 @@ void GameScene::Update()
 	}
 
 	if (flashFrame_ > 0)
+
 	{
 		flashFrame_--;
+	}
+
+	for (auto& effect : photoEffects_)
+	{
+		if (effect.cooldown > 0)
+			effect.cooldown--;
+
+		if (effect.flashFrame > 0)
+			effect.flashFrame--;
+
+		if (effect.rankFrame > 0)
+			effect.rankFrame--;
+
+		if (effect.shutterFrame > 0)
+			effect.shutterFrame++;
 	}
 
 	if (stage_) stage_->Update();
@@ -675,30 +704,169 @@ void GameScene::Update()
 		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.SetPhotoCount(photoCount_);
 		scene.SetLastPhotoScore(lastPhotoScore_);
+	scene.SetLastPhotoScore(
+			lastPhotoScorePerPlayer_[lastPhotoPlayerIndex_]);
+
+		std::vector<int> scores;
+		for (auto* player : players_)
+		{
+			if (player)
+			{
+				scores.push_back(player->GetScore());
+			}
+		}
+
+		scene.SetPlayerScore(scores);
+
+		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 		return;
 	}
 
 	if (IsAllPlayersDead())
 	{
+std::vector<int> scores;
+
+		for (auto* player : players_)
+		{
+			if (player)
+			{
+				scores.push_back(player->GetScore());
+			}
+		}
+
+		scene.SetPlayerScore(scores);
+
+		std::vector<int> money =
+			scene.GetPlayerMoney();
+
+		std::vector<int> score =
+			scene.GetPlayerScore();
+
+		for (size_t i = 0; i < players_.size(); i++)
+		{
+			if (players_[i]->HasInsuranceCamera())
+			{
+				money[i] += score[i];
+			}
+			else
+			{
+				money[i] = 0;
+			}
+		}
+
+		scene.SetPlayerMoney(money);
 		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
 		scene.SetPhotoCount(photoCount_);
-		scene.SetLastPhotoScore(lastPhotoScore_);
+		scene.SetLastPhotoScore(lastPhotoScorePerPlayer_[lastPhotoPlayerIndex_]);
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 		return;
 	}
 
-	if (isTakePhoto)
+	if (ins.IsTrgDown(KEY_INPUT_RETURN) &&
+		photoCooldown_ == 0 &&
+		remainingPhotoCount_ > 0)
 	{
 		TryTakePhoto();
-		isScreenshotRequested_ = true;
-		flashFrame_ = FLASH_FRAME_MAX;
+
+		photoIdleFrame_ = 0;
+
+		auto& effect = photoEffects_[0];
+
+		effect.flashDelay = 2;      // 2フレーム後に光る
+		effect.shutterFrame = 1;
+		effect.cooldown = PHOTO_COOLDOWN;
+
+		photoCooldown_ = PHOTO_COOLDOWN;   
+		remainingPhotoCount_--;            
+
 	}
 
-	if (isTogglePreview && hasScreenshot_)
+	photoIdleFrame_++;
+
+	if (photoIdleFrame_ > 120)
 	{
-		isScreenshotPreviewEnabled_ = !isScreenshotPreviewEnabled_;
+		for (auto& card : photoCards_)
+		{
+			if (card.active)
+			{
+				card.fading = true;
+			}
+		}
 	}
+
+	for (auto& card : photoCards_)
+	{
+		if (!card.active)
+			continue;
+
+		card.frame++;
+
+		// 移動
+		card.x += (card.targetX - card.x) * 0.1f;
+		card.y += (card.targetY - card.y) * 0.1f;
+
+		card.angle +=
+			(card.targetAngle - card.angle) * 0.08f;
+
+		// 拡大縮小
+		card.scale -= 0.01f;
+
+		if (card.scale < 0.4f)
+		{
+			card.scale = 0.4f;
+		}
+
+		// フェードアウト
+		if (card.fading)
+		{
+			card.alpha -= 8;
+
+			card.y += 1.5f;      // 少し下へ
+
+			if (card.alpha <= 0)
+			{
+				card.active = false;
+			}
+		}
+	}
+
+	for (auto& effect : photoEffects_)
+	{
+		if (effect.flashFrame > 0)
+		{
+			effect.flashFrame--;
+		}
+
+		if (effect.rankFrame > 0)
+		{
+			effect.rankFrame--;
+		}
+
+		if (effect.shutterFrame > 0)
+		{
+			effect.shutterFrame++;
+
+			if (effect.shutterFrame > 30)
+			{
+				effect.shutterFrame = 0;
+			}
+		}
+	}
+	// 撮影クールダウンの減算
+	if (photoCooldown_ > 0)
+	{
+		photoCooldown_--;
+	}
+	photoCards_.erase(
+		std::remove_if(
+			photoCards_.begin(),
+			photoCards_.end(),
+			[](const PhotoCard& c)
+			{
+				return !c.active;
+			}),
+		photoCards_.end());
 }
 
 //====================================================
@@ -718,9 +886,21 @@ void GameScene::Draw()
 		GetColor(255, 255, 255),
 		"GAME DRAW");
 
-	if (isScreenshotRequested_)
+	DrawFormatString(
+		30,
+		60,
+		GetColor(255, 255, 255),
+		"PHOTO %d / %d",
+		remainingPhotoCount_,
+		MAX_PHOTO_COUNT);
+
+	if (remainingPhotoCount_ == 0)
 	{
-		CaptureScreenshot();
+		DrawString(
+			screenWidth_ / 2 - 70,
+			screenHeight_ - 100,
+			"OUT OF FILM",
+			GetColor(255, 50, 50));
 	}
 
 	SetDrawScreen(DX_SCREEN_BACK);
@@ -763,7 +943,7 @@ void GameScene::Draw()
 
 	
 
-	DrawFlashEffect();
+	DrawFlashEffect(0);
 }
 
 void GameScene::DrawInventoryHUD(const Player* targetPlayer, int drawWidth, int drawHeight) const
@@ -915,18 +1095,29 @@ void GameScene::Release()
 	if (gs_placeSE != -1) { DeleteSoundMem(gs_placeSE); gs_placeSE = -1; }
 	if (gs_explodeSE != -1) { DeleteSoundMem(gs_explodeSE); gs_explodeSE = -1; } // 追加: 爆発音ハンドルを削除
 
-	for (auto& trap : traps_)
+for (auto& card : photoCards_)
 	{
-		if (trap.modelId != -1)
+		if (card.polaroidHandle != -1)
 		{
-			MV1DeleteModel(trap.modelId);
-			trap.modelId = -1;
+			DeleteGraph(card.polaroidHandle);
+			card.polaroidHandle = -1;
 		}
+
+		// card.graph は PhotoManager が解放するので削除しない
+		card.graph = -1;
+	}
+
+	photoCards_.clear();
+
+	if (photoRankFont_ != -1)
+	{
+		DeleteFontToHandle(photoRankFont_);
+		photoRankFont_ = -1;
 	}
 
 	traps_.clear();
 
-	traps_.clear();
+	PhotoManager::GetInstance().Clear();
 
 	ReleaseScreenHandles();
 }
@@ -1042,6 +1233,10 @@ void GameScene::DrawView(
 	//----------------------------------------------------
 	// カメラ設定
 	//----------------------------------------------------
+	bool zoom = CheckHitKey(KEY_INPUT_LCONTROL) != 0;
+
+	float fov = targetPlayer->GetCurrentFOV(zoom);
+	SetupCamera_Perspective(DX_PI_F * fov / 180.0f);
 	targetPlayer->ApplyCamera(SceneManager::GetInstance().GetCamera());
 
 	VECTOR eye = GetCameraPosition();
@@ -1176,7 +1371,12 @@ void GameScene::DrawView(
 
 	// HUD
 	DrawString(20, 20, playerName, GetColor(255, 255, 255));
-	DrawFormatString(20, 50, GetColor(255, 255, 0), "SCORE : %d", SceneManager::GetInstance().GetCarryMoney());
+	DrawFormatString(
+		20,
+		50,
+		GetColor(255, 255, 0),
+		"SCORE : %d",
+		targetPlayer->GetScore());
 
 	{
 		const int barX = 20; const int barY = 145;
@@ -1194,13 +1394,23 @@ void GameScene::DrawView(
 		DrawBox(barX, barY + 22, barX + barWidth, barY + 22 + barHeight, frameColor, FALSE);
 		DrawFormatString(barX + barWidth + 12, barY + 22, GetColor(255, 255, 255), "%d / %d", targetPlayer->GetHp(), targetPlayer->GetHpMax());
 	}
-
-	int localLast = lastPhotoScore_; int localCount = 0;
+ 
+	int localLast = 0;
+	int localCount = 0;
 	auto it = std::find(players_.begin(), players_.end(), targetPlayer);
-	if (it != players_.end()) { const int idx = static_cast<int>(std::distance(players_.begin(), it)); localLast = lastPhotoScorePerPlayer_[idx]; localCount = photoCountPerPlayer_[idx]; }
-	else { localCount = photoCount_; }
+	if (it != players_.end())
+	{
+		const int idx =
+			static_cast<int>(std::distance(players_.begin(), it));
 
-	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localLast);
+		localLast = lastPhotoScorePerPlayer_[idx];
+		localCount = photoCountPerPlayer_[idx];
+	}
+	else
+	{
+		localCount = photoCount_;
+	}
+	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localCount);
 	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", localCount);
 
 	// 追加: 選択中アイテムと残数表示
@@ -1217,6 +1427,16 @@ void GameScene::DrawView(
 	DrawFormatString(drawWidth - 220, 20, GetColor(180, 240, 255), "ITEM: %s x%d", selName, selCount);
 
 	DrawInventoryHUD(targetPlayer, drawWidth, drawHeight);
+	if (it != players_.end())
+	{
+		int playerIndex =
+			static_cast<int>(std::distance(players_.begin(), it));
+
+		DrawFlashEffect(playerIndex);
+		DrawShutterEffect(playerIndex);
+		DrawRankEffect(playerIndex);
+		DrawPhotoCards(playerIndex);
+	}
 }
 
 void GameScene::DrawCompositedScene(void)
@@ -1244,18 +1464,17 @@ void GameScene::DrawCompositedScene(void)
 	effectManager_->Draw();
 }
 
-void GameScene::CaptureScreenshot(void)
+void GameScene::CaptureScreenshot(int playerIndex)
 {
-	if (screenshotScreenHandle_ == -1)
-	{
-		isScreenshotRequested_ = false;
-		return;
-	}
+	SoundManager::GetInstance().PlaySe(
+		ResourceManager::SRC::CAMERA_SHUTTER);
 
 	int sourceHandle = -1;
 	int sourceWidth = screenWidth_;
 	int sourceHeight = screenHeight_;
 
+	//----------------------------------------------------
+	// 撮影対象のスクリーンを決定
 	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
 	{
 		sourceHandle = sceneScreenHandle_;
@@ -1272,17 +1491,17 @@ void GameScene::CaptureScreenshot(void)
 		sourceWidth = screenWidth_ / 2;
 		sourceHeight = screenHeight_ / 2;
 	}
-
+	
 	if (sourceHandle == -1)
 	{
 		isScreenshotRequested_ = false;
 		return;
 	}
-
+	
 	SetDrawScreen(screenshotScreenHandle_);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 	ClearDrawScreen();
-
+	
 	DrawExtendGraph(
 		0,
 		0,
@@ -1291,8 +1510,131 @@ void GameScene::CaptureScreenshot(void)
 		sourceHandle,
 		FALSE);
 
-	hasScreenshot_ = true;
-	isScreenshotRequested_ = false;
+	int handle =
+		MakeScreen(screenWidth_, screenHeight_, TRUE);
+
+	SetDrawScreen(handle);
+
+	DrawExtendGraph(
+		0,
+		0,
+		screenWidth_,
+		screenHeight_,
+		screenshotScreenHandle_,
+		FALSE);
+
+	SetDrawScreen(DX_SCREEN_BACK);
+
+	PhotoData photo;
+
+	photo.graphHandle = handle;
+	photo.playerIndex = playerIndex;
+	photo.score = lastPhotoScorePerPlayer_[playerIndex];
+
+	PhotoManager::GetInstance().AddPhoto(photo);
+
+	// ----------------------------
+	// ここでPhotoCardを作る
+	// ----------------------------
+	PhotoCard card;
+
+	int polaroid =
+		MakeScreen(240, 260, TRUE);
+
+	SetDrawScreen(polaroid);
+	SetDrawArea(0, 0, 240, 260);
+	ClearDrawScreen();
+
+	card.playerIndex = photo.playerIndex;
+	card.active = true;
+	card.fading = false;
+	card.alpha = 255;
+
+	card.x = screenWidth_ / 2;
+	card.y = screenHeight_ / 2;
+
+	// 写真カードのターゲット位置を計算
+	int count = 0;
+
+	for (auto& p : photoCards_)
+	{
+		if (p.playerIndex == photo.playerIndex)
+			count++;
+	}
+
+	if (players_.size() == 1)
+	{
+		card.targetX = screenWidth_ - 230 + count * 10;
+		card.targetY = 40 + count * 28;
+	}
+	else if (players_.size() == 2)
+	{
+		if (photo.playerIndex == 0)
+		{
+			// 左画面の右上
+			card.targetX = screenWidth_ / 2 - 230 + count * 10;
+		}
+		else
+		{
+			// 右画面の右上
+			card.targetX = screenWidth_ - 230 + count * 10;
+		}
+
+		card.targetY = 40 + count * 28;
+	}
+	else
+	{
+		int viewW = screenWidth_ / 2;
+		int viewH = screenHeight_ / 2;
+
+		int col = photo.playerIndex % 2;
+		int row = photo.playerIndex / 2;
+
+		card.targetX =
+			col * viewW + viewW - 230 + count * 10;
+
+		card.targetY =
+			row * viewH + 40 + count * 28;
+	}
+	card.targetAngle =
+		(float)(GetRand(20) - 10);
+
+	DrawBox(
+		0,
+		0,
+		240,
+		260,
+		GetColor(255, 255, 255),
+		TRUE);
+
+	DrawExtendGraph(
+		10,
+		10,
+		230,
+		190,
+		handle,
+		FALSE);
+
+	DrawFormatString(
+		20,
+		210,
+		GetColor(0, 0, 0),
+		"+%d",
+		photo.score);
+
+	DrawString(
+		20,
+		230,
+		photoRank_.c_str(),
+		GetColor(0, 0, 0));
+
+	SetDrawScreen(DX_SCREEN_BACK);
+
+	card.polaroidHandle = polaroid;
+	card.score = photo.score;
+
+	photoCards_.push_back(card);
+
 }
 
 void GameScene::DrawScreenshotThumbnail(void) const
@@ -1365,18 +1707,233 @@ void GameScene::DrawScreenshotThumbnail(void) const
 	DrawString(thumbnailLeft, areaY + THUMBNAIL_MARGIN, "LAST SHOT", labelColor);
 }
 
-void GameScene::DrawFlashEffect(void) const
+void GameScene::DrawPhotoCards(int playerIndex)
 {
-	if (flashFrame_ <= 0)
+	for (auto& card : photoCards_)
+	{
+		if (!card.active)
+			continue;
+
+		// このプレイヤー以外の写真は描かない
+		if (card.playerIndex != playerIndex)
+			continue;
+
+		SetDrawBlendMode(
+			DX_BLENDMODE_ALPHA,
+			card.alpha);
+
+		DrawRotaGraph(
+			(int)(card.x + 120 * card.scale),
+			(int)(card.y + 130 * card.scale),
+			card.scale,
+			card.angle * DX_PI_F / 180.0f,
+			card.polaroidHandle,
+			TRUE);
+
+		SetDrawBlendMode(
+			DX_BLENDMODE_NOBLEND,
+			255);
+	}
+}
+
+void GameScene::DrawFlashEffect(int playerIndex)
+{
+	auto& effect = photoEffects_[playerIndex];
+
+	if (effect.flashFrame <= 0)
 	{
 		return;
 	}
 
-	const int alpha = 255 * flashFrame_ / FLASH_FRAME_MAX;
+	int x = 0;
+	int y = 0;
+	int w = screenWidth_;
+	int h = screenHeight_;
+
+	switch (players_.size())
+	{
+	case 1:
+		break;
+
+	case 2:
+		w /= 2;
+		x = playerIndex * w;
+		break;
+
+	case 3:
+	case 4:
+		w /= 2;
+		h /= 2;
+		x = (playerIndex % 2) * w;
+		y = (playerIndex / 2) * h;
+		break;
+	}
+
+	const int alpha =
+		effect.flashFrame * 255 / FLASH_FRAME_MAX;
 
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
-	DrawBox(0, 0, screenWidth_, screenHeight_, GetColor(255, 255, 255), TRUE);
+
+	DrawBox(
+		x,
+		y,
+		x + w,
+		y + h,
+		GetColor(255, 255, 255),
+		TRUE);
+
 	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+}
+
+void GameScene::DrawShutterEffect(int playerIndex)
+{
+	auto& effect = photoEffects_[playerIndex];
+
+	if (effect.shutterFrame <= 0)
+	{
+		return;
+	}
+
+	int x = 0;
+	int y = 0;
+	int w = screenWidth_;
+	int h = screenHeight_;
+
+	switch (players_.size())
+	{
+	case 1:
+		break;
+
+	case 2:
+		w /= 2;
+		x = playerIndex * w;
+		break;
+
+	case 3:
+	case 4:
+		w /= 2;
+		h /= 2;
+		x = (playerIndex % 2) * w;
+		y = (playerIndex / 2) * h;
+		break;
+	}
+
+	int shutterHeight;
+
+	if (effect.shutterFrame <= 10)
+	{
+		shutterHeight = h / 2 * effect.shutterFrame / 10;
+	}
+	else if (effect.shutterFrame <= 20)
+	{
+		shutterHeight = h / 2;
+	}
+	else
+	{
+		shutterHeight = h / 2 * (30 - effect.shutterFrame) / 10;
+	}
+
+	DrawBox(
+		x,
+		y,
+		x + w,
+		y + shutterHeight,
+		GetColor(0, 0, 0),
+		TRUE);
+
+	DrawBox(
+		x,
+		y + h - shutterHeight,
+		x + w,
+		y + h,
+		GetColor(0, 0, 0),
+		TRUE);
+}
+
+void GameScene::DrawPlayerScreen(int playerIndex)
+{
+	// プレイヤー画面描画
+
+	DrawFlashEffect(playerIndex);
+
+	DrawShutterEffect(playerIndex);
+
+}
+
+void GameScene::DrawRankEffect(int playerIndex)
+{
+
+
+	int x = 0;
+	int yBase = 0;
+	int w = screenWidth_;
+	int h = screenHeight_;
+
+	switch (players_.size())
+	{
+	case 1:
+		break;
+
+	case 2:
+		w /= 2;
+		x = playerIndex * w;
+		break;
+
+	case 3:
+	case 4:
+		w /= 2;
+		h /= 2;
+		x = (playerIndex % 2) * w;
+		yBase = (playerIndex / 2) * h;
+		break;
+	}
+
+	auto& effect = photoEffects_[playerIndex];
+
+	if (effect.rankFrame <= 0)
+	{
+		return;
+	}
+
+	float t =
+		1.0f - (float)effect.rankFrame / photoRankMaxFrame_;
+
+	float scale =
+		1.8f - t * 0.8f;
+
+	int alpha =
+		std::min(255, effect.rankFrame * 3);
+
+	int y =
+		120 + (int)(20.0f * (1.0f - t));
+
+	unsigned int color = GetColor(255, 255, 255);
+
+	if (effect.rankText == "PERFECT!")
+		color = GetColor(255, 220, 0);
+	else if (effect.rankText == "EXCELLENT!")
+		color = GetColor(0, 255, 255);
+	else if (effect.rankText == "GREAT!")
+		color = GetColor(0, 255, 0);
+
+	int width =
+		GetDrawStringWidthToHandle(
+			effect.rankText.c_str(),
+			(int)effect.rankText.length(),
+			photoRankFont_);
+
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+
+	DrawExtendStringToHandle(
+		x + w / 2 - (int)(width * scale / 2),
+		yBase + y,
+		scale,
+		scale,
+		effect.rankText.c_str(),
+		color,
+		photoRankFont_);
+
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
 }
 
 bool GameScene::IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const
@@ -1563,17 +2120,48 @@ void GameScene::TryTakePhoto(void)
 		subj->Stun(PHOTO_STUN_FRAMES);
 	}
 
-	ApplyPhotoScoreResult(totalAddedScore);
+	// 各プレイヤーごとにスコアを反映
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		ApplyPhotoScoreResult(static_cast<int>(i), lastPhotoScorePerPlayer_[i]);
+	}
 }
 
-void GameScene::ApplyPhotoScoreResult(int totalAddedScore)
-{
-	if (totalAddedScore <= 0)
+
+void GameScene::ApplyPhotoScoreResult(int playerIndex,int addedScore) {
+	auto& effect =
+		photoEffects_[playerIndex];
+
+	lastPhotoScorePerPlayer_[playerIndex] =
+		addedScore;
+
+	// 評価文字を決定
+	if (addedScore >= 900)
 	{
-		return;
+		effect.rankText = "PERFECT!";
+	}
+	else if (addedScore >= 750)
+	{
+		effect.rankText = "EXCELLENT!";
+	}
+	else if (addedScore >= 500)
+	{
+		effect.rankText = "GREAT!";
+	}
+	else if (addedScore >= 300)
+	{
+		effect.rankText = "GOOD!";
+	}
+	else
+	{
+		effect.rankText.clear();
 	}
 
-	lastPhotoScore_ = totalAddedScore;
+	effect.rankFrame = photoRankMaxFrame_;
+
+	// 2秒表示
+	photoRankFrame_ = 120;
+
 	photoCount_ = 0;
 
 	for (int count : photoCountPerPlayer_)
@@ -1581,9 +2169,11 @@ void GameScene::ApplyPhotoScoreResult(int totalAddedScore)
 		photoCount_ += count;
 	}
 
+
+
 	SceneManager& scene = SceneManager::GetInstance();
-	scene.SetCarryMoney(scene.GetCarryMoney() + totalAddedScore);
 }
+
 
 void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 {
@@ -2023,15 +2613,45 @@ void GameScene::ReleaseScreenHandles(void)
 	DeleteScreenHandle(screenshotScreenHandle_);
 }
 
-void GameScene::ResetScreenHandles(void)
+void GameScene::ResetScreenHandles()
 {
-	leftScreenHandle_ = -1;
-	rightScreenHandle_ = -1;
-	bottomLeftScreenHandle_ = -1;
-	bottomRightScreenHandle_ = -1;
-	sceneScreenHandle_ = -1;
-	screenshotScreenHandle_ = -1;
+	if (leftScreenHandle_ != -1)
+	{
+		DeleteGraph(leftScreenHandle_);
+		leftScreenHandle_ = -1;
+	}
+
+	if (rightScreenHandle_ != -1)
+	{
+		DeleteGraph(rightScreenHandle_);
+		rightScreenHandle_ = -1;
+	}
+
+	if (bottomLeftScreenHandle_ != -1)
+	{
+		DeleteGraph(bottomLeftScreenHandle_);
+		bottomLeftScreenHandle_ = -1;
+	}
+
+	if (bottomRightScreenHandle_ != -1)
+	{
+		DeleteGraph(bottomRightScreenHandle_);
+		bottomRightScreenHandle_ = -1;
+	}
+
+	if (sceneScreenHandle_ != -1)
+	{
+		DeleteGraph(sceneScreenHandle_);
+		sceneScreenHandle_ = -1;
+	}
+
+	if (screenshotScreenHandle_ != -1)
+	{
+		DeleteGraph(screenshotScreenHandle_);
+		screenshotScreenHandle_ = -1;
+	}
 }
+
 
 void GameScene::DrawSinglePlayerScene(void)
 {
@@ -2323,13 +2943,16 @@ void GameScene::DrawPlayerHpBar(const Player* targetPlayer, int drawWidth) const
 
 void GameScene::DrawPlayerPhotoInfo(const Player* targetPlayer) const
 {
-	int localLast = lastPhotoScore_;
+	int localLast = 0;
 	int localCount = 0;
 
 	auto it = std::find(players_.begin(), players_.end(), targetPlayer);
+
 	if (it != players_.end())
 	{
-		const int idx = static_cast<int>(std::distance(players_.begin(), it));
+		int idx =
+			static_cast<int>(std::distance(players_.begin(), it));
+
 		localLast = lastPhotoScorePerPlayer_[idx];
 		localCount = photoCountPerPlayer_[idx];
 	}

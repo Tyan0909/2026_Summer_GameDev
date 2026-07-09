@@ -1,12 +1,24 @@
 #include "Result.h"
 #include "../Manager/SceneManager.h"
 #include "../Manager/InputManager.h"
+#include "../Manager/PhotoManager.h"
 #include <DxLib.h>
 
 Result::Result(void) {}
 Result::~Result(void) {}
 
-void Result::Init(void) {}
+void Result::Init(void) 
+{
+	const PhotoData* best =
+		PhotoManager::GetInstance().GetBestPhoto();
+
+	if (best)
+	{
+		bestPhotoHandle_ = best->graphHandle;
+		bestPhotoScore_ = best->score;
+		bestPhotoPlayer_ = best->playerIndex;
+	}
+}
 
 void Result::Update(void)
 {
@@ -67,14 +79,47 @@ void Result::Draw(void)
 
 	if (isClear)
 	{
-		DrawString(200, 370, "A BUTTON : BUY SELECT", GetColor(255, 255, 255));
+		DrawFormatString(200, 270, GetColor(255, 255, 255), "PHOTO COUNT : %d", photoCount);
+		DrawFormatString(200, 310, GetColor(0, 255, 255), "LAST PHOTO : +%d", lastPhotoScore);
+		DrawString(200, 370, "ENTER : BUY SELECT", GetColor(255, 255, 255));
 	}
 	else
 	{
-		DrawString(200, 300, "A BUTTON : TITLE", GetColor(255, 255, 255));
+		DrawString(200, 300, "ENTER : TITLE", GetColor(255, 255, 255));
 	}
 
-	DrawString(200, 420, "X BUTTON : TITLE", GetColor(255, 255, 255));
+	DrawString(200, 420, "SPACE : TITLE", GetColor(255, 255, 255));
+
+	if (bestPhotoHandle_ != -1)
+	{
+		DrawExtendGraph(
+			350,
+			80,
+			930,
+			520,
+			bestPhotoHandle_,
+			TRUE);
+
+		DrawFormatString(
+			430,
+			540,
+			GetColor(255, 255, 0),
+			"BEST SHOT");
+
+		DrawFormatString(
+			430,
+			570,
+			GetColor(255, 255, 255),
+			"SCORE : %d",
+			bestPhotoScore_);
+
+		DrawFormatString(
+			430,
+			600,
+			GetColor(255, 255, 255),
+			"PLAYER %d",
+			bestPhotoPlayer_ + 1);
+	}
 }
 
 void Result::Release(void) {}
