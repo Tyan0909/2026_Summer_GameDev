@@ -59,6 +59,10 @@ public:
 	void SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos);
 	void Draw(void) override;
 
+	void DrawStunEffect(void);
+
+	void DrawStar(int x, int y, int size, unsigned int color);
+
 	bool IsInAttackRange(const VECTOR& targetPos) const;
 	bool CanStartAttack(void) const;
 	bool StartAttack(const VECTOR& targetPos);

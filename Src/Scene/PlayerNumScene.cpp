@@ -306,14 +306,14 @@ void PlayerNumScene::Draw(void)
 	}
 
 	// デバッグ表示
-	{
+	/*{
 		char dbgBuf[256];
 		int selCount = 0;
 		for (int i = 0; i < SELECT_MAX; ++i) if (isUsePlayer_[i]) ++selCount;
 		snprintf(dbgBuf, sizeof(dbgBuf), "DEBUG Cursor:%d Selected:%d modelIds: %d,%d,%d,%d", cursor_, selCount,
 			modelId_[0], modelId_[1], modelId_[2], modelId_[3]);
 		DrawFormatString(10, 10, GetColor(255, 240, 120), "%s", dbgBuf);
-	}
+	}*/
 
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 70);
 	DrawBox(0, 0, screenW, screenH, GetColor(0, 0, 0), TRUE);

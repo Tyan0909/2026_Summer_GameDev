@@ -1,5 +1,6 @@
 #include "Subject.h"
 #include <cmath>
+#include <DxLib.h>
 #include "../../../../Manager/Camera.h"
 #include "../../../../Manager/ResourceManager.h"
 #include "../../../../Manager/SceneManager.h"
@@ -121,6 +122,111 @@ void Subject::Draw(void)
 	}
 
 	ActorBase::Draw();
+
+	// スタン状態の視覚表示
+	if (stunFrames_ > 0)
+	{
+		DrawStunEffect();
+	}
+}
+
+void Subject::DrawStunEffect(void)
+{
+	// 敵の頭上の位置を計算
+	VECTOR headPos = VAdd(transform_.pos, VGet(0.0f, 140.0f, 0.0f));
+
+	// 3D座標を2D画面座標に変換
+	VECTOR screenPos = ConvWorldPosToScreenPos(headPos);
+
+	// 画面外の場合は描画しない
+	if (screenPos.z < 0.0f || screenPos.z > 1.0f)
+	{
+		return;
+	}
+
+	int centerX = static_cast<int>(screenPos.x);
+	int centerY = static_cast<int>(screenPos.y);
+
+	// 回転する星マークを描画（3つの星を円周上に配置）
+	const int starCount = 3;
+	const float radius = 30.0f;
+	const float rotSpeed = 0.1f;
+	float angle = static_cast<float>(GetNowCount()) * rotSpeed;
+
+	for (int i = 0; i < starCount; ++i)
+	{
+		float currentAngle = angle + (DX_PI_F * 2.0f / starCount) * i;
+		int starX = centerX + static_cast<int>(cos(currentAngle) * radius);
+		int starY = centerY + static_cast<int>(sin(currentAngle) * radius);
+
+		// 星を描画（5角形の星）
+		DrawStar(starX, starY, 8, GetColor(255, 255, 100));
+	}
+
+	// スタン時間のテキスト表示
+	const int textColor = GetColor(255, 200, 50);
+	const int backColor = GetColor(0, 0, 0);
+
+	// 背景を半透明で描画
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+	DrawBox(centerX - 30, centerY + 40, centerX + 30, centerY + 60, backColor, TRUE);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+	// スタンテキスト表示
+	DrawFormatString(
+		centerX - 25,
+		centerY + 43,
+		textColor,
+		"STUN!");
+}
+
+void Subject::DrawStar(int x, int y, int size, unsigned int color)
+{
+	// 5角形の星を描画
+	const int points = 10; // 外側5点 + 内側5点
+	const float outerRadius = static_cast<float>(size);
+	const float innerRadius = outerRadius * 0.4f;
+
+	Vector2 vertices[10];
+
+	for (int i = 0; i < points; ++i)
+	{
+		float angle = (DX_PI_F * 2.0f / points) * i - DX_PI_F / 2.0f;
+		float radius = (i % 2 == 0) ? outerRadius : innerRadius;
+
+		vertices[i].x = x + cos(angle) * radius;
+		vertices[i].y = y + sin(angle) * radius;
+	}
+
+	// 星の各三角形を描画
+	for (int i = 0; i < points; ++i)
+	{
+		int next = (i + 1) % points;
+		DrawTriangle(
+			static_cast<int>(vertices[i].x),
+			static_cast<int>(vertices[i].y),
+			static_cast<int>(vertices[next].x),
+			static_cast<int>(vertices[next].y),
+			x,
+			y,
+			color,
+			TRUE
+		);
+	}
+
+	// 星の輪郭を描画
+	for (int i = 0; i < points; ++i)
+	{
+		int next = (i + 1) % points;
+		DrawLine(
+			static_cast<int>(vertices[i].x),
+			static_cast<int>(vertices[i].y),
+			static_cast<int>(vertices[next].x),
+			static_cast<int>(vertices[next].y),
+			GetColor(255, 255, 0),
+			2
+		);
+	}
 }
 
 void Subject::StartDying()

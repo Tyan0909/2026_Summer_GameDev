@@ -1,9 +1,6 @@
 #pragma once
 #include "SceneBase.h"
 #include "../Object/Actor/Stage/Stage.h"
-#include "../Manager/PhotoScoreManager.h"
-#include "../Object/Actor/Item/Trap/Trap.h"
-
 #include <vector>
 #include <string>
 
@@ -26,11 +23,6 @@ public:
 	void Draw3D(void);
 	void Release(void) override;
 
-	const std::vector<Trap>& GetTraps() const
-	{
-		return traps_;
-	}
-
 private:
 
 	// 定数
@@ -42,6 +34,7 @@ private:
 	static constexpr VECTOR SUBJECT_AREA_MIN = { -3600.0f, 0.0f, -790.0f };
 	static constexpr VECTOR SUBJECT_AREA_MAX = { 11100.0f, 0.0f, 11900.0f };
 	static constexpr int SUBJECT_COUNT = 50;
+	static constexpr int PHOTO_STUN_FRAMES = 3 * 60;
 	// 撮影スコア関連
 	static constexpr int PHOTO_SCORE_MAX = 1000;
 	static constexpr int PHOTO_SCORE_MIN = 0;
@@ -62,7 +55,18 @@ private:
 	static constexpr int PREVIEW_WIDTH = 640;
 	static constexpr int PREVIEW_HEIGHT = 360;
 
-	static constexpr int MAX_PHOTO_COUNT = 5;
+	static constexpr int MAX_PHOTO_COUNT = 50;
+
+	// ミニマップ関連の定数
+	static constexpr int MINIMAP_SIZE = 180;           // ミニマップのサイズ
+	static constexpr int MINIMAP_MARGIN = 20;          // 画面端からの余白
+	static constexpr int MINIMAP_BORDER_THICKNESS = 3; // 枠線の太さ
+
+	// ミニマップのワールド範囲（SUBJECT_AREAと同じ）
+	static constexpr float MINIMAP_WORLD_MIN_X = -3600.0f;
+	static constexpr float MINIMAP_WORLD_MAX_X = 11100.0f;
+	static constexpr float MINIMAP_WORLD_MIN_Z = -790.0f;
+	static constexpr float MINIMAP_WORLD_MAX_Z = 11900.0f;
 
 	/*static constexpr VECTOR GOAL_POS = { 520.0f, 0.0f, 520.0f };
 	static constexpr float GOAL_RADIUS = 80.0f;*/
@@ -99,8 +103,13 @@ private:
 	void DrawPhotoCards(int playerIndex);
 	void DrawFlashEffect(int playerIndex);
 	void DrawShutterEffect(int playerIndex);
+	// ビュー単位描画（DrawView から呼ぶ用）
+	void DrawFlashEffectForView(int playerIndex, int viewWidth, int viewHeight);
+	void DrawShutterEffectForView(int playerIndex, int viewWidth, int viewHeight);
+	void DrawRankEffectForView(int playerIndex, int viewWidth, int viewHeight);
 	void DrawPlayerScreen(int playerIndex);
 	void DrawRankEffect(int playerIndex);
+
 	void DrawSubjectDistanceGuide(const Player* targetPlayer) const;
 
 	bool IsCameraOccludedByStage(const Player* targetPlayer) const;
@@ -113,8 +122,10 @@ private:
 	bool IsAllPlayersDead(void) const;
 
 	void TryTakePhoto(void);
+	void TryTakePhotoForPlayer(int playerIndex);
 	bool IsSubjectInView(const Player* targetPlayer, const Subject* targetSubject) const;
 	bool IsSubjectVisible(const Player* targetPlayer, const Subject* targetSubject) const;
+	int CalculatePhotoScore(const VECTOR& shotPos, const VECTOR& targetPos) const;
 	int CalculatePlayerPhotoScore(const Player* targetPlayer) const;
 	void ApplyPhotoScoreResult(
 		int playerIndex,
@@ -160,9 +171,32 @@ private:
 	// 手榴弾関連
 	void ExplodeGrenade(const VECTOR& pos);
 
+	// ミニマップ描画
+	void DrawMinimap(int playerIndex);
+	void WorldToMinimapCoords(
+		const VECTOR& worldPos,
+		int minimapX,
+		int minimapY,
+		int minimapSize,
+		int& outX,
+		int& outY) const;
+
 	static constexpr int ITEM_ICON_SIZE = 48;
 	static constexpr int ITEM_ICON_SPACING = 8;
 	static constexpr int ITEM_ICON_MARGIN = 16;
+
+	// 追加: トラップ関連
+	enum class TRAP_TYPE { SPIKE = 0, MINE = 1 };
+	struct Trap
+	{
+		TRAP_TYPE type;
+		VECTOR pos;
+		bool triggered = false;
+		int lifeFrames = 0; // 残存フレーム（スパイク持続等）
+		int ownerPlayerIndex = 0; // owner index in players_ (optional)
+
+		int modelId = -1;
+	};
 
 	//写真評価演出関連
 	struct PhotoEffect
@@ -288,5 +322,5 @@ private:
 	
 	int remainingPhotoCount_ = -1;
 
-	PhotoScoreManager photoScoreManager_;
+	
 };
