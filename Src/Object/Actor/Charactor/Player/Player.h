@@ -98,6 +98,7 @@ public:
 
 	void Init(void);
 	void Update(void) override;
+	void Release(void) override;
 
 	void SetPos(const VECTOR& pos);
 	const VECTOR& GetPos() const;

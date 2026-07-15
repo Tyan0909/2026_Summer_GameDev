@@ -42,6 +42,25 @@ void BuySelect::Init(void)
     itemImg_[4] = LoadGraph("Data/Image/BuySelect/FragGrenade.png");
     itemImg_[5] = LoadGraph("Data/Image/BuySelect/SpikeTrap.png");
     itemImg_[6] = LoadGraph("Data/Image/BuySelect/ExplosiveTrap.png");
+    messageFaceHandle_ =
+        LoadGraph("Data/Image/BuySelect/PlayerText.png");
+
+	// 購入メッセージ用フォント
+    messageFont_ = CreateFontToHandle(
+        NULL,
+        28,                         // ← 好きなサイズ
+        -1,
+        DX_FONTTYPE_ANTIALIAS);
+
+	// 名前表示用フォント
+    int nameFont_ = CreateFontToHandle(
+        NULL,
+        22,
+        3,
+        DX_FONTTYPE_ANTIALIAS);
+
+
+    printfDx("nameFont = %d\n", nameFont_);
 
     playerItems_.clear();
 
@@ -131,16 +150,24 @@ void BuySelect::Update(void)
     // Zキーで数量を +1 (購入を増やす)
     if (ins.IsTrgDown(KEY_INPUT_Z))
     {
-        const Item& it = items[cursorIdx_];
+        Item& it = items[cursorIdx_];
 
 
-        // カメラの場合
+        // カメラ購入制限
         if (IsCameraItem(it.type))
         {
+            // 同じカメラを2個以上買おうとした場合
+            if (it.quantity >= 1)
+            {
+                buyMessage_ = "カメラは1個まで購入できない";
+                buyMessageFrame_ = 120;
+                return;
+            }
+
+
+            // 他のカメラがカートに入っているか確認
             bool alreadyCamera = false;
 
-
-            // 現在カート内にカメラがあるか確認
             for (const auto& item : items)
             {
                 if (IsCameraItem(item.type) &&
@@ -152,11 +179,9 @@ void BuySelect::Update(void)
             }
 
 
-            // 別のカメラが選択済みなら購入不可
-            if (alreadyCamera &&
-                items[cursorIdx_].quantity == 0)
+            if (alreadyCamera)
             {
-                buyMessage_ = "カメラは1種類までです";
+                buyMessage_ = "カメラは1種類のみ選択できるぞ！";
                 buyMessageFrame_ = 120;
                 return;
             }
@@ -168,7 +193,7 @@ void BuySelect::Update(void)
 
         if (total + it.price <= playerMoney_[currentPlayer_])
         {
-            items[cursorIdx_].quantity += 1;
+            it.quantity += 1;
 
             if (bs_toggleSE != -1)
             {
@@ -176,6 +201,11 @@ void BuySelect::Update(void)
                     bs_toggleSE,
                     DX_PLAYTYPE_BACK);
             }
+        }
+        else
+        {
+            buyMessage_ = "所持金が足りないぞ";
+            buyMessageFrame_ = 120;
         }
     }
 
@@ -680,6 +710,94 @@ void BuySelect::Draw(void)
         else
             DrawFormatString(winLeft + 24, bgBottom + 14, descColor, "%s", desc);
     }
+
+    if (buyMessageFrame_ > 0)
+    {
+        const int boxX = 780;
+        const int boxY = 550;
+        const int boxW = 470;
+        const int boxH = 150;
+
+        // キャラクター画像（右上）
+        if (messageFaceHandle_ != -1)
+        {
+            DrawExtendGraph(
+                1060,   // ← 左へ60
+                390,    // ← 上へ30
+                1260,   // ← サイズ少し拡大
+                boxY + 130,
+                messageFaceHandle_,
+                TRUE);
+        }
+
+        // 背景
+        SetDrawBlendMode(
+            DX_BLENDMODE_ALPHA,
+            220);
+
+        // 名前プレート
+        const int nameX = boxX + 20;
+        const int nameY = boxY - 42;
+        const int nameW = 180;
+        const int nameH = 36;
+
+        // 背景
+        DrawBox(
+            nameX,
+            nameY,
+            nameX + nameW,
+            nameY + nameH,
+            GetColor(20, 20, 30),
+            TRUE);
+
+        // 枠
+        DrawBox(
+            nameX,
+            nameY,
+            nameX + nameW,
+            nameY + nameH,
+            GetColor(0, 220, 255),
+            FALSE);
+
+        // 名前
+        DrawString(
+            nameX + 12,
+            nameY + 7,
+            "デイブ(Dave)",
+            GetColor(255, 220, 80));
+
+
+        DrawBox(
+            boxX,
+            boxY,
+            boxX + boxW,
+            boxY + boxH,
+            GetColor(20, 20, 30),
+            TRUE);
+
+
+        SetDrawBlendMode(
+            DX_BLENDMODE_NOBLEND,
+            0);
+
+
+        // 枠
+        DrawBox(
+            boxX,
+            boxY,
+            boxX + boxW,
+            boxY + boxH,
+            GetColor(0, 220, 255),
+            FALSE);
+       
+        // メッセージ
+        DrawStringToHandle(
+            boxX + 30,
+            boxY + 50,
+            buyMessage_.c_str(),
+            GetColor(255, 100, 100),
+            messageFont_);
+    }
 }
 
 void BuySelect::Release(void)
@@ -710,6 +828,12 @@ void BuySelect::Release(void)
     if (bs_moveSE != -1) { DeleteSoundMem(bs_moveSE); bs_moveSE = -1; }
     if (bs_toggleSE != -1) { DeleteSoundMem(bs_toggleSE); bs_toggleSE = -1; }
     if (bs_confirmSE != -1) { DeleteSoundMem(bs_confirmSE); bs_confirmSE = -1; }
+
+    if (messageFont_ != -1)
+    {
+        DeleteFontToHandle(messageFont_);
+        messageFont_ = -1;
+    }
 }
 
 bool BuySelect::IsCameraItem(ITEM_TYPE type) const

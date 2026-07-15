@@ -122,8 +122,8 @@ int PhotoScoreManager::CalculateDangerScore(
         subject->GetTransform().pos;
 
 
-    const auto& traps =
-        scene->GetTraps();
+    /*const auto& traps =
+        scene->GetTraps();*/
 
 
     constexpr float DANGER_DISTANCE = 300.0f;
@@ -135,7 +135,7 @@ int PhotoScoreManager::CalculateDangerScore(
 
 
     // ˆê”Ô‹ß‚¢ã©‚ð’T‚·
-    for (const auto& trap : traps)
+    /*for (const auto& trap : traps)
     {
         VECTOR diff =
             VSub(
@@ -152,7 +152,7 @@ int PhotoScoreManager::CalculateDangerScore(
             nearDistance = dist;
             dangerTrap = &trap;
         }
-    }
+    }*/
 
 
     if (dangerTrap == nullptr)

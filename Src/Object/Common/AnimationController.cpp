@@ -16,11 +16,20 @@ AnimationController::AnimationController(int modelId)
 	stepEndLoopEnd_ = 0.0f;
 }
 
-AnimationController::~AnimationController(void)
+AnimationController::~AnimationController()
 {
+	if (playAnim_.attachNo != -1)
+	{
+		MV1DetachAnim(modelId_, playAnim_.attachNo);
+		playAnim_.attachNo = -1;
+	}
+
 	for (const auto& anim : animations_)
 	{
-		MV1DeleteModel(anim.second.model);
+		if (anim.second.model != -1)
+		{
+			MV1DeleteModel(anim.second.model);
+		}
 	}
 }
 
@@ -184,6 +193,30 @@ void AnimationController::SetEndLoop(float startStep, float endStep, float speed
 int AnimationController::GetPlayType(void) const
 {
 	return playType_;
+}
+
+
+void AnimationController::Release()
+{
+	if (playAnim_.attachNo != -1)
+	{
+		MV1DetachAnim(
+			modelId_,
+			playAnim_.attachNo);
+
+		playAnim_.attachNo = -1;
+	}
+
+	for (auto& anim : animations_)
+	{
+		if (anim.second.model != -1)
+		{
+			MV1DeleteModel(anim.second.model);
+			anim.second.model = -1;
+		}
+	}
+
+	playType_ = -1;
 }
 
 bool AnimationController::IsEnd(void) const

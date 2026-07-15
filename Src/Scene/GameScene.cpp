@@ -696,25 +696,31 @@ void GameScene::Update()
 	scene.SetLastPhotoScore(
 			lastPhotoScorePerPlayer_[lastPhotoPlayerIndex_]);
 
-		std::vector<int> scores;
-		for (auto* player : players_)
+	std::vector<int> scores;
+	int totalScore = 0;
+
+	for (auto* player : players_)
+	{
+		if (player)
 		{
-			if (player)
-			{
-				scores.push_back(player->GetScore());
-			}
+			scores.push_back(player->GetScore());
+			totalScore += player->GetScore();
 		}
+	}
 
-		scene.SetPlayerScore(scores);
+	scene.SetPlayerScore(scores);
 
-		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
-		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
+	// リザルト用の合計点
+	scene.SetCarryMoney(totalScore);
+
+	scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
+	scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 		return;
 	}
 
 	if (IsAllPlayersDead())
 	{
-std::vector<int> scores;
+	std::vector<int> scores;
 
 		for (auto* player : players_)
 		{
@@ -1206,28 +1212,17 @@ void GameScene::UpdatePlayers(void)
 	}
 }
 
-void GameScene::ReleasePlayers(void)
+void GameScene::ReleasePlayers()
 {
 	for (auto*& player : players_)
 	{
-		if (player == nullptr)
-		{
-			continue;
-		}
+		if (!player) continue;
 
-		player->Release();
 		delete player;
 		player = nullptr;
 	}
 
 	players_.clear();
-	lastPhotoScorePerPlayer_.clear();
-	photoCountPerPlayer_.clear();
-
-	player_ = nullptr;
-	player2_ = nullptr;
-	player3_ = nullptr;
-	player4_ = nullptr;
 }
 
 void GameScene::DeleteScreenHandle(int& screenHandle)

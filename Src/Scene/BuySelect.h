@@ -63,11 +63,14 @@ private:
 	int fontSmall_ = -1;
 
 	int previousPlayer_ = 0;
+	int messageFaceHandle_ = -1;
 
 	// ÉJÅ[É\Éã
 	int cursorIdx_ = 0;
 	std::string buyMessage_;
 	int buyMessageFrame_ = 0;
+	int messageFont_ = -1;
+	int nameFont_ = -1;
 
 	int currentPlayer_ = 0;
 

@@ -39,6 +39,8 @@ public:
 	// 再生中のアニメーション
 	int GetPlayType(void) const;
 
+	void Release();
+
 	// 再生終了
 	bool IsEnd(void) const;
 

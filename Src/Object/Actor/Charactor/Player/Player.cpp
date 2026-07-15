@@ -108,7 +108,7 @@ Player::Player(void)
 
 Player::~Player(void)
 {
-	delete animController_;
+	Release();
 }
 
 void Player::Init(void)
@@ -188,6 +188,17 @@ void Player::Update(void)
 	{
 		SetZooming(false);
 	}
+}
+
+void Player::Release()
+{
+	if (animController_ != nullptr)
+	{
+		delete animController_;
+		animController_ = nullptr;
+	}
+
+	ActorBase::Release();
 }
 
 bool Player::IsKeyboardInputEnabled(void) const

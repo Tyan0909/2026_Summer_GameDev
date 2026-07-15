@@ -121,6 +121,15 @@ void ResourceManager::Init(void)
 	resourcesMap_.emplace(
 		SRC::CAMERA_SHUTTER,
 		res);
+
+	// SE: GAME CLEAR
+	res = new RES(
+		RES_T::SOUND,
+		PATH_SND + "Result/GameClear.mp3");
+
+	resourcesMap_.emplace(
+		SRC::GAMECLEAR_SE,
+		res);
 }
 
 void ResourceManager::Release(void)
