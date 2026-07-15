@@ -3025,6 +3025,8 @@ void GameScene::DrawViewWorld(const Player* targetPlayer, const Player* hidePlay
 		}
 	}
 
+	// test
+	
 	if (subjectManager_ != nullptr)
 	{
 		subjectManager_->Draw();
