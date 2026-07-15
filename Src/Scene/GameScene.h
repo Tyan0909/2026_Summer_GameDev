@@ -10,6 +10,7 @@ class Subject;
 class SubjectManager;
 class ColliderBase;
 class EffectManager;
+class ScreenManager;
 
 class GameScene : public SceneBase
 {
@@ -321,6 +322,9 @@ private:
 	bool isUseItem;
 	
 	int remainingPhotoCount_ = -1;
+
+	// スクリーンマネージャー
+	ScreenManager* screenManager_;
 
 	
 };
