@@ -38,17 +38,17 @@ void EffectManager::Init()
             (Application::PATH_EFFECT +
                 "Flash.efkefc").c_str());
 
-    printfDx(
-        "BlastResId=%d\n",
-        effectBlastResId_);
+  ///*  printfDx(
+  //   /*   "BlastResId=%d\n",*/
+  //      effectBlastResId_);*/
 
     int effectHandle =
         PlayEffekseer3DEffect(
             effectBlastResId_);
 
-    printfDx(
-        "Handle=%d\n",
-        effectHandle);
+   /* printfDx(
+        "Handle=%d\n",*/
+       /* effectHandle);*/
 
 }
 
@@ -142,11 +142,11 @@ void EffectManager::AddExplosion(
     const VECTOR& pos)
 {
 
-    printfDx(
-        "AddExplosion %.1f %.1f %.1f\n",
-        pos.x,
-        pos.y,
-        pos.z);
+  ///*  printfDx(
+  //      "AddExplosion %.1f %.1f %.1f\n",*/
+  //      pos.x,
+  //      pos.y,
+  //      pos.z);
 
     Explosion e;
 

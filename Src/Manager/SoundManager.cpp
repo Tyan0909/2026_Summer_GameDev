@@ -84,7 +84,7 @@ void SoundManager::StopBgm(void)
 void SoundManager::PlaySe(ResourceManager::SRC src)
 {
 	const Resource& res = ResourceManager::GetInstance().Load(src);
-	printfDx("SE Handle = %d\n", res.handleId_);
+	/*printfDx("SE Handle = %d\n", res.handleId_);*/
 	if (res.type_ != Resource::TYPE::SOUND || res.handleId_ == -1)
 	{
 		return;

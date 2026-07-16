@@ -2511,12 +2511,12 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		const VECTOR midPos = VScale(VAdd(playerHeadPos, subjectHeadPos), 0.5f);
 		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
 
-		DrawFormatString(
-			static_cast<int>(screenPos.x),
-			static_cast<int>(screenPos.y),
-			textColor,
-			"%.0f",
-			distance);
+		//DrawFormatString(
+		//	static_cast<int>(screenPos.x),
+		//	static_cast<int>(screenPos.y),
+		//	textColor,
+		//	"%.0f",
+		//	distance);
 	}
 }
 

@@ -855,7 +855,7 @@ void Player::AddItem(int itemType)
 		{
 			cameraItem_->OnAcquire(this);
 
-			printfDx("Insurance = %d\n", HasInsuranceCamera());
+			/*printfDx("Insurance = %d\n", HasInsuranceCamera());*/
 		}
 
 		break;

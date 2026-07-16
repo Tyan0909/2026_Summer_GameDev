@@ -60,7 +60,7 @@ void BuySelect::Init(void)
         DX_FONTTYPE_ANTIALIAS);
 
 
-    printfDx("nameFont = %d\n", nameFont_);
+    //printfDx("nameFont = %d\n", nameFont_);
 
     playerItems_.clear();
 
@@ -115,7 +115,7 @@ void BuySelect::Update(void)
         if (InputManager::GetInstance().IsTrgDown(KEY_INPUT_SPACE) ||
             turnChangeFrame_ >= TURN_CHANGE_TIME)
         {
-            printfDx("Start Player %d\n", currentPlayer_ + 1);
+            //printfDx("Start Player %d\n", currentPlayer_ + 1);
             isTurnChange_ = false;
         }
 
