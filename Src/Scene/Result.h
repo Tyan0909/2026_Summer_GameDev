@@ -37,6 +37,7 @@ private:
 	int bestPhotoScore_ = 0;
 	int bestPhotoPlayer_ = -1;
 	int titleFont_ = -1;
+	int rankFont_ = -1;
 	int resultFrame_ = 0;
 	int photoY_;
 	int displayScore_ = 0;

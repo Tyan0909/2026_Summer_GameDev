@@ -131,7 +131,6 @@ void ColliderCapsule::PushBackAlongNormal(
 			{
 				continue;
 			}
-
 			if (std::fabs(hitPoly.Normal.y) > normalYMax)
 			{
 				continue;
@@ -194,7 +193,7 @@ bool ColliderCapsule::IsHit(const ColliderModel* colliderModel, bool isExclude, 
 
 void ColliderCapsule::DrawDebug(int color)
 {
-	VECTOR pos1 = GetPosTop();
+	/*VECTOR pos1 = GetPosTop();
 	DrawSphere3D(pos1, radius_, 5, color, color, false);
 
 	VECTOR pos2 = GetPosDown();
@@ -223,5 +222,5 @@ void ColliderCapsule::DrawDebug(int color)
 	e = VAdd(pos2, VScale(dir, radius_));
 	DrawLine3D(s, e, color);
 
-	DrawSphere3D(GetCenter(), 5.0f, 10, color, color, true);
+	DrawSphere3D(GetCenter(), 5.0f, 10, color, color, true);*/
 }

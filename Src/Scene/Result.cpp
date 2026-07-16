@@ -48,6 +48,11 @@ void Result::Init(void)
 		60,
 		3);
 
+    rankFont_ = CreateFontToHandle(
+        "Meiryo",
+        28,     // サイズ
+        5);     // 太さ（1～9くらい）
+
     std::vector<int> scores =
         SceneManager::GetInstance().GetPlayerScore();
 
@@ -235,14 +240,6 @@ void Result::Draw(void)
 
     //-------------------------------------------------
     // 文字を順番に表示
-    //-------------------------------------------------
-
-    DrawFormatString(
-        180,
-        230,
-        GetColor(255, 255, 0),
-        "TOTAL SCORE : %d",
-        scoreDisplay_);
 
     if (resultFrame_ > 150)
     {
@@ -260,14 +257,30 @@ void Result::Draw(void)
             else if (i == 2)
                 color = GetColor(205, 127, 50);     // 銅
 
-            DrawFormatString(
-                70,
-                330 + i * 40,
-                color,
+            char str[64];
+
+            sprintf_s(
+                str,
                 "%d. PLAYER%d   %d",
                 i + 1,
                 ranking_[i].playerNo,
                 ranking_[i].score);
+
+            // 影
+            DrawStringToHandle(
+                72,
+                332 + i * 40,
+                str,
+                GetColor(20, 20, 20),
+                rankFont_);
+
+            // 本体
+            DrawStringToHandle(
+                70,
+                330 + i * 40,
+                str,
+                color,
+                rankFont_);
         }
     }
 
@@ -416,6 +429,23 @@ void Result::Draw(void)
             GetColor(0, 0, 0),
             "SCORE %d",
             bestPhotoScore_);
+
+        // TOTAL SCORE
+        DrawStringToHandle(
+            photoX + 140,
+            photoY + photoH + 20,
+            "TOTAL SCORE",
+            GetColor(255, 255, 255),
+            rankFont_);
+
+        // 数字を少し大きなフォントで表示するとさらに見栄えUP
+        DrawFormatString(
+            photoX + 185,
+            photoY + photoH + 55,
+            GetColor(255, 220, 0),
+            "%d",
+            scoreDisplay_);
+
     }
 
     //-------------------------------------------------
@@ -450,6 +480,12 @@ void Result::Draw(void)
 }
 void Result::Release()
 {
+    if (rankFont_ != -1)
+    {
+        DeleteFontToHandle(rankFont_);
+        rankFont_ = -1;
+    }
+
 	if (titleFont_ != -1)
 	{
 		DeleteFontToHandle(titleFont_);

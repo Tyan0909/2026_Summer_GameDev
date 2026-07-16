@@ -5,6 +5,7 @@
 #include "BuySelect.h"
 #include "../Manager/InputManager.h"
 #include "../Manager/SceneManager.h"
+#include "../Manager/SoundManager.h"
 
 #ifndef DX_FONTTYPE_ANTIALIAS
 // 環境によって定義がない場合は安全なデフォルトを用意
@@ -21,6 +22,7 @@ BuySelect::~BuySelect(void) {}
 
 void BuySelect::Init(void)
 {
+
     // 背景画像を読み込む（ファイルを Data/Image/BuySelect/Background.png に置いてください）
     bgHandle_ = LoadGraph("Data/Image/BuySelect/Background.png");
 
@@ -60,7 +62,7 @@ void BuySelect::Init(void)
         DX_FONTTYPE_ANTIALIAS);
 
 
-    printfDx("nameFont = %d\n", nameFont_);
+    /*printfDx("nameFont = %d\n", nameFont_);*/
 
     playerItems_.clear();
 

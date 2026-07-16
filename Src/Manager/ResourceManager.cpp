@@ -130,6 +130,15 @@ void ResourceManager::Init(void)
 	resourcesMap_.emplace(
 		SRC::GAMECLEAR_SE,
 		res);
+
+	//SE:ロードディング
+	res = new RES(
+		RES_T::SOUND,
+		PATH_SND + "Load/loading.wav");
+
+	resourcesMap_.emplace(
+		SRC::LOADING_SE,
+		res);
 }
 
 void ResourceManager::Release(void)

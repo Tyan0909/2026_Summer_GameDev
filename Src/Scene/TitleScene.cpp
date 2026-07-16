@@ -22,7 +22,7 @@ TitleScene::~TitleScene(void)
 
 void TitleScene::Init(void)
 {
-	SoundManager::GetInstance().SetBgmVolume(180);
+	SoundManager::GetInstance().SetBgmVolume(120);
 	SoundManager::GetInstance().PlayBgm(
 		ResourceManager::SRC::BGM_TITLE);
 	// カメラセット
@@ -384,9 +384,9 @@ void TitleScene::Draw(void)
 
 	// UI 描画（テキストを時折赤く）
 	int uiColor = forceRedText_ ? GetColor(220, 40, 40) : GetColor(255, 255, 255);
-	DrawString(200, 200, "タイトル - 不穏な気配が漂う", uiColor);
+	/*DrawString(200, 200, "タイトル - 不穏な気配が漂う", uiColor);
 	DrawString(200, 240, "SPACE : ゆっくり進む", uiColor);
-	DrawString(200, 280, "ENTER : 先に進む", uiColor);
+	DrawString(200, 280, "ENTER : 先に進む", uiColor);*/
 
 	// PRESS SPACE 点滅
 	int textAlpha = (int)((std::sin(pointerAnim_ * 0.05f) * 0.5f + 0.5f) * 255);
@@ -403,7 +403,7 @@ void TitleScene::Release(void)
 	// メモリ解放
 	delete debugGrid_;
 	debugGrid_ = nullptr;
-	SoundManager::GetInstance().StopBgm();
+
 
 	// 画像
 	if (logoHandle_ != -1) DeleteGraph(logoHandle_);

@@ -1264,10 +1264,10 @@ void GameScene::DrawView(
 	VECTOR eye = GetCameraPosition();
 	VECTOR target = GetCameraTarget();
 
-	DrawLine3D(
+	/*DrawLine3D(
 		eye,
 		target,
-		GetColor(255, 0, 0));
+		GetColor(255, 0, 0));*/
 
 	//----------------------------------------------------
 	// ÉèÅ[ÉãÉhï`âÊ
@@ -2500,17 +2500,17 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		const bool isVisible = IsSubjectVisible(targetPlayer, subject);
 		const int lineColor = isVisible ? visibleLineColor : hiddenLineColor;
 
-		DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
+		/*DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);*/
 
 		const VECTOR midPos = VScale(VAdd(playerHeadPos, subjectHeadPos), 0.5f);
 		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
 
-		DrawFormatString(
+		/*DrawFormatString(
 			static_cast<int>(screenPos.x),
 			static_cast<int>(screenPos.y),
 			textColor,
 			"%.0f",
-			distance);
+			distance);*/
 	}
 }
 

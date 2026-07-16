@@ -4,6 +4,7 @@
 #include <DxLib.h>
 #include <cmath>
 #include <random>
+#include "../Manager/SoundManager.h"
 
 // 環境によっては未定義の可能性があるためフォールバックを用意
 #ifndef DX_FONTTYPE_ANTIALIAS
@@ -29,9 +30,15 @@ LoadingScene::~LoadingScene(void)
 
 void LoadingScene::Init(void)
 {
+
+
 	progress_ = 0.0f;
 	isRequested_ = false;
 	dummyHandle_ = -1;
+
+	SoundManager::GetInstance().StopBgm();
+	SoundManager::GetInstance().PlaySe(
+		ResourceManager::SRC::LOADING_SE);
 
 	// 乱数初期化（パーティクル用）
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
@@ -40,6 +47,8 @@ void LoadingScene::Init(void)
 	s_fontLarge = CreateFontToHandle(NULL, 36, -1, DX_FONTTYPE_ANTIALIAS);
 	s_fontMid = CreateFontToHandle(NULL, 24, -1, DX_FONTTYPE_ANTIALIAS);
 	s_fontSmall = CreateFontToHandle(NULL, 16, -1, DX_FONTTYPE_ANTIALIAS);
+
+
 
 	// ユニット画像読み込み（Unit1..Unit7.png を優先、なければ Unit.png でフォールバック）
 	for (int i = 0; i < 7; ++i)
