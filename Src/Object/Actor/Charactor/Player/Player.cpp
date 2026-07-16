@@ -557,9 +557,10 @@ void Player::InitAnimation(void)
 
 	std::string path = Application::PATH_MODEL + "Player/Animation/";
 
-	animController_->Add((int)ANIM_TYPE::IDLE, path + "Idle.mv1", 20.0f);
+	animController_->Add((int)ANIM_TYPE::IDLE, path + "Idle_.mv1", 20.0f);
 	animController_->Add((int)ANIM_TYPE::CROUCHED, path + "Crouched.mv1", 20.0f);
-	animController_->Add((int)ANIM_TYPE::WALK, path + "Walking.mv1", 60.0f);
+	animController_->Add((int)ANIM_TYPE::WALK, path + "walk_.mv1", 60.0f);
+	animController_->Add((int)ANIM_TYPE::RUN, path + "run_.mv1", 60.0f);
 }
 
 void Player::InitPost(void)
@@ -767,7 +768,7 @@ void Player::OnEnterRun(void)
 {
 	if (animController_ != nullptr)
 	{
-		animController_->Play((int)ANIM_TYPE::WALK, true);
+		animController_->Play((int)ANIM_TYPE::RUN, true);
 	}
 }
 
