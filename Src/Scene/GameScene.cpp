@@ -2506,7 +2506,7 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		const bool isVisible = IsSubjectVisible(targetPlayer, subject);
 		const int lineColor = isVisible ? visibleLineColor : hiddenLineColor;
 
-		DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
+		//DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
 
 		const VECTOR midPos = VScale(VAdd(playerHeadPos, subjectHeadPos), 0.5f);
 		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
@@ -3070,7 +3070,7 @@ void GameScene::DrawViewWorld(const Player* targetPlayer, const Player* hidePlay
 		goalMarkerPos.y += 45.0f; // Stage::DrawGoalMarker と合わせる高さ
 
 		const int guideColor = GetColor(255, 200, 80); // 黄
-		DrawLine3D(playerHead, goalMarkerPos, guideColor);
+		//DrawLine3D(playerHead, goalMarkerPos, guideColor);
 
 		// 距離表示（ワールド中点をスクリーン変換して描画）
 		const VECTOR midPos = VScale(VAdd(playerHead, goalMarkerPos), 0.5f);
