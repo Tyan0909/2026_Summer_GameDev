@@ -146,6 +146,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Manager\ScreenManager.cpp" />
     <ClCompile Include="Src\Manager\EffectManager.cpp" />
     <ClCompile Include="Src\Manager\PhotoManager.cpp" />
     <ClCompile Include="Src\Manager\PhotoScoreManager.cpp" />
@@ -195,6 +196,7 @@
     <ClCompile Include="Src\Object\Actor\Charactor\Subject\SubjectB.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Manager\ScreenManager.h" />
     <ClInclude Include="Src\Manager\EffectManager.h" />
     <ClInclude Include="Src\Manager\PhotoManager.h" />
     <ClInclude Include="Src\Manager\PhotoScoreManager.h" />
