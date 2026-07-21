@@ -21,6 +21,7 @@
 #include <EffekseerForDXLib.h>
 #include "../Manager/PhotoManager.h"
 #include "../Manager/SoundManager.h"
+#include "../Manager/ScreenManager.h"
 
 // ファイルローカル: 設置効果音ハンドル
 static int gs_placeSE = -1;
@@ -87,20 +88,20 @@ void GameScene::Init()
 	// ランダムにゴール位置を選択
 	{
 		const int idx = GetRand(GOAL_CANDIDATE_COUNT - 1);
-		goalPos_= GOAL_CANDIDATES[idx];
+		goalPos_ = GOAL_CANDIDATES[idx];
 		if (stage_ != nullptr)
 		{
 			stage_->SetGoalPos(goalPos_);
 		}
 	}
 
-	effectManager_ =std::make_unique<EffectManager>();
+	effectManager_ = std::make_unique<EffectManager>();
 	effectManager_->Init();
 
 	const ColliderBase* stageCollider =
 		stage_->GetOwnCollider(static_cast<int>(Stage::COLLIDER_TYPE::MODEL));
 
-	
+
 
 	// プレイヤー選択情報を取得して GameScene の構成に反映
 	const int selectedPlayerCount = scene.GetPlayerNum();
@@ -299,6 +300,10 @@ void GameScene::Init()
 	}
 
 	GetDrawScreenSize(&screenWidth_, &screenHeight_);
+
+	/*screenManager_ = new ScreenManager();
+	screenManager_->Create(screenWidth_, screenHeight_, selectedPlayerCount, isSplitScreenEnabled_);*/
+
 
 	// 画面バッファ作成
 	if (isSplitScreenEnabled_ && selectedPlayerCount == 2)
@@ -977,6 +982,7 @@ void GameScene::Update()
 void GameScene::Draw()
 {
 	DrawCompositedScene();
+	//screenManager_->Compose(activePlayerCount_ >= 3, screenWidth_, screenHeight_);
 
 	DrawFormatString(
 		0,
@@ -2578,17 +2584,17 @@ void GameScene::DrawSubjectDistanceGuide(const Player* targetPlayer) const
 		const bool isVisible = IsSubjectVisible(targetPlayer, subject);
 		const int lineColor = isVisible ? visibleLineColor : hiddenLineColor;
 
-		/*DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);*/
+		//DrawLine3D(playerHeadPos, subjectHeadPos, lineColor);
 
 		const VECTOR midPos = VScale(VAdd(playerHeadPos, subjectHeadPos), 0.5f);
 		const VECTOR screenPos = ConvWorldPosToScreenPos(midPos);
 
-		/*DrawFormatString(
-			static_cast<int>(screenPos.x),
-			static_cast<int>(screenPos.y),
-			textColor,
-			"%.0f",
-			distance);*/
+		//DrawFormatString(
+		//	static_cast<int>(screenPos.x),
+		//	static_cast<int>(screenPos.y),
+		//	textColor,
+		//	"%.0f",
+		//	distance);
 	}
 }
 
@@ -3142,7 +3148,7 @@ void GameScene::DrawViewWorld(const Player* targetPlayer, const Player* hidePlay
 		goalMarkerPos.y += 45.0f; // Stage::DrawGoalMarker と合わせる高さ
 
 		const int guideColor = GetColor(255, 200, 80); // 黄
-		DrawLine3D(playerHead, goalMarkerPos, guideColor);
+		//DrawLine3D(playerHead, goalMarkerPos, guideColor);
 
 		// 距離表示（ワールド中点をスクリーン変換して描画）
 		const VECTOR midPos = VScale(VAdd(playerHead, goalMarkerPos), 0.5f);

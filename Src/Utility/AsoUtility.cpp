@@ -360,7 +360,8 @@ bool AsoUtility::IsHitSpheres(const VECTOR& pos1, float radius1, const VECTOR& p
     // お互いの半径の合計
     float radius = radius1 + radius2;
 
-    // 座標の差からお互いの距離を取る
+    // 座標の差からお互いの
+    // を取る
     VECTOR diff = VSub(pos2, pos1);
 
     // 三平方の定理で比較(SqrMagnitudeと同じ)

@@ -47,7 +47,7 @@ void ResourceManager::Init(void)
 
 	// プレイヤー
 	res = new RES(RES_T::MODEL, PATH_MDL +
-		"Player/Player_1.mv1");
+		"Player/Player1.mv1");
 	resourcesMap_.emplace(SRC::PLAYER, res);
 
 	// サブジェクト

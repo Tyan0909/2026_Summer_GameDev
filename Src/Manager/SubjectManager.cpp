@@ -63,7 +63,7 @@ void SubjectManager::Draw(void)
 			continue;
 		}
 
-		subject->Draw();
+ 		subject->Draw();
 	}
 }
 
