@@ -28,9 +28,9 @@ private:
 
 	// 定数
 	// プレイヤー初期位置
-	static constexpr VECTOR PLAYER2_INIT_POS = { 200.0f, 1000.0f, 0.0f };
-	static constexpr VECTOR PLAYER3_INIT_POS = { -200.0f, 1000.0f, 0.0f };
-	static constexpr VECTOR PLAYER4_INIT_POS = { 700.0f, 1000.0f, 0.0f };
+	static constexpr VECTOR PLAYER2_INIT_POS = { 700.0f, 100.0f, 400.0f };
+	static constexpr VECTOR PLAYER3_INIT_POS = { 1000.0f, 100.0f, 600.0f };
+	static constexpr VECTOR PLAYER4_INIT_POS = { 1400.0f, 100.0f, 1400.0f };
 	// 撮影対象の出現範囲
 	static constexpr VECTOR SUBJECT_AREA_MIN = { -3600.0f, 0.0f, -790.0f };
 	static constexpr VECTOR SUBJECT_AREA_MAX = { 11100.0f, 0.0f, 11900.0f };
