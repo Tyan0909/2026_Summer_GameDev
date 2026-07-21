@@ -51,6 +51,11 @@ namespace
 
 	// 追加: モデルの表示スケール
 	constexpr float MODEL_SCALE = 1.8f;
+
+	// 左スティックでのカーソル移動判定用フラグ
+	static bool s_padLeftStickMoved = false;
+	// 左スティック閾値（InputManager と近い値を使う）
+	constexpr float PAD_STICK_THRESHOLD = 0.35f;
 }
 
 namespace AnimType
@@ -168,16 +173,60 @@ void PlayerNumScene::Update(void)
 	InputManager& ins = InputManager::GetInstance();
 	SceneManager& scene = SceneManager::GetInstance();
 
+	// 任意のパッド（PAD1..PAD4）をチェックするユーティリティ
+	auto IsAnyPadBtnTrgDown = [&](InputManager::JOYPAD_BTN btn) -> bool {
+		for (int p = static_cast<int>(InputManager::JOYPAD_NO::PAD1); p <= static_cast<int>(InputManager::JOYPAD_NO::PAD4); ++p)
+		{
+			if (ins.IsPadBtnTrgDown(static_cast<InputManager::JOYPAD_NO>(p), btn)) return true;
+		}
+		return false;
+		};
+
 	const auto padNo = InputManager::JOYPAD_NO::PAD1;
 
+	// パッド状態を取得（左スティック操作対応を追加）
+	const auto padState = ins.GetJPadInputState(padNo);
+	// 左スティックで左右移動（トグルの移動）
+	{
+		const VECTOR stickDir = ins.GetDirXZAKey(padState.AKeyLX, padState.AKeyLY);
+		// stickDir.x < 0 : 左、 >0 : 右
+		if (std::fabs(stickDir.x) >= PAD_STICK_THRESHOLD)
+		{
+			if (!s_padLeftStickMoved)
+			{
+				// 一回だけ移動（スティックを倒した瞬間）
+				if (stickDir.x < 0.0f)
+				{
+					cursor_--;
+					if (cursor_ < 0) cursor_ = 3;
+				}
+				else
+				{
+					cursor_++;
+					if (cursor_ > 3) cursor_ = 0;
+				}
+				// 移動音
+				if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
+				s_padLeftStickMoved = true;
+			}
+		}
+		else
+		{
+			// スティックがニュートラルに戻ったら次の入力を受け付ける
+			s_padLeftStickMoved = false;
+		}
+	}
+
+	// スタートボタン（SPACE / 任意パッド LEFT）で決定
 	const bool isStart =
 		ins.IsTrgDown(KEY_INPUT_SPACE) ||
-		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::LEFT);
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::LEFT); // Xボタンで開始（遷移）
 
 	const bool isToggle =
 		ins.IsTrgDown(KEY_INPUT_RETURN) ||
-		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::RIGHT);
+		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::DOWN); // Aボタンでトグル（決定）
 
+	// 既存の D-PAD による左右移動も残す（補助）
 	const bool isLeft =
 		ins.IsTrgDown(KEY_INPUT_LEFT) ||
 		ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_LEFT);
@@ -213,7 +262,7 @@ void PlayerNumScene::Update(void)
 	}
 
 	// Enterキーで参加状態をトグル（確定）
-	if (ins.IsTrgDown(KEY_INPUT_RETURN))
+	if (ins.IsTrgDown(KEY_INPUT_RETURN) || IsAnyPadBtnTrgDown(InputManager::JOYPAD_BTN::RIGHT))
 	{
 		isUsePlayer_[cursor_] = !isUsePlayer_[cursor_];
 		// トグル音
@@ -221,14 +270,14 @@ void PlayerNumScene::Update(void)
 	}
 
 	// 左右カーソル
-	if (ins.IsTrgDown(KEY_INPUT_LEFT))
+	if (isLeft)
 	{
 		cursor_--;
 		if (cursor_ < 0) cursor_ = 3;
 		// 移動音
 		if (pn_moveSE != -1) PlaySoundMem(pn_moveSE, DX_PLAYTYPE_BACK);
 	}
-	if (ins.IsTrgDown(KEY_INPUT_RIGHT))
+	if (isRight)
 	{
 		cursor_++;
 		if (cursor_ > 3) cursor_ = 0;

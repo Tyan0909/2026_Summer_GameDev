@@ -18,6 +18,8 @@ public:
 		PLAYER,
 
 		SUBJECT,
+		SUBJECT_A,
+		SUBJECT_B,
 		MAIN_STAGE,
 		MAIN_STAGE_FAR,
 		SKY_DOME,

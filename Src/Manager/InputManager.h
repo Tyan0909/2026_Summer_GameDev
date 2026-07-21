@@ -57,6 +57,9 @@ public:
 		D_PAD_LEFT,
 		D_PAD_RIGHT,
 		MAX
+
+		
+
 	};
 
 

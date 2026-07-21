@@ -110,6 +110,38 @@ void GameScene::Init()
 	SetupPlayers(stageCollider, selectedPlayerCount);
 	RebuildPlayersArray();
 
+
+	// ここで各プレイヤーに対応する物理パッドIDを割り当てます:
+	// Player index 0 -> PAD1, index 1 -> PAD2, ...
+	// これにより BuySelect と同様に PAD1→PAD2... の順でプレイヤー入力を割り当てます。
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		Player* pl = players_[i];
+		if (pl == nullptr) continue;
+
+		// 基本の入力設定を選択（1P はキーボード+PAD、それ以外は PAD ベース設定を使う）
+		Player::INPUT_CONFIG cfg;
+		if (i == 0)
+		{
+			cfg = Player::KEYBOARD_AND_PAD1_INPUT_CONFIG;
+		}
+		else
+		{
+			// PAD ベースの設定を流用（元定義は PAD1 を使っているが下で上書き）
+			cfg = Player::PAD1_INPUT_CONFIG;
+		}
+
+		// padNo を割り当て（PAD1..PAD4）。上限は PAD4 にクランプ。
+		int padIndexBase = static_cast<int>(InputManager::JOYPAD_NO::PAD1);
+		int assigned = padIndexBase + static_cast<int>(i);
+		int maxPad = static_cast<int>(InputManager::JOYPAD_NO::PAD4);
+		if (assigned > maxPad) assigned = maxPad;
+		cfg.padNo = static_cast<InputManager::JOYPAD_NO>(assigned);
+
+		// 設定をプレイヤーに反映
+		pl->SetInputConfig(cfg);
+	}
+
 	// プレイヤー1（常に作成）
 	player_ = new Player();
 	player_->Init();
@@ -351,9 +383,10 @@ void GameScene::Update()
 	SceneManager& scene = SceneManager::GetInstance();
 
 	// --- 入力状態の更新（例: Qキーでアイテムサイクル） ---
-	isCycleItem = (ins.IsTrgDown(KEY_INPUT_Q) != 0);
-	// アイテム使用キーを F キーに変更
-	isUseItem = (ins.IsTrgDown(KEY_INPUT_F) != 0);
+	// キーボードまたは PAD1 の R_BUMPER でアイテムサイクル
+	isCycleItem = (ins.IsTrgDown(KEY_INPUT_Q) != 0) || ins.IsPadBtnTrgDown(InputManager::JOYPAD_NO::PAD1, InputManager::JOYPAD_BTN::R_BUMPER);
+	// アイテム使用キーを F キーに変更（PAD1 の R_TRIGGER も受け付ける）
+	isUseItem = (ins.IsTrgDown(KEY_INPUT_F) != 0) || ins.IsPadBtnTrgDown(InputManager::JOYPAD_NO::PAD1, InputManager::JOYPAD_BTN::R_TRIGGER);
 
 	if (flashFrame_ > 0)
 
@@ -375,6 +408,7 @@ void GameScene::Update()
 		if (effect.shutterFrame > 0)
 			effect.shutterFrame++;
 	}
+
 
 	if (stage_) stage_->Update();
 
@@ -793,6 +827,50 @@ void GameScene::Update()
 			photoIdleFrame_ = 0;
 
 			auto& effect = photoEffects_[1];
+			effect.flashDelay = 2;
+			effect.shutterFrame = 1;
+			effect.cooldown = PHOTO_COOLDOWN;
+
+			photoCooldown_ = PHOTO_COOLDOWN;
+			remainingPhotoCount_--;
+		}
+	}
+
+	// プレイヤー3: F2
+	if (ins.IsTrgDown(KEY_INPUT_F2) &&
+		photoCooldown_ == 0 &&
+		remainingPhotoCount_ > 0 &&
+		players_.size() >= 3)
+	{
+		if (IsPlayerAlive(players_[2]))
+		{
+			TryTakePhotoForPlayer(2);
+
+			photoIdleFrame_ = 0;
+
+			auto& effect = photoEffects_[2];
+			effect.flashDelay = 2;
+			effect.shutterFrame = 1;
+			effect.cooldown = PHOTO_COOLDOWN;
+
+			photoCooldown_ = PHOTO_COOLDOWN;
+			remainingPhotoCount_--;
+		}
+	}
+
+	// プレイヤー4: F3
+	if (ins.IsTrgDown(KEY_INPUT_F3) &&
+		photoCooldown_ == 0 &&
+		remainingPhotoCount_ > 0 &&
+		players_.size() >= 4)
+	{
+		if (IsPlayerAlive(players_[3]))
+		{
+			TryTakePhotoForPlayer(3);
+
+			photoIdleFrame_ = 0;
+
+			auto& effect = photoEffects_[3];
 			effect.flashDelay = 2;
 			effect.shutterFrame = 1;
 			effect.cooldown = PHOTO_COOLDOWN;
@@ -1891,7 +1969,7 @@ void GameScene::DrawPlayerScreen(int playerIndex)
 }
 
 void GameScene::DrawRankEffect(int playerIndex)
-{
+{	
 
 
 	int x = 0;

@@ -17,6 +17,10 @@ static int bs_moveSE = -1;
 static int bs_toggleSE = -1;
 static int bs_confirmSE = -1;
 
+// パッド左スティックの縦移動での一回移動判定フラグ
+static bool s_padLeftStickMovedVert = false;
+
+
 BuySelect::BuySelect(void) {}
 BuySelect::~BuySelect(void) {}
 
@@ -109,12 +113,36 @@ void BuySelect::Init(void)
 void BuySelect::Update(void)
 {
 
+    // アクティブになるパッドを currentPlayer_ に合わせて決定する（PAD1..PAD4）
+    auto makeActivePad = [](int playerIndex) -> InputManager::JOYPAD_NO
+        {
+            int base = static_cast<int>(InputManager::JOYPAD_NO::PAD1);
+            int idx = base + playerIndex;
+            int maxIdx = static_cast<int>(InputManager::JOYPAD_NO::PAD4);
+            if (idx > maxIdx) idx = maxIdx;
+            return static_cast<InputManager::JOYPAD_NO>(idx);
+        };
+
+    if (currentPlayer_ >= SceneManager::GetInstance().GetPlayerNum())
+    {
+        // 全員分終わったら安全に早期 return（通常は遷移済）
+        return;
+    }
+
+    const auto activePad = makeActivePad(currentPlayer_);
+
     if (isTurnChange_)
     {
         turnChangeFrame_++;
 
-        // SPACEまたは2秒経過で開始
-        if (InputManager::GetInstance().IsTrgDown(KEY_INPUT_SPACE) ||
+        // SPACEまたは2秒経過で開始（パッド TOP も受け付ける）
+        InputManager::JOYPAD_NO activePad = makeActivePad(currentPlayer_);
+
+        // パッド状態を取得（左スティック操作対応を追加）
+        InputManager& ins = InputManager::GetInstance();
+        const auto padStateStart = ins.GetJPadInputState(activePad);
+        const bool padAstart = ins.IsPadBtnTrgDown(activePad, InputManager::JOYPAD_BTN::DOWN);
+        if (ins.IsTrgDown(KEY_INPUT_SPACE) ||
             turnChangeFrame_ >= TURN_CHANGE_TIME)
         {
             printfDx("Start Player %d\n", currentPlayer_ + 1);
@@ -135,9 +163,41 @@ void BuySelect::Update(void)
     auto& items =
         playerItems_[currentPlayer_];
 
+
+    // --- パッド対応: 現在のターンは activePad のみ操作可能にする ---
+    const auto padState = ins.GetJPadInputState(activePad);
     if (items.empty()) return;
 
-    // 上下カーソル移動
+    // 左スティック縦入力 (padState.AKeyLY: 上が負、下が正の想定)
+    {
+        const float ly = static_cast<float>(padState.AKeyLY) / InputManager::AKEY_VAL_MAX;
+        const float threshold = InputManager::THRESHOLD;
+
+        if (std::fabs(ly) >= threshold)
+        {
+            if (!s_padLeftStickMovedVert)
+            {
+                if (ly < 0.0f)
+                {
+                    // スティック上 -> カーソル上
+                    cursorIdx_ = (cursorIdx_ - 1 + (int)items.size()) % (int)items.size();
+                }
+                else
+                {
+                    // スティック下 -> カーソル下
+                    cursorIdx_ = (cursorIdx_ + 1) % (int)items.size();
+                }
+                s_padLeftStickMovedVert = true;
+                if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
+            }
+        }
+        else
+        {
+            s_padLeftStickMovedVert = false;
+        }
+    }
+
+    // ここでキーボードの矢印キーでもカーソル移動できるようにする（スティックは消さない）
     if (ins.IsTrgDown(KEY_INPUT_UP))
     {
         cursorIdx_ = (cursorIdx_ - 1 + (int)items.size()) % (int)items.size();
@@ -145,12 +205,12 @@ void BuySelect::Update(void)
     }
     if (ins.IsTrgDown(KEY_INPUT_DOWN))
     {
-        cursorIdx_ =(cursorIdx_ + 1) %(int)items.size();
+        cursorIdx_ = (cursorIdx_ + 1) % (int)items.size();
         if (bs_moveSE != -1) PlaySoundMem(bs_moveSE, DX_PLAYTYPE_BACK);
     }
 
-    // Zキーで数量を +1 (購入を増やす)
-    if (ins.IsTrgDown(KEY_INPUT_Z))
+    // Zキーで数量を +1 (購入を増やす)  => キーボード Z または パッド R_BUMPER
+    if (ins.IsTrgDown(KEY_INPUT_Z) || ins.IsPadBtnTrgDown(activePad, InputManager::JOYPAD_BTN::RIGHT))
     {
         Item& it = items[cursorIdx_];
 
@@ -211,8 +271,8 @@ void BuySelect::Update(void)
         }
     }
 
-    // Xキーで数量を -1 (購入数を減らす)
-    if (ins.IsTrgDown(KEY_INPUT_X))
+    // Xキーで数量を -1 (購入数を減らす) => キーボード X または パッド L_TRIGGER
+    if (ins.IsTrgDown(KEY_INPUT_X) || ins.IsPadBtnTrgDown(activePad, InputManager::JOYPAD_BTN::DOWN))
     {
         if (items[cursorIdx_].quantity > 0)
         {
@@ -221,10 +281,10 @@ void BuySelect::Update(void)
         }
     }
 
-    // SPACEキーで購入確定（清算）
-    if (ins.IsTrgDown(KEY_INPUT_SPACE))
+    // SPACEキーで購入確定（清算） => キーボード SPACE または パッド TOP
+    if (ins.IsTrgDown(KEY_INPUT_SPACE) || ins.IsPadBtnTrgDown(activePad, InputManager::JOYPAD_BTN::LEFT))
     {
- 
+
 		// 現在のプレイヤーの購入リストを保存
         std::vector<int> purchased;
 
@@ -505,7 +565,7 @@ void BuySelect::Draw(void)
     const int listLeft = 160;
     const int listTop = 100;
     const int listRight = 560;
-    const int listBottom = screenH - 80;
+    const int listBottom = screenH - 180;
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 120);
     DrawBox(listLeft, listTop, listRight, listBottom, GetColor(10, 30, 40), TRUE);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
@@ -624,7 +684,7 @@ void BuySelect::Draw(void)
     {
         const int winLeft = 700;
         const int winTop = 26 + 120 + 22;
-        const int winRight = 1150;
+        const int winRight = 1250;
         const int winBottom = winTop + 240;
 
         int previewIdx = cursorIdx_;
@@ -800,6 +860,12 @@ void BuySelect::Draw(void)
             GetColor(255, 100, 100),
             messageFont_);
     }
+
+    // パッド操作の案内を追加
+    DrawFormatString(40, 600, GetColor(255, 255, 255), "LRスティック : カーソル移動");
+    DrawFormatString(40, 630, GetColor(255, 255, 255), "Aボタン to Z key      : 数量を増やす");
+    DrawFormatString(40, 670, GetColor(255, 255, 255), "Bボタン to X key      : 数量を減らす");
+    DrawFormatString(40, 700, GetColor(255, 255, 255), "Xボタン to SPACE key      : 購入確定（次の PAD へ）");
 }
 
 void BuySelect::Release(void)
