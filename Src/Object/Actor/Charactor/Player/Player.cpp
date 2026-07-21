@@ -387,8 +387,11 @@ bool Player::IsRunInput(void) const
 
 	if (IsPadInputEnabled())
 	{
+		// パッド側: 既存の runPadBtn に加え、ユーザ指定どおり
+		// 「crouchPadBtn に割り当てられているボタン」でもダッシュ(＝走り)扱いにする
 		const auto& input = InputManager::GetInstance();
 		isRun = isRun || input.IsPadBtnNew(inputConfig_.padNo, inputConfig_.runPadBtn);
+		isRun = isRun || input.IsPadBtnNew(inputConfig_.padNo, inputConfig_.crouchPadBtn);
 	}
 
 	return isRun;
@@ -408,11 +411,8 @@ bool Player::IsCrouchInput(void) const
 		isCrouch = isCrouch || CheckHitKey(inputConfig_.crouchKey);
 	}
 
-	if (IsPadInputEnabled())
-	{
-		const auto& input = InputManager::GetInstance();
-		isCrouch = isCrouch || input.IsPadBtnNew(inputConfig_.padNo, inputConfig_.crouchPadBtn);
-	}
+	// 注意: パッドの crouchPadBtn は SHIFT に割り当てている走り（ダッシュ）へ再利用するため、
+	// ここではパッドのボタンによるしゃがみ判定を行わない（キーボードのみでしゃがみ）。
 
 	return isCrouch;
 }

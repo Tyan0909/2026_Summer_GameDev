@@ -23,6 +23,7 @@
 #include "../Manager/SoundManager.h"
 #include "../Manager/ScreenManager.h"
 
+
 // ファイルローカル: 設置効果音ハンドル
 static int gs_placeSE = -1;
 static int gs_explodeSE = -1; // 追加: 爆発音用ハンドル
@@ -393,6 +394,9 @@ void GameScene::Update()
 	// アイテム使用キーを F キーに変更（PAD1 の R_TRIGGER も受け付ける）
 	isUseItem = (ins.IsTrgDown(KEY_INPUT_F) != 0) || ins.IsPadBtnTrgDown(InputManager::JOYPAD_NO::PAD1, InputManager::JOYPAD_BTN::R_TRIGGER);
 
+
+
+
 	if (flashFrame_ > 0)
 
 	{
@@ -591,6 +595,145 @@ void GameScene::Update()
 		}
 	}
 
+	// 追加: パッド入力でのアイテム使用 / 切替 / 撮影 を各プレイヤーに割り当て
+	{
+		// ヘルパ: 指定プレイヤーがアイテム使用を行う処理（既存の player_ 用処理を一般化）
+		auto UseItemForPlayer = [&](int pi)
+			{
+				if (pi < 0 || pi >= static_cast<int>(players_.size())) return;
+				Player* pl = players_[pi];
+				if (!pl || !IsPlayerAlive(pl)) return;
+
+				ITEM_TYPE sel = pl->GetSelectedUsableItemType();
+				if (sel == ITEM_TYPE::NORMAL_CAMERA)
+				{
+					// NORMAL_CAMERA はトグル的な扱いでサイクル
+					pl->CycleSelectedUsableItem(0);
+					return;
+				}
+
+				// 配置処理（player_ と同様）
+				VECTOR ppos = pl->GetTransform().pos;
+				VECTOR placeForward = pl->GetCameraForward();
+				placeForward.y = 0.0f;
+				float len = sqrtf(placeForward.x * placeForward.x + placeForward.z * placeForward.z);
+				if (len > 0.0f)
+				{
+					placeForward.x /= len;
+					placeForward.z /= len;
+				}
+				VECTOR placePos = VAdd(ppos, VScale(placeForward, 140.0f));
+				placePos.y = ppos.y;
+
+				switch (sel)
+				{
+				case ITEM_TYPE::SPIKE_TRAP:
+					if (pl->UseSpikeTrap())
+					{
+						Trap t;
+						t.type = TRAP_TYPE::SPIKE;
+						t.pos = placePos;
+						t.modelId = ResourceManager::GetInstance().LoadModelDuplicate(ResourceManager::SRC::SPIKE_MODEL);
+						MV1SetPosition(t.modelId, t.pos);
+						MV1SetScale(t.modelId, VGet(0.01f, 0.01f, 0.01f));
+						t.triggered = false;
+						t.lifeFrames = SPIKE_DURATION_FRAMES;
+						traps_.push_back(t);
+						if (gs_placeSE != -1) PlaySoundMem(gs_placeSE, DX_PLAYTYPE_BACK);
+						if (pl->GetSpikeCount() <= 0) pl->CycleSelectedUsableItem(1);
+					}
+					break;
+
+				case ITEM_TYPE::EXPLOSIVE_TRAP:
+					if (pl->UseExplosiveTrap())
+					{
+						Trap t;
+						t.type = TRAP_TYPE::MINE;
+						t.pos = placePos;
+						t.triggered = false;
+						t.lifeFrames = 0;
+						t.modelId = ResourceManager::GetInstance().LoadModelDuplicate(ResourceManager::SRC::MINE_MODEL);
+						MV1SetPosition(t.modelId, t.pos);
+						MV1SetScale(t.modelId, VGet(1.0f, 1.0f, 1.0f));
+						traps_.push_back(t);
+						if (gs_placeSE != -1) PlaySoundMem(gs_placeSE, DX_PLAYTYPE_BACK);
+						if (pl->GetMineCount() <= 0) pl->CycleSelectedUsableItem(1);
+					}
+					break;
+
+				case ITEM_TYPE::FRAG_GRENADE:
+					if (pl->UseFragGrenade())
+					{
+						Grenade g;
+						VECTOR forward = pl->GetCameraForward();
+						g.pos = pl->GetTransform().pos;
+						g.pos.y += 60.0f;
+						g.pos = VAdd(g.pos, VScale(forward, 30.0f));
+						g.velocity = VAdd(VScale(forward, 15.0f), VGet(0.0f, 10.0f, 0.0f));
+						g.exploded = false;
+						g.lifeFrame = 0;
+						grenades_.push_back(g);
+						if (gs_placeSE != -1) PlaySoundMem(gs_placeSE, DX_PLAYTYPE_BACK);
+						if (pl->GetFragCount() <= 0) pl->CycleSelectedUsableItem(1);
+					}
+					break;
+
+				default:
+					break;
+				}
+			};
+
+		// 各プレイヤーの割り当てパッド (PAD1..PAD4)
+		for (int pi = 0; pi < static_cast<int>(players_.size()); ++pi)
+		{
+			InputManager::JOYPAD_NO padNo = static_cast<InputManager::JOYPAD_NO>(static_cast<int>(InputManager::JOYPAD_NO::PAD1) + pi);
+			if (padNo > InputManager::JOYPAD_NO::PAD4) padNo = InputManager::JOYPAD_NO::PAD4;
+
+			// LT : アイテム使用（設置 / 投下）
+			if (ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::L_TRIGGER))
+			{
+				UseItemForPlayer(pi);
+			}
+
+			// D-PAD 左右 : アイテム切替（左で前, 右で次）
+			if (ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_LEFT))
+			{
+				if (pi < static_cast<int>(players_.size()) && players_[pi]) players_[pi]->CycleSelectedUsableItem(-1);
+			}
+			if (ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::D_PAD_RIGHT))
+			{
+				if (pi < static_cast<int>(players_.size()) && players_[pi]) players_[pi]->CycleSelectedUsableItem(1);
+			}
+
+			// RB : アイテム切り替え (次) -- 表示に合わせ追加
+			if (ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::R_BUMPER))
+			{
+				if (pi < static_cast<int>(players_.size()) && players_[pi]) players_[pi]->CycleSelectedUsableItem(1);
+			}
+
+			// RT : 写真撮影
+			if (ins.IsPadBtnTrgDown(padNo, InputManager::JOYPAD_BTN::R_TRIGGER) &&
+				photoCooldown_ == 0 &&
+				remainingPhotoCount_ > 0)
+			{
+				if (pi < static_cast<int>(players_.size()) && IsPlayerAlive(players_[pi]))
+				{
+					TryTakePhotoForPlayer(pi);
+
+					photoIdleFrame_ = 0;
+
+					auto& effect = photoEffects_[pi];
+					effect.flashDelay = 2;
+					effect.shutterFrame = 1;
+					effect.cooldown = PHOTO_COOLDOWN;
+
+					photoCooldown_ = PHOTO_COOLDOWN;
+					remainingPhotoCount_--;
+				}
+			}
+		}
+	}
+
 	if (!traps_.empty() && subjectManager_ != nullptr)
 	{
 		auto& subjects = const_cast<std::vector<Subject*>&>(subjectManager_->GetSubjects());
@@ -732,34 +875,34 @@ void GameScene::Update()
 		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.SetPhotoCount(photoCount_);
 		scene.SetLastPhotoScore(lastPhotoScore_);
-	scene.SetLastPhotoScore(
+		scene.SetLastPhotoScore(
 			lastPhotoScorePerPlayer_[lastPhotoPlayerIndex_]);
 
-	std::vector<int> scores;
-	int totalScore = 0;
+		std::vector<int> scores;
+		int totalScore = 0;
 
-	for (auto* player : players_)
-	{
-		if (player)
+		for (auto* player : players_)
 		{
-			scores.push_back(player->GetScore());
-			totalScore += player->GetScore();
+			if (player)
+			{
+				scores.push_back(player->GetScore());
+				totalScore += player->GetScore();
+			}
 		}
-	}
 
-	scene.SetPlayerScore(scores);
+		scene.SetPlayerScore(scores);
 
-	// リザルト用の合計点
-	scene.SetCarryMoney(totalScore);
+		// リザルト用の合計点
+		scene.SetCarryMoney(totalScore);
 
-	scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
-	scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
+		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
+		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 		return;
 	}
 
 	if (IsAllPlayersDead())
 	{
-	std::vector<int> scores;
+		std::vector<int> scores;
 
 		for (auto* player : players_)
 		{
@@ -1031,6 +1174,7 @@ void GameScene::Draw()
 	int y = 40;
 	int color = GetColor(255, 255, 255);
 
+	// 常に表示する操作説明（要求どおりの文字列と順序）
 	DrawString(x, y, "【操作方法】", color);
 
 	y += 40;
@@ -1040,13 +1184,16 @@ void GameScene::Draw()
 	DrawString(x, y, "カメラ操作　：右スティック", color);
 
 	y += 40;
-	DrawString(x, y, "LT　　　　　：写真撮影", color);
+	DrawString(x, y, "RT　　　　　：写真撮影", color);
 
 	y += 30;
 	// アイテム使用キーを RT -> F に変更して表示も更新
-	DrawString(x, y, "F　　　　　：アイテム投下", color);
+	DrawString(x, y, "LT　　　　　：アイテム投下", color);
 
-	
+	y += 30;
+	DrawString(x, y, "RB　　　　　：アイテム切り替え", color);
+
+
 
 	// すべてのプレイヤーにシャッター演出を適用
 	for (size_t i = 0; i < players_.size(); ++i)
@@ -1129,8 +1276,9 @@ void GameScene::ExplodeGrenade(const VECTOR& pos)
 	effectManager_->AddExplosion(
 		effectPos);
 
-	effectManager_->PlayExplosion(
-		pos);
+	effectManager_->
+		PlayExplosion(
+			pos);
 
 	const float radius = 200.0f;
 
