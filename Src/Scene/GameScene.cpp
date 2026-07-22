@@ -1602,6 +1602,7 @@ void GameScene::DrawView(
 	}
 
 	// --- 追加: プレビューカプセル（各ビューに表示） ---
+#if 0
 	if (targetPlayer->GetSelectedUsableItemType() != ITEM_TYPE::NORMAL_CAMERA)
 	{
 		ITEM_TYPE previewType = targetPlayer->GetSelectedUsableItemType();
@@ -1664,6 +1665,7 @@ void GameScene::DrawView(
 			}
 		}
 	}
+#endif
 	// --- プレビュー終わり ---
 
 	// HUD
@@ -2168,7 +2170,6 @@ void GameScene::DrawPlayerScreen(int playerIndex)
 void GameScene::DrawRankEffect(int playerIndex)
 {	
 
-
 	int x = 0;
 	int yBase = 0;
 	int w = screenWidth_;
@@ -2618,7 +2619,8 @@ void GameScene::WorldToMinimapCoords(
 	const float normalizedZ = (worldPos.z - MINIMAP_WORLD_MIN_Z) / worldDepth;
 
 	outX = minimapX + static_cast<int>(normalizedX * minimapSize);
-	outY = minimapY + static_cast<int>(normalizedZ * minimapSize);
+	// Y 軸を反転してミニマップ上の上下方向をゲームワールドと一致させる
+	outY = minimapY + minimapSize - static_cast<int>(normalizedZ * minimapSize);
 
 	// ミニマップの範囲内にクランプ
 	if (outX < minimapX) outX = minimapX;

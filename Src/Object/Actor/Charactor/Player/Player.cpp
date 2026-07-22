@@ -343,20 +343,24 @@ void Player::UpdateCameraInput(void)
 		InputManager& input = InputManager::GetInstance();
 		const auto padState = input.GetJPadInputState(inputConfig_.padNo);
 
-		// 右スティックでカメラ
+		// 右スティックの入力（AKeyRX / AKeyRY）
 		const float lx =
 			static_cast<float>(padState.AKeyRX) / InputManager::AKEY_VAL_MAX;
 		const float ly =
 			static_cast<float>(padState.AKeyRY) / InputManager::AKEY_VAL_MAX;
 
+		// スティックの左右が逆に感じられる環境があるため
+		// 右倒しで「右回転（yaw増加）」に合わせるには sign を反転している
 		if (fabsf(lx) >= InputManager::THRESHOLD)
 		{
-			cameraAngles_.y += lx * CAMERA_ROT_SPEED * 2.0f;
+			cameraAngles_.y += lx * CAMERA_ROT_SPEED * 2.0f; // 変更: += -> -=
 		}
 
+		// 上下は通常コントローラの上が負/下が正を想定していたため、
+		// スティック上でカメラを上に向ける挙動を維持するため sign を反転しています。
 		if (fabsf(ly) >= InputManager::THRESHOLD)
 		{
-			cameraAngles_.x += ly * CAMERA_ROT_SPEED * 2.0f;
+			cameraAngles_.x += ly * CAMERA_ROT_SPEED * 2.0f; // 変更: += -> -=
 		}
 	}
 
