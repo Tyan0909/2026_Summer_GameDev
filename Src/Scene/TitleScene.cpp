@@ -388,6 +388,7 @@ void TitleScene::Draw(void)
 	DrawString(200, 240, "SPACE : Ç‰Ç¡Ç≠ÇËêiÇﬁ", uiColor);
 	DrawString(200, 280, "ENTER : êÊÇ…êiÇﬁ", uiColor);*/
 
+
 	// PRESS SPACE ì_ñ≈
 	int textAlpha = (int)((std::sin(pointerAnim_ * 0.05f) * 0.5f + 0.5f) * 255);
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, textAlpha);

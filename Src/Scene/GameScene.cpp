@@ -121,7 +121,7 @@ void GameScene::Init()
 		Player* pl = players_[i];
 		if (pl == nullptr) continue;
 
-		// 基本の入力設定を選択（1P はキーボード+PAD、それ以外は PAD ベース設定を使う）
+		// ベースの入力設定を選択（1P はキーボード+PAD、それ以外は PAD ベース設定を使う）
 		Player::INPUT_CONFIG cfg;
 		if (i == 0)
 		{
@@ -129,7 +129,6 @@ void GameScene::Init()
 		}
 		else
 		{
-			// PAD ベースの設定を流用（元定義は PAD1 を使っているが下で上書き）
 			cfg = Player::PAD1_INPUT_CONFIG;
 		}
 
@@ -140,8 +139,8 @@ void GameScene::Init()
 		if (assigned > maxPad) assigned = maxPad;
 		cfg.padNo = static_cast<InputManager::JOYPAD_NO>(assigned);
 
-		// 設定をプレイヤーに反映
 		pl->SetInputConfig(cfg);
+		pl->SetInputEnabled(true);
 	}
 
 	// プレイヤー1（常に作成）
@@ -203,6 +202,36 @@ void GameScene::Init()
 	if (player2_) players_.push_back(player2_);
 	if (player3_) players_.push_back(player3_);
 	if (player4_) players_.push_back(player4_);
+
+	// 重要: 各プレイヤーが持つ INPUT_CONFIG に確実にパッド番号を割り当てる
+	// （プレイヤー生成 -> players_ へ push_back の後に必ず設定する）
+	for (size_t i = 0; i < players_.size(); ++i)
+	{
+		Player* pl = players_[i];
+		if (pl == nullptr) continue;
+
+		Player::INPUT_CONFIG cfg;
+		if (i == 0)
+		{
+			// 1P はキーボード + PAD を使う設定
+			cfg = Player::KEYBOARD_AND_PAD1_INPUT_CONFIG;
+		}
+		else
+		{
+			// 2P以降はパッド設定を使う（padNo を後で上書き）
+			cfg = Player::PAD1_INPUT_CONFIG;
+		}
+
+		// PAD1..PAD4 を順に割り当て（上限は PAD4）
+		int padIndexBase = static_cast<int>(InputManager::JOYPAD_NO::PAD1);
+		int assigned = padIndexBase + static_cast<int>(i);
+		int maxPad = static_cast<int>(InputManager::JOYPAD_NO::PAD4);
+		if (assigned > maxPad) assigned = maxPad;
+		cfg.padNo = static_cast<InputManager::JOYPAD_NO>(assigned);
+
+		pl->SetInputConfig(cfg);
+		pl->SetInputEnabled(true);
+	}
 
 	const size_t pcount = players_.size();
 	lastPhotoScorePerPlayer_.assign(pcount, 0);
@@ -935,7 +964,7 @@ void GameScene::Update()
 		scene.SetPlayerMoney(money);
 		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
 		scene.SetPhotoCount(photoCount_);
-		scene.SetLastPhotoScore(lastPhotoScorePerPlayer_[lastPhotoPlayerIndex_]);
+		scene.SetLastPhotoScore(lastPhotoPlayerIndex_);
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 		return;
 	}
@@ -1677,7 +1706,7 @@ void GameScene::DrawView(
 	case ITEM_TYPE::EXPLOSIVE_TRAP: selName = "MINE"; selCount = targetPlayer->GetMineCount(); break;
 	default: selName = "NONE"; selCount = 0; break;
 	}
-	DrawFormatString(drawWidth - 220, 20, GetColor(180, 240, 255), "ITEM: %s x%d", selName, selCount);
+	DrawFormatString(drawWidth - 220, 20, GetColor(180,240,255), "ITEM: %s x%d", selName, selCount);
 
 	DrawInventoryHUD(targetPlayer, drawWidth, drawHeight);
 	if (it != players_.end())
@@ -3443,3 +3472,4 @@ void GameScene::GetPlayer1ViewArea(int& x, int& y, int& width, int& height) cons
 	width = screenWidth_ / 2;
 	height = screenHeight_ / 2;
 }
+
