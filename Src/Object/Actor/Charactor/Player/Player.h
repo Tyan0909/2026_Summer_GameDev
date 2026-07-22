@@ -183,7 +183,7 @@ private:
 	static constexpr float CAMERA_PITCH_MAX = DX_PI_F * 0.45f;
 	static constexpr float TURN_SPEED = 10.0f;
 
-	static constexpr VECTOR INIT_POS = { 300.0f, 100.0f, 100.0f };
+	static constexpr VECTOR INIT_POS = { 4000.0f, 100.0f, 400.0f };
 
 
 	static constexpr int HP_MAX = 6;

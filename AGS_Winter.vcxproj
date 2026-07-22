@@ -86,6 +86,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>;C:\DxLib</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -102,6 +103,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>;C:\DxLib</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -119,6 +121,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -138,6 +141,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -194,6 +198,7 @@
     <ClCompile Include="Src\Object\Common\Transform.cpp" />
     <ClCompile Include="Src\Object\Actor\Charactor\Subject\SubjectA.cpp" />
     <ClCompile Include="Src\Object\Actor\Charactor\Subject\SubjectB.cpp" />
+    <ClCompile Include="Src\Object\Actor\Charactor\Subject\SubjectC.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Manager\ScreenManager.h" />
@@ -244,6 +249,7 @@
     <ClInclude Include="Src\Object\Actor\Charactor\Subject\Subject.h" />
     <ClInclude Include="Src\Object\Actor\Charactor\Subject\SubjectA.h" />
     <ClInclude Include="Src\Object\Actor\Charactor\Subject\SubjectB.h" />
+    <ClInclude Include="Src\Object\Actor\Charactor\Subject\SubjectC.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Data\Image\Background.png" />

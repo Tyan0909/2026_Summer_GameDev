@@ -1156,11 +1156,11 @@ void GameScene::Draw()
 	DrawCompositedScene();
 	//screenManager_->Compose(activePlayerCount_ >= 3, screenWidth_, screenHeight_);
 
-	DrawFormatString(
-		0,
-		0,
-		GetColor(255, 255, 255),
-		"GAME DRAW");
+	//DrawFormatString(
+	//	0,
+	//	0,
+	//	GetColor(255, 255, 255),
+	//	"GAME DRAW");
 
 	DrawFormatString(
 		30,
@@ -1470,6 +1470,20 @@ void GameScene::UpdatePlayers(void)
 		}
 
 		player->Update();
+	}
+
+	// プレイヤーが死亡している場合、操作を無効化する
+	for (auto* player : players_)
+	{
+		if (player == nullptr)
+		{
+			continue;
+		}
+
+		if (!IsPlayerAlive(player))
+		{
+			player->SetInputEnabled(false);
+		}
 	}
 }
 

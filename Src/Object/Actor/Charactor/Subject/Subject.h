@@ -26,6 +26,8 @@ public:
 	static constexpr VECTOR
 		COL_CAPSULE_DOWN_LOCAL_POS = { 0.0f, 30.0f, 0.0f };
 	static constexpr float COL_CAPSULE_RADIUS = 20.0f;
+	// 初期位置
+	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
 
 	//　プレイヤー検知範囲
 	static constexpr float DETECTION_RANGE = 1000.0f;
@@ -92,7 +94,8 @@ public:
 
 protected:
 
-	
+	// 重力適用（派生クラスで上書き可能に）
+	virtual void ApplyGravity(void);
 
 	// リソースロード
 	void InitLoad(void) override;
@@ -131,7 +134,7 @@ protected:
 	// プレイヤー検知半径
 	float playerDetectRange_;
 
-	
+	void PickRandomMoveDirection(void);
 
 private:
 
@@ -144,9 +147,6 @@ private:
 	static constexpr int RANDOM_DIR_CHANGE_MIN = 60;
 	static constexpr int RANDOM_DIR_CHANGE_MAX = 180;
 
-	// 初期位置
-	static constexpr VECTOR INIT_POS = { 0.0f, 1000.0f, 0.0f };
-
 	// 攻撃
 	static constexpr float ATTACK_RANGE = 85.0f;
 	static constexpr int ATTACK_COOLDOWN_MAX = 90;
@@ -158,8 +158,6 @@ private:
 	float gravityVelocity_;
 	bool isInoputEnabled_;
 
-	
-
 	// 基本スケール
 	VECTOR baseScale_;
 	ACTION_STATE actionState_;
@@ -167,7 +165,6 @@ private:
 	int attackFrame_;
 	VECTOR attackTargetPos_;
 	bool isAttackHitPending_;
-
 
 	VECTOR knockBackVelocity_;
 
@@ -178,9 +175,6 @@ private:
 
 	static constexpr int DYING_FRAME_MAX = 120; // 60fpsで2秒
 
-	// 重力適用
-	void ApplyGravity(void);
-
 	// 地面との接地判定
 	bool CheckGround(VECTOR& hitPos) const;
 
@@ -190,7 +184,7 @@ private:
 
 	/*void UpdateRandomMove(void);*/
 	void UpdateAttack(void);
-	void PickRandomMoveDirection(void);
+	
 	
 	void FaceTarget(const VECTOR& targetPos);
 	void ClampToMoveArea(void);
@@ -199,4 +193,3 @@ private:
 
 
 };
-
