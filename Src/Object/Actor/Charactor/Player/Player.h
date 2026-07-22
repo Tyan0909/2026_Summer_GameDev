@@ -221,11 +221,13 @@ private:
 	void UpdateRun(void);
 	void UpdateJump(void);
 	void UpdateCrouched(void);
+	void UpdateTakePhoto(void);
 	void OnEnterIdle(void);
 	void OnEnterWalk(void);
 	void OnEnterRun(void);
 	void OnEnterJump(void);
 	void OnEnterCrouched(void);
+	void OnEnterTakePhoto(void);
 
 	STATE state_;
 
