@@ -55,6 +55,14 @@ void ResourceManager::Init(void)
 		"Subject/Subject.mv1");
 	resourcesMap_.emplace(SRC::SUBJECT, res);
 
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"Subject/UFO/UFO.mv1");
+	resourcesMap_.emplace(SRC::ENEMY_UFO, res);
+
+	res = new RES(RES_T::MODEL, PATH_MDL +
+		"Subject/Chicken.mv1");
+	resourcesMap_.emplace(SRC::ENEMY_CHICKEN, res);
+
 	// É^ÉCÉgÉãÉçÉS
 	res = new RES(RES_T::IMG, PATH_IMG +
 		"Title/Title Logo.png");

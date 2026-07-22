@@ -15,8 +15,8 @@ public:
 	{
 		SUBJECT_A,
 		SUBJECT_B,
-		/*SUBJECT_C,
-		SUBJECT_D,*/
+		SUBJECT_C,
+		SUBJECT_D,
 		MAX,
 	};
 
@@ -36,8 +36,12 @@ public:
 
 	const std::vector<Subject*>& GetSubjects(void) const;
 
-		// 追加: Subject を削除する（GameScene から呼ぶ）
-		void RemoveSubject(Subject* subject);
+	// 追加: Subject を削除する（GameScene から呼ぶ）
+	void RemoveSubject(Subject* subject);
+
+	// 新規: 出現比率と最大同時出現数を設定
+	void SetSpawnWeight(SUBJECT_TYPE type, float weight);
+	void SetMaxConcurrent(SUBJECT_TYPE type, int maxCount);
 
 private:
 	static constexpr float SUBJECT_SPAWN_HEIGHT = 1000.0f;
@@ -51,4 +55,11 @@ private:
 	VECTOR spawnAreaMax_;
 
 	float GetRandomRange(float minValue, float maxValue) const;
+
+	// 出現制御
+	std::vector<float> spawnWeights_; // 各種の重み（0で出現無効）
+	std::vector<int> maxConcurrent_;  // 各種の最大同時出現数（-1で無制限）
+
+	// 型ごとの現在数を数える内部ユーティリティ
+	int CountSubjectsOfType(SUBJECT_TYPE type) const;
 };
