@@ -1164,9 +1164,9 @@ void GameScene::Draw()
 
 	DrawFormatString(
 		30,
-		60,
+		240,
 		GetColor(255, 255, 255),
-		"PHOTO %d / %d",
+		"残り撮影可能枚数 %d / %d",
 		remainingPhotoCount_,
 		MAX_PHOTO_COUNT);
 
@@ -1199,7 +1199,7 @@ void GameScene::Draw()
 		}
 	}
 
-	int x = 300;
+	int x = 600;
 	int y = 40;
 	int color = GetColor(255, 255, 255);
 
@@ -1708,7 +1708,7 @@ void GameScene::DrawView(
 	{
 		localCount = photoCount_;
 	}
-	DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localCount);
+	/*DrawFormatString(20, 80, GetColor(0, 255, 255), "LAST PHOTO : +%d", localCount);*/
 	DrawFormatString(20, 110, GetColor(255, 255, 255), "PHOTO COUNT : %d", localCount);
 
 	// 追加: 選択中アイテムと残数表示

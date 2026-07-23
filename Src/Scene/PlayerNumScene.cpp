@@ -258,7 +258,7 @@ void PlayerNumScene::Update(void)
 		scene.SetSelectedPlayerNums(selected);
 
 		PlaySoundMem(decideSE_, DX_PLAYTYPE_BACK);
-		scene.ChangeScene(SceneManager::SCENE_ID::EXAMPLE);
+		scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
 	}
 
 	// Enterキーで参加状態をトグル（確定）

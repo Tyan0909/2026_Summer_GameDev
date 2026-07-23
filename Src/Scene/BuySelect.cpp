@@ -500,7 +500,7 @@ void BuySelect::Draw(void)
             screenH / 2 + 70,
             GetColor(180, 255, 255),
             fontMid_,
-            "SPACEで開始");
+            "自動で切り替わります");
 
         return;
     }

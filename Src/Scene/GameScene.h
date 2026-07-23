@@ -56,7 +56,7 @@ private:
 	static constexpr int PREVIEW_WIDTH = 640;
 	static constexpr int PREVIEW_HEIGHT = 360;
 
-	static constexpr int MAX_PHOTO_COUNT = 50;
+	static constexpr int MAX_PHOTO_COUNT = 10;
 
 	// ミニマップ関連の定数
 	static constexpr int MINIMAP_SIZE = 180;           // ミニマップのサイズ
