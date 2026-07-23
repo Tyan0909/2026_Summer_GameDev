@@ -2580,7 +2580,7 @@ void GameScene::DrawMinimap(int playerIndex)
 			int dirX = plrX + static_cast<int>(cosf(angle) * 12);
 			int dirY = plrY + static_cast<int>(sinf(angle) * 12);
 
-			DrawLine(plrX, plrY, dirX, dirY, GetColor(0, 255, 255), 2);
+			DrawLine(plrX, -plrY, dirX, -dirY, GetColor(0, 255, 255), 2);
 
 			// プレイヤー本体
 			DrawCircle(plrX, plrY, 6, GetColor(0, 255, 255), TRUE);

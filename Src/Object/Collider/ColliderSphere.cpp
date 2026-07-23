@@ -71,6 +71,6 @@ VECTOR ColliderSphere::GetPosPushBackAlongNormal(const MV1_COLL_RESULT_POLY& hit
 
 void ColliderSphere::DrawDebug(int color)
 {
-	DrawSphere3D(
-		GetPos(), radius_, 16, color, color, false);
+	/*DrawSphere3D(
+		GetPos(), radius_, 16, color, color, false);*/
 }

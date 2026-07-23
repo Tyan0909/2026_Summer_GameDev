@@ -75,11 +75,11 @@ void EffectManager::Update()
 void EffectManager::Draw()
 {
 
-    DrawFormatString(
+    /*DrawFormatString(
         0,
         200,
         GetColor(255, 255, 255),
-        "EffectManager Draw");
+        "EffectManager Draw");*/
 
     for (const auto& e : explosions_)
     {
@@ -115,13 +115,13 @@ void EffectManager::Draw()
     }
     DrawEffekseer3D();
 
-    DrawSphere3D(
+    /*DrawSphere3D(
         VGet(300, 100, 1000),
         50,
         16,
         GetColor(0, 255, 0),
         GetColor(0, 255, 0),
-        TRUE);
+        TRUE);*/
 }
 
 void EffectManager::Release()
