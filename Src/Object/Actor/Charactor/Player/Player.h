@@ -98,6 +98,7 @@ public:
 
 	void Init(void);
 	void Update(void) override;
+	void Draw(void) override; 
 	void Release(void) override;
 
 	void SetPos(const VECTOR& pos);
@@ -118,6 +119,8 @@ public:
 	int GetHp(void) const;
 	int GetHpMax(void) const;
 	float GetHpRate(void) const;
+
+	void AddKnockBack(const VECTOR& force);
 
 
 	// 追加: アイテム付与 / 在庫参照 / 使用
@@ -252,5 +255,10 @@ private:
 
 	bool isTakingPhoto_ = false;
 	int photoActFrame_ = 0;
+
+	// ノックバック用
+	VECTOR knockBackVelocity_ = VGet(0.0f, 0.0f, 0.0f);
+	static constexpr float KNOCKBACK_DECAY = 0.85f;
+	static constexpr float KNOCKBACK_MIN = 0.15f;
 };
 

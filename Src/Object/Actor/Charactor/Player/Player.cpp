@@ -103,7 +103,8 @@ Player::Player(void)
 	damageCooldownFrame_(0),
 	animController_(nullptr),
 	inputConfig_(KEYBOARD_INPUT_CONFIG),
-	state_(STATE::IDLE)
+	state_(STATE::IDLE),
+	knockBackVelocity_(VGet(0.0f, 0.0f, 0.0f)) // 追加: 初期化
 {
 }
 
@@ -145,6 +146,18 @@ void Player::Update(void)
 
 	UpdateCameraInput();
 	UpdateMoveInput();
+
+	// ノックバック処理：優先して位置に加算し減衰させる
+	if (VSize(knockBackVelocity_) > KNOCKBACK_MIN)
+	{
+		transform_.pos = VAdd(transform_.pos, knockBackVelocity_);
+		knockBackVelocity_ = VScale(knockBackVelocity_, KNOCKBACK_DECAY);
+		// 小さくなったら停止
+		if (VSize(knockBackVelocity_) <= KNOCKBACK_MIN)
+		{
+			knockBackVelocity_ = VGet(0.0f, 0.0f, 0.0f);
+		}
+	}
 
 	ResolveWallCollision();
 	ApplyGravity();
@@ -1168,4 +1181,31 @@ void Player::StartTakePhoto()
 bool Player::IsTakingPhoto() const
 {
 	return isTakingPhoto_;
+}
+
+// 点滅描画実装：ダメージ無敵時間中は点滅させる
+void Player::Draw(void)
+{
+	// ダメージクールダウンが残っている間は点滅
+	if (damageCooldownFrame_ > 0)
+	{
+		// 6フレーム刻みで点滅（任意調整可）
+		const int blinkPeriod = 6;
+		if (((damageCooldownFrame_ / blinkPeriod) & 1) == 1)
+		{
+			// 非表示フェーズ：何も描かない
+			return;
+		}
+	}
+
+	// 通常描画（ActorBase に委譲）
+	ActorBase::Draw();
+
+	// 必要なら追加の HUD/エフェクト描画をここに。
+}
+
+// ノックバック受け取り
+void Player::AddKnockBack(const VECTOR& force)
+{
+	knockBackVelocity_ = force;
 }

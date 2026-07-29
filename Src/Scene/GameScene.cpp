@@ -2917,6 +2917,21 @@ void GameScene::UpdateSubjectAttacks(void)
 
 		if (subject->ConsumeAttackHit() && subject->IsInAttackRange(nearestPos))
 		{
+			// ƒmƒbƒNƒoƒbƒN•ûŒü‚ð”íUŒ‚ŽÒ‚Ö—^‚¦‚éi”íŠQŽÒ‘¤‚Ö‰Ÿ‚µo‚·j
+			VECTOR dir = VSub(nearest->GetTransform().pos, subject->GetTransform().pos);
+			dir.y = 0.0f;
+			if (!AsoUtility::EqualsVZero(dir))
+			{
+				dir = AsoUtility::VNormalize(dir);
+			}
+			else
+			{
+				dir = VGet(0.0f, 0.0f, 1.0f);
+			}
+
+			const float knockPower = 10.0f; // ”CˆÓ’²®‰Â
+			nearest->AddKnockBack(VScale(dir, knockPower));
+
 			nearest->TakeDamage(1);
 		}
 	}
