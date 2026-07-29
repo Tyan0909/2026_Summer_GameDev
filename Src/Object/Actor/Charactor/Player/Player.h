@@ -258,7 +258,8 @@ private:
 
 	// ノックバック用
 	VECTOR knockBackVelocity_ = VGet(0.0f, 0.0f, 0.0f);
-	static constexpr float KNOCKBACK_DECAY = 0.85f;
-	static constexpr float KNOCKBACK_MIN = 0.15f;
+	static constexpr float KNOCKBACK_DECAY = 0.90f; // 例: 0.90 -> ゆっくり止まる（以前は 0.85）
+	static constexpr float KNOCKBACK_MIN = 0.10f;   // 速度がこれ以下になったら停止（小さくするとごくわずかまで動く）
+	static constexpr int   DAMAGE_BLINK_PERIOD = 4; // 点滅周期（フレーム単位）。小さいほど点滅が速い
 };
 

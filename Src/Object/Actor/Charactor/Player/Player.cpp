@@ -152,7 +152,6 @@ void Player::Update(void)
 	{
 		transform_.pos = VAdd(transform_.pos, knockBackVelocity_);
 		knockBackVelocity_ = VScale(knockBackVelocity_, KNOCKBACK_DECAY);
-		// 小さくなったら停止
 		if (VSize(knockBackVelocity_) <= KNOCKBACK_MIN)
 		{
 			knockBackVelocity_ = VGet(0.0f, 0.0f, 0.0f);
@@ -1190,10 +1189,10 @@ void Player::Draw(void)
 	if (damageCooldownFrame_ > 0)
 	{
 		// 6フレーム刻みで点滅（任意調整可）
-		const int blinkPeriod = 6;
+		const int blinkPeriod = DAMAGE_BLINK_PERIOD;
 		if (((damageCooldownFrame_ / blinkPeriod) & 1) == 1)
 		{
-			// 非表示フェーズ：何も描かない
+			// 非表示フェーズ
 			return;
 		}
 	}

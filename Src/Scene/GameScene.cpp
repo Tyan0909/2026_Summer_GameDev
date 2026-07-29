@@ -2917,7 +2917,7 @@ void GameScene::UpdateSubjectAttacks(void)
 
 		if (subject->ConsumeAttackHit() && subject->IsInAttackRange(nearestPos))
 		{
-			// ƒmƒbƒNƒoƒbƒN•ûŒü‚ð”íUŒ‚ŽÒ‚Ö—^‚¦‚éi”íŠQŽÒ‘¤‚Ö‰Ÿ‚µo‚·j
+			// ƒmƒbƒNƒoƒbƒN•ûŒü
 			VECTOR dir = VSub(nearest->GetTransform().pos, subject->GetTransform().pos);
 			dir.y = 0.0f;
 			if (!AsoUtility::EqualsVZero(dir))
@@ -2929,8 +2929,11 @@ void GameScene::UpdateSubjectAttacks(void)
 				dir = VGet(0.0f, 0.0f, 1.0f);
 			}
 
-			const float knockPower = 10.0f; // ”CˆÓ’²®‰Â
-			nearest->AddKnockBack(VScale(dir, knockPower));
+			const float knockPower = 14.0f;    // © ‚±‚±‚ð‘å‚«‚­‚·‚é‚Æ‚«”ò‚Ñ‚ª‹­‚­‚È‚é
+			const float knockUp = 4.0f;        // © Y ¬•ª‚ð’Ç‰Á‚µ‚Ä­‚µŽ‚¿ã‚°‚éê‡
+			VECTOR kb = VScale(dir, knockPower);
+			kb.y = knockUp;
+			nearest->AddKnockBack(kb);
 
 			nearest->TakeDamage(1);
 		}
