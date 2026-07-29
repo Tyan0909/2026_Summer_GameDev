@@ -921,7 +921,19 @@ void GameScene::Update()
 
 		scene.SetPlayerScore(scores);
 
-		// リザルト用の合計点
+		// ここでプレイヤー毎の所持金もセットする（BuySelect が参照するもの）
+		{
+			std::vector<int> money;
+			money.reserve(scores.size());
+			for (int s : scores)
+			{
+				// 現状は「獲得スコアをそのまま所持金にする」仕様に合わせる
+				money.push_back(s);
+			}
+			scene.SetPlayerMoney(money);
+		}
+
+		// ここで総獲得スコアをセットする
 		scene.SetCarryMoney(totalScore);
 
 		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
@@ -929,42 +941,50 @@ void GameScene::Update()
 		return;
 	}
 
-	if (IsAllPlayersDead())
+	if (IsPlayerReachedGoal())
 	{
+		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
+		scene.SetPhotoCount(photoCount_);
+		scene.SetLastPhotoScore(lastPhotoScore_);
+		scene.SetLastPhotoScore(
+			lastPhotoScorePerPlayer_[lastPhotoPlayerIndex_]);
+
 		std::vector<int> scores;
+		int totalScore = 0;
 
 		for (auto* player : players_)
 		{
 			if (player)
 			{
 				scores.push_back(player->GetScore());
+				totalScore += player->GetScore();
+			}
+			else
+			{
+				scores.push_back(0);
 			}
 		}
 
 		scene.SetPlayerScore(scores);
 
-		std::vector<int> money =
-			scene.GetPlayerMoney();
+		// 合計得点をキャリー（BuySelect の合計表示などに使用）
+		scene.SetCarryMoney(totalScore);
 
-		std::vector<int> score =
-			scene.GetPlayerScore();
-
-		for (size_t i = 0; i < players_.size(); i++)
+		// 各プレイヤーの所持金を「BuySelect で残った金額 + 今回獲得したスコア」にする
 		{
-			if (players_[i]->HasInsuranceCamera())
+			const auto prevMoney = scene.GetPlayerMoney();
+			const int defaultMoney = 2000;
+			std::vector<int> money;
+			money.resize(scores.size());
+			for (size_t i = 0; i < scores.size(); ++i)
 			{
-				money[i] += score[i];
+				int base = (i < prevMoney.size()) ? prevMoney[i] : defaultMoney;
+				money[i] = base + scores[i];
 			}
-			else
-			{
-				money[i] = 0;
-			}
+			scene.SetPlayerMoney(money);
 		}
 
-		scene.SetPlayerMoney(money);
-		scene.SetGameResult(SceneManager::GAME_RESULT::GAMEOVER);
-		scene.SetPhotoCount(photoCount_);
-		scene.SetLastPhotoScore(lastPhotoPlayerIndex_);
+		scene.SetGameResult(SceneManager::GAME_RESULT::CLEAR);
 		scene.ChangeScene(SceneManager::SCENE_ID::RESULT);
 		return;
 	}

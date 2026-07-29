@@ -87,39 +87,43 @@ void Result::Update(void)
 		return false;
 	};
 
-	// X�{�^�� (SPACE / 任意パッド LEFT)
-	if (
-		ins.IsTrgDown(KEY_INPUT_SPACE) ||
-		IsAnyPadBtnTrgDown(InputManager::JOYPAD_BTN::LEFT)
-		)
-	{
-		scene.SetCarryMoney(0);
-		scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
-		scene.SetPhotoCount(0);
-		scene.SetLastPhotoScore(0);
-		scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
-		return;
-	}
+    // Xボタン系（SPACE / 任意パッド LEFT）
+    if (
+        ins.IsTrgDown(KEY_INPUT_SPACE) ||
+        IsAnyPadBtnTrgDown(InputManager::JOYPAD_BTN::LEFT)
+        )
+    {
+        scene.SetCarryMoney(0);
+        // タイトルへ戻るときは所持金情報をリセットしておく（BuySelect は空なら初期2000を使う）
+        scene.SetPlayerMoney(std::vector<int>{});
+        scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
+        scene.SetPhotoCount(0);
+        scene.SetLastPhotoScore(0);
+        scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
+        return;
+    }
 
-	// A�{�^�� (ENTER / 任意パッド DOWN)
-	if (
-		ins.IsTrgDown(KEY_INPUT_RETURN) ||
-		IsAnyPadBtnTrgDown(InputManager::JOYPAD_BTN::DOWN)
-		)
-	{
-		if (scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR)
-		{
-			scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
-		}
-		else
-		{
-			scene.SetCarryMoney(0);
-			scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
-			scene.SetPhotoCount(0);
-			scene.SetLastPhotoScore(0);
-			scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
-		}
-	}
+    // ENTER系（決定）
+    if (
+        ins.IsTrgDown(KEY_INPUT_RETURN) ||
+        IsAnyPadBtnTrgDown(InputManager::JOYPAD_BTN::DOWN)
+        )
+    {
+        if (scene.GetGameResult() == SceneManager::GAME_RESULT::CLEAR)
+        {
+            scene.ChangeScene(SceneManager::SCENE_ID::BUYSELECT);
+        }
+        else
+        {
+            scene.SetCarryMoney(0);
+            // タイトルへ戻るときは所持金情報をリセットしておく（BuySelect は空なら初期2000を使う）
+            scene.SetPlayerMoney(std::vector<int>{});
+            scene.SetGameResult(SceneManager::GAME_RESULT::NONE);
+            scene.SetPhotoCount(0);
+            scene.SetLastPhotoScore(0);
+            scene.ChangeScene(SceneManager::SCENE_ID::TITLE);
+        }
+    }
 
     
 	resultFrame_++;

@@ -90,6 +90,9 @@ void TitleScene::Init(void)
 	}
 	SoundManager::GetInstance().PlayBgm(
 		ResourceManager::SRC::BGM_TITLE);
+
+	// タイトルに入った時点でプレイヤー所持金をクリアする
+	SceneManager::GetInstance().SetPlayerMoney(std::vector<int>{});
 }
 
 static float RandFloat(float a, float b)

@@ -112,10 +112,12 @@ void Subject::SetMoveArea(const VECTOR& minPos, const VECTOR& maxPos)
 
 void Subject::Draw(void)
 {
-	// 死亡演出中は点滅
+	// 死亡中は点滅表示にする。
 	if (isDying_)
 	{
-		if ((dyingFrame_ / 5) % 2 == 0)
+		// visible when ((dyingFrame_/5) % 2) == 0
+		// invisible when == 1
+		if (((dyingFrame_ / 5) % 2) == 1)
 		{
 			return;
 		}
@@ -123,7 +125,7 @@ void Subject::Draw(void)
 
 	ActorBase::Draw();
 
-	// スタン状態の視覚表示
+	// スタンエフェクト表示
 	if (stunFrames_ > 0)
 	{
 		DrawStunEffect();
@@ -232,23 +234,31 @@ void Subject::DrawStar(int x, int y, int size, unsigned int color)
 void Subject::StartDying()
 {
 
-	
-
 	if (isDying_)
 	{
 		return;
 	}
 
 	isDying_ = true;
+
 	dyingFrame_ = 0;
 
-	// 動きを止める
+	// 死亡時はまず表示スケールを基準値に戻しておく
+	transform_.scl = baseScale_;
+
+	// 死亡中はスタン状態と同等に扱い、外向き攻撃等の待機を解除
 	stunFrames_ = DYING_FRAME_MAX;
 
-	// 攻撃中なら解除
+	// 挙動リセット
 	actionState_ = ACTION_STATE::MOVE;
 	attackFrame_ = 0;
 	isAttackHitPending_ = false;
+
+	// 死亡中は外部とのヒット参照をクリアして当たり判定だけ残る状態を防ぐ
+	ClearHitCollider();
+
+	// ノックバックなどの残留挙動がある場合は必要に応じて初期化
+	knockBackVelocity_ = VGet(0.0f, 0.0f, 0.0f);
 }
 
 void Subject::InitLoad(void)
@@ -296,6 +306,10 @@ void Subject::InitPost(void)
 {
 	// サブジェクトの初期座標を設定
 	transform_.pos = GetInitPos();
+
+	// 基準スケールとして保存する
+	baseScale_ = transform_.scl;
+
 	PickRandomMoveDirection();
 }
 
