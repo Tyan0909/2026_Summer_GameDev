@@ -1792,7 +1792,7 @@ void GameScene::CaptureScreenshot(int playerIndex)
 	int sourceHeight = screenHeight_;
 
 	//----------------------------------------------------
-	// 撮影対象のスクリーンを決定（playerIndex に応じて正しい分割バッファを選ぶ）
+	// 撮影をする画面を決定させる
 	if (!isSplitScreenEnabled_ || activePlayerCount_ <= 1)
 	{
 		sourceHandle = sceneScreenHandle_;
@@ -1813,24 +1813,29 @@ void GameScene::CaptureScreenshot(int playerIndex)
 		sourceWidth = screenWidth_ / 2;
 		sourceHeight = screenHeight_;
 	}
-	else // 3 or 4 players
+	else // 3人以上のとき
 	{
-		// 4分割レイアウトにマップ（存在しないハンドルは sceneScreenHandle_ にフォールバック）
+		// 4分割レイアウトにマップ
 		switch (playerIndex)
 		{
 		case 0:
+			// 左上
 			sourceHandle = leftScreenHandle_;
 			break;
 		case 1:
+			// 右上
 			sourceHandle = rightScreenHandle_;
 			break;
 		case 2:
+			// 左下
 			sourceHandle = bottomLeftScreenHandle_;
 			break;
 		case 3:
+			//	右下
 			sourceHandle = bottomRightScreenHandle_;
 			break;
 		default:
+			// 例外は左上にフォールバック
 			sourceHandle = leftScreenHandle_;
 			break;
 		}
@@ -1838,7 +1843,7 @@ void GameScene::CaptureScreenshot(int playerIndex)
 		sourceHeight = screenHeight_ / 2;
 	}
 
-	// フォールバック: 対応する分割バッファが無ければシーン全体を使う
+	// フォールバック
 	if (sourceHandle == -1)
 	{
 		sourceHandle = sceneScreenHandle_;
@@ -1846,7 +1851,7 @@ void GameScene::CaptureScreenshot(int playerIndex)
 		sourceHeight = screenHeight_;
 	}
 
-	// キャプチャ用に一旦スクリーンへ描画（分割バッファを画面全体に伸張して取り込む）
+	// キャプチャ用に一旦スクリーンへ描画
 	SetDrawScreen(screenshotScreenHandle_);
 	SetDrawArea(0, 0, screenWidth_, screenHeight_);
 	ClearDrawScreen();
